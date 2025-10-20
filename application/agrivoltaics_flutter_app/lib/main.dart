@@ -83,7 +83,7 @@ class App extends StatelessWidget {
             onError: Colors.white,
           ),
           scaffoldBackgroundColor: Color(0xFFF2F5FD),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             color: Colors.white,
             surfaceTintColor: Colors.white,
             elevation: 4,
