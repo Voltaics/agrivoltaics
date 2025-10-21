@@ -8,6 +8,7 @@
             "name": "agrivoltaics_flutter_app",
             "request": "launch",
             "type": "dart",
+            "program": "application/agrivoltaics_flutter_app/lib/main.dart",
             "args": [
                 "--dart-define=INFLUXDB_URL=https://us-east-1-1.aws.cloud2.influxdata.com",
                 "--dart-define=INFLUXDB_TOKEN=5ML2JenjyVxPEv7ioyy8jU7Xlit4Lw_LpSt53IouvVWIIro88qkIDAeJ00rR15NkQAcd0WdPl7Cyn5-vywwlJg==",

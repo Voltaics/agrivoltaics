@@ -1,0 +1,55 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "agrivoltaics_flutter_app",
+            "request": "launch",
+            "type": "dart",
+            "program": "application/agrivoltaics_flutter_app/lib/main.dart",
+            "deviceId": "chrome",
+            "args": [
+                "--dart-define=INFLUXDB_URL=https://us-east-1-1.aws.cloud2.influxdata.com",
+                "--dart-define=INFLUXDB_TOKEN=5ML2JenjyVxPEv7ioyy8jU7Xlit4Lw_LpSt53IouvVWIIro88qkIDAeJ00rR15NkQAcd0WdPl7Cyn5-vywwlJg==",
+                "--dart-define=INFLUXDB_ORG=65831f5e68f42d85",
+                "--dart-define=INFLUXDB_BUCKET=esp32_testing",
+                "--dart-define=INFLUXDB_DEBUG=true",
+                "--dart-define=AUTHORIZED_EMAILS=rindler.eli@gmail.com"
+            ]
+        },
+        {
+            "name": "agrivoltaics_flutter_app (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "program": "application/agrivoltaics_flutter_app/lib/main.dart",
+            "deviceId": "chrome",
+            "flutterMode": "profile",
+            "args": [
+                "--dart-define=INFLUXDB_URL=https://us-east-1-1.aws.cloud2.influxdata.com",
+                "--dart-define=INFLUXDB_TOKEN=5ML2JenjyVxPEv7ioyy8jU7Xlit4Lw_LpSt53IouvVWIIro88qkIDAeJ00rR15NkQAcd0WdPl7Cyn5-vywwlJg==",
+                "--dart-define=INFLUXDB_ORG=65831f5e68f42d85",
+                "--dart-define=INFLUXDB_BUCKET=esp32_testing",
+                "--dart-define=INFLUXDB_DEBUG=true",
+                "--dart-define=AUTHORIZED_EMAILS=rindler.eli@gmail.com"
+            ]
+        },
+        {
+            "name": "agrivoltaics_flutter_app (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "program": "application/agrivoltaics_flutter_app/lib/main.dart",
+            "deviceId": "chrome",
+            "flutterMode": "release",
+            "args": [
+                "--dart-define=INFLUXDB_URL=https://us-east-1-1.aws.cloud2.influxdata.com",
+                "--dart-define=INFLUXDB_TOKEN=5ML2JenjyVxPEv7ioyy8jU7Xlit4Lw_LpSt53IouvVWIIro88qkIDAeJ00rR15NkQAcd0WdPl7Cyn5-vywwlJg==",
+                "--dart-define=INFLUXDB_ORG=65831f5e68f42d85",
+                "--dart-define=INFLUXDB_BUCKET=esp32_testing",
+                "--dart-define=INFLUXDB_DEBUG=true",
+                "--dart-define=AUTHORIZED_EMAILS=rindler.eli@gmail.com"
+            ]
+        }
+    ]
+}
