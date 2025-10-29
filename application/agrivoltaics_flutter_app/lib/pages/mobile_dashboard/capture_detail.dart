@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+// import 'package:firebase_storage/firebase_storage.dart';
 import 'capture_detail_tabs.dart';
 
 class CaptureDetailPage extends StatelessWidget {
@@ -20,12 +20,12 @@ class CaptureDetailPage extends StatelessWidget {
     final overlayUrl = imageUrls.length > 3 ? imageUrls[3] : '';
     final heatmapUrl = imageUrls.length > 4 ? imageUrls[4] : '';
 
-    final timestamp = DateTime.fromMillisecondsSinceEpoch(
-      data['timestamp'].seconds * 1000,
-    ).toLocal();
+    // final timestamp = DateTime.fromMillisecondsSinceEpoch(
+    //   data['timestamp'].seconds * 1000,
+    // ).toLocal();
 
-    final dateStr = "${timestamp.month}/${timestamp.day}/${timestamp.year}";
-    final timeStr = "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
+    // final dateStr = "${timestamp.month}/${timestamp.day}/${timestamp.year}";
+    // final timeStr = "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
 
     return Scaffold(
       body: ListView(
