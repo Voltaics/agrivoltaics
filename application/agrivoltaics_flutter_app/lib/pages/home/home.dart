@@ -1,11 +1,9 @@
 import 'dart:convert';
 
-import 'package:agrivoltaics_flutter_app/app_constants.dart';
 import 'package:agrivoltaics_flutter_app/app_state.dart';
 import 'package:agrivoltaics_flutter_app/auth.dart';
 import 'package:agrivoltaics_flutter_app/pages/login.dart';
 import 'package:agrivoltaics_flutter_app/pages/settings.dart';
-import 'package:agrivoltaics_flutter_app/pages/sites.dart';
 import 'package:agrivoltaics_flutter_app/pages/home/notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
@@ -15,7 +13,6 @@ import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 
-import '../dashboard/dashboard.dart';
 import '../dashboard/dashboard_new.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
 

@@ -6,30 +6,55 @@ class OrganizationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // Ensure user document exists
+  Future<void> ensureUserDocument() async {
+    final userId = _auth.currentUser!.uid;
+    final userEmail = _auth.currentUser!.email;
+    final userDoc = await _firestore.doc('users/$userId').get();
+    
+    if (!userDoc.exists) {
+      await _firestore.doc('users/$userId').set({
+        'uid': userId,
+        'email': userEmail,
+        'displayName': _auth.currentUser!.displayName ?? '',
+        'photoUrl': _auth.currentUser!.photoURL ?? '',
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastLogin': FieldValue.serverTimestamp(),
+      });
+    } else {
+      // Update last login
+      await _firestore.doc('users/$userId').update({
+        'lastLogin': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
   // Get user's organizations
   Stream<List<Organization>> getUserOrganizations() {
     final userId = _auth.currentUser!.uid;
     
+    // Query all organizations where the user is a member
+    // We'll search through all organizations for this user's membership
     return _firestore
-        .collectionGroup('members')
-        .where(FieldPath.documentId, isEqualTo: userId)
+        .collection('organizations')
         .snapshots()
-        .asyncMap((snapshot) async {
-      // Get org IDs from member docs
-      final orgIds = snapshot.docs
-          .map((doc) => doc.reference.parent.parent!.id)
-          .toList();
-      
-      if (orgIds.isEmpty) return [];
-      
-      // Fetch organization documents
-      final orgDocs = await Future.wait(
-        orgIds.map((id) => _firestore.doc('organizations/$id').get())
+        .asyncMap((orgSnapshot) async {
+      // For each organization, check if user is a member
+      final memberChecks = await Future.wait(
+        orgSnapshot.docs.map((orgDoc) async {
+          final memberDoc = await orgDoc.reference
+              .collection('members')
+              .doc(userId)
+              .get();
+          
+          return memberDoc.exists ? orgDoc : null;
+        })
       );
       
-      return orgDocs
-          .where((doc) => doc.exists)
-          .map((doc) => Organization.fromFirestore(doc))
+      // Filter out nulls and convert to Organization objects
+      return memberChecks
+          .where((doc) => doc != null)
+          .map((doc) => Organization.fromFirestore(doc!))
           .toList();
     });
   }

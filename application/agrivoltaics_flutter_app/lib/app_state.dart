@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:agrivoltaics_flutter_app/app_constants.dart';
+import 'package:agrivoltaics_flutter_app/models/organization.dart';
 import 'package:agrivoltaics_flutter_app/pages/home/notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -94,6 +95,14 @@ class AppState with ChangeNotifier {
 
   // Notifications
   List<AppNotification> notifications = [];
+
+  // Selected Organization
+  Organization? selectedOrganization;
+
+  void setSelectedOrganization(Organization org) {
+    selectedOrganization = org;
+    notifyListeners();
+  }
 
   void setSingleGraphToggle(bool value) {
       singleGraphToggle = value;

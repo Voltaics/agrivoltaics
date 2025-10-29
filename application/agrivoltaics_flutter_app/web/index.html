@@ -32,48 +32,19 @@
   <title>Vinovoltaics</title>
   <link rel="manifest" href="manifest.json">
 
-  <script>
-    // The value below is injected by flutter build, do not touch.
-    var serviceWorkerVersion = null;
-  </script>
   <!-- Recaptcha script https://pub.dev/packages/g_recaptcha_v3 -->
   <script src="https://www.google.com/recaptcha/api.js?render=6LfzobQlAAAAAHFj8WZMcGQMNmq_JBZ027jlukgP"></script>
   <!-- This script adds the flutter initialization JS code -->
-
-  <!-- Firebase JS SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBNJGg2wwE17ohi3W_C0r7LYR2M6M7bdM4",
-      authDomain: "agrivoltaics-flutter-firebase.firebaseapp.com",
-      projectId: "agrivoltaics-flutter-firebase",
-      storageBucket: "agrivoltaics-flutter-firebase.appspot.com",
-      messagingSenderId: "593883469296",
-      appId: "1:593883469296:web:228da2060c5e674174b935"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-  </script>
 
   <script src="flutter.js" defer></script>
 </head>
 <body>
   <script>
+    {{flutter_js}}
+    {{flutter_build_config}}
+    
     window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
-        }
-      }).then(function(engineInitializer) {
-        return engineInitializer.initializeEngine();
-      }).then(function(appRunner) {
-        return appRunner.runApp();
-      });
+      _flutter.loader.load();
     });
   </script>
 </body>
