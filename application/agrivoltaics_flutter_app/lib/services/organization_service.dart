@@ -6,29 +6,6 @@ class OrganizationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Ensure user document exists
-  Future<void> ensureUserDocument() async {
-    final userId = _auth.currentUser!.uid;
-    final userEmail = _auth.currentUser!.email;
-    final userDoc = await _firestore.doc('users/$userId').get();
-    
-    if (!userDoc.exists) {
-      await _firestore.doc('users/$userId').set({
-        'uid': userId,
-        'email': userEmail,
-        'displayName': _auth.currentUser!.displayName ?? '',
-        'photoUrl': _auth.currentUser!.photoURL ?? '',
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastLogin': FieldValue.serverTimestamp(),
-      });
-    } else {
-      // Update last login
-      await _firestore.doc('users/$userId').update({
-        'lastLogin': FieldValue.serverTimestamp(),
-      });
-    }
-  }
-
   // Get user's organizations
   Stream<List<Organization>> getUserOrganizations() {
     final userId = _auth.currentUser!.uid;

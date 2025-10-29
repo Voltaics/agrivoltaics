@@ -14,20 +14,6 @@ class OrganizationSelectionPage extends StatefulWidget {
 
 class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
   final OrganizationService _orgService = OrganizationService();
-  bool _initialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeUser();
-  }
-
-  Future<void> _initializeUser() async {
-    await _orgService.ensureUserDocument();
-    setState(() {
-      _initialized = true;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +22,7 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
         title: const Text('Select Organization'),
         automaticallyImplyLeading: false, // Remove back button
       ),
-      body: !_initialized
-          ? const Center(child: CircularProgressIndicator())
-          : StreamBuilder<List<Organization>>(
+      body: StreamBuilder<List<Organization>>(
         stream: _orgService.getUserOrganizations(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

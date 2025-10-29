@@ -314,16 +314,23 @@ class SignOutDialog extends StatelessWidget {
           child: const Text('Cancel'),
         ),
         TextButton(
-          onPressed: () {
-            Future<void> signoutPromise = signOut();
-            signoutPromise.then((_) => {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LoginPage()
-                )
+          onPressed: () async {
+            // Clear user state
+            final appState = Provider.of<AppState>(context, listen: false);
+            appState.clearCurrentUser();
+            
+            // Sign out from Firebase
+            await signOut();
+            
+            if (!context.mounted) return;
+            
+            // Navigate to login
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LoginPage()
               )
-            });
+            );
           },
           child: const Text('Sign out')
         )

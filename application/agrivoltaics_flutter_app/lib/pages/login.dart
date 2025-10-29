@@ -1,6 +1,9 @@
 import 'package:agrivoltaics_flutter_app/auth.dart';
+import 'package:agrivoltaics_flutter_app/services/user_service.dart';
+import 'package:agrivoltaics_flutter_app/app_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'organization_selection.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_signin_button/flutter_signin_button.dart';
@@ -13,6 +16,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final UserService _userService = UserService();
   String? _errorMessage;
 
   @override
@@ -76,7 +80,20 @@ class _LoginPageState extends State<LoginPage> {
                       if (!mounted) return;
                       
                       if (authorizeUser(userCredential)) {
-                        // User is authorized, navigate to organization selection
+                        // User is authorized, create/update user document
+                        await _userService.createOrUpdateUser();
+                        
+                        // Get the user document and store in AppState
+                        final appUser = await _userService.getCurrentUser();
+                        
+                        if (!mounted) return;
+                        
+                        if (appUser != null) {
+                          final appState = Provider.of<AppState>(context, listen: false);
+                          appState.setCurrentUser(appUser);
+                        }
+                        
+                        // Navigate to organization selection
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
