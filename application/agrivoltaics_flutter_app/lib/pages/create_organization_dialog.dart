@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_state.dart';
 import '../services/organization_service.dart';
+import 'home/home.dart';
 
 class CreateOrganizationDialog extends StatefulWidget {
-  const CreateOrganizationDialog({super.key});
+  final bool autoNavigate;
+  
+  const CreateOrganizationDialog({
+    super.key,
+    this.autoNavigate = false,
+  });
 
   @override
   State<CreateOrganizationDialog> createState() => _CreateOrganizationDialogState();
@@ -50,8 +56,19 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
 
       if (!mounted) return;
 
-      // Close dialog and show success message
+      // Close dialog
       Navigator.of(context).pop();
+      
+      // If autoNavigate is true, navigate to home page
+      if (widget.autoNavigate && newOrg != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const HomeState(),
+          ),
+        );
+      }
+      
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Organization "${_nameController.text}" created successfully!'),

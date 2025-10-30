@@ -8,6 +8,7 @@ import 'package:agrivoltaics_flutter_app/pages/login.dart';
 import 'package:agrivoltaics_flutter_app/pages/settings.dart';
 import 'package:agrivoltaics_flutter_app/pages/home/notifications.dart';
 import 'package:agrivoltaics_flutter_app/pages/create_organization_dialog.dart';
+import 'package:agrivoltaics_flutter_app/pages/edit_organization_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:timezone/timezone.dart' as tz;
@@ -714,9 +715,26 @@ class OrganizationList extends StatelessWidget {
                 ),
               ),
               subtitle: org.description.isNotEmpty ? Text(org.description) : null,
-              trailing: isSelected
-                  ? const Icon(Icons.check_circle, color: Color(0xFF2D53DA))
-                  : null,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isSelected)
+                    const Icon(Icons.check_circle, color: Color(0xFF2D53DA)),
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 20),
+                    onPressed: () {
+                      Navigator.pop(context); // Close the menu
+                      showDialog(
+                        context: context,
+                        builder: (context) => EditOrganizationDialog(
+                          organization: org,
+                        ),
+                      );
+                    },
+                    tooltip: 'Edit organization',
+                  ),
+                ],
+              ),
               onTap: () {
                 appState.setSelectedOrganization(org);
                 Navigator.pop(context);

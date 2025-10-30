@@ -5,6 +5,7 @@ import '../services/organization_service.dart';
 import '../app_state.dart';
 import 'home/home.dart';
 import 'create_organization_dialog.dart';
+import 'edit_organization_dialog.dart';
 
 class OrganizationSelectionPage extends StatefulWidget {
   const OrganizationSelectionPage({super.key});
@@ -82,7 +83,9 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
               onPressed: () {
                 showDialog(
                   context: context,
-                  builder: (context) => const CreateOrganizationDialog(),
+                  builder: (context) => const CreateOrganizationDialog(
+                    autoNavigate: true,
+                  ),
                 );
               },
               icon: const Icon(Icons.add),
@@ -146,7 +149,24 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
                           child: Text(org.description),
                         )
                       : null,
-                  trailing: const Icon(Icons.arrow_forward_ios),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => EditOrganizationDialog(
+                              organization: org,
+                            ),
+                          );
+                        },
+                        tooltip: 'Edit organization',
+                      ),
+                      const Icon(Icons.arrow_forward_ios),
+                    ],
+                  ),
                   onTap: () => _selectOrganization(org),
                 ),
               );
@@ -159,7 +179,9 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (context) => const CreateOrganizationDialog(),
+                builder: (context) => const CreateOrganizationDialog(
+                  autoNavigate: true,
+                ),
               );
             },
             icon: const Icon(Icons.add),

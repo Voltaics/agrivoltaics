@@ -93,7 +93,17 @@ class OrganizationService {
 
   // Delete organization
   Future<void> deleteOrganization(String orgId) async {
-    // TODO: Delete subcollections (members, sites, etc.)
-    await _firestore.doc('organizations/$orgId').delete();
+    final orgRef = _firestore.doc('organizations/$orgId');
+    
+    // Delete members subcollection
+    final membersSnapshot = await orgRef.collection('members').get();
+    for (final doc in membersSnapshot.docs) {
+      await doc.reference.delete();
+    }
+    
+    // TODO: Delete other subcollections (sites, zones, sensors, etc.) when implemented
+    
+    // Delete the organization document
+    await orgRef.delete();
   }
 }
