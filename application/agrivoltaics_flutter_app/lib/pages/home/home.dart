@@ -2,9 +2,12 @@ import 'dart:convert';
 
 import 'package:agrivoltaics_flutter_app/app_state.dart';
 import 'package:agrivoltaics_flutter_app/auth.dart';
+import 'package:agrivoltaics_flutter_app/models/organization.dart';
+import 'package:agrivoltaics_flutter_app/services/organization_service.dart';
 import 'package:agrivoltaics_flutter_app/pages/login.dart';
 import 'package:agrivoltaics_flutter_app/pages/settings.dart';
 import 'package:agrivoltaics_flutter_app/pages/home/notifications.dart';
+import 'package:agrivoltaics_flutter_app/pages/create_organization_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:timezone/timezone.dart' as tz;
@@ -47,6 +50,16 @@ class HomePage extends State<HomeState> {
     });
   }
 
+  void _showOrganizationMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => const OrganizationMenuSheet(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +108,13 @@ class HomePage extends State<HomeState> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  const Divider(color: Colors.white38),
+                  const SizedBox(height: 8),
+                  
+                  // Organization Selector
+                  OrganizationSelector(),
+                  
+                  const SizedBox(height: 8),
                   const Divider(color: Colors.white38),
                   const SizedBox(height: 8),
 
@@ -146,7 +166,93 @@ class HomePage extends State<HomeState> {
             ),
           // Main content area
           Expanded(
-            child: _pages[_selectedIndex],
+            child: !isWideScreen
+                ? Column(
+                    children: [
+                      // Mobile AppBar with Organization Selector
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: SafeArea(
+                          bottom: false,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.eco, color: Colors.white, size: 24),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () {
+                                      _showOrganizationMenu(context);
+                                    },
+                                    child: Consumer<AppState>(
+                                      builder: (context, appState, child) {
+                                        final currentOrg = appState.selectedOrganization;
+                                        return Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 16,
+                                              backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                              backgroundImage: currentOrg?.logoUrl != null
+                                                  ? NetworkImage(currentOrg!.logoUrl!)
+                                                  : null,
+                                              child: currentOrg?.logoUrl == null
+                                                  ? Text(
+                                                      currentOrg?.name.isNotEmpty == true
+                                                          ? currentOrg!.name[0].toUpperCase()
+                                                          : '?',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 14,
+                                                      ),
+                                                    )
+                                                  : null,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                currentOrg?.name ?? 'No Organization',
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            Icon(
+                                              Icons.keyboard_arrow_down,
+                                              color: Colors.white.withValues(alpha: 0.8),
+                                              size: 24,
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Page content
+                      Expanded(
+                        child: _pages[_selectedIndex],
+                      ),
+                    ],
+                  )
+                : _pages[_selectedIndex],
           ),
         ],
       ),
@@ -398,5 +504,227 @@ Future<void> getSettings(String? email, AppState appstate) async {
   // ignore: empty_catches
   } catch (e) {
     print(e);
+  }
+}
+
+// Organization Selector Widget
+class OrganizationSelector extends StatelessWidget {
+  const OrganizationSelector({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final currentOrg = appState.selectedOrganization;
+
+    return InkWell(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.white,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          builder: (context) => const OrganizationMenuSheet(),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
+              backgroundImage: currentOrg?.logoUrl != null
+                  ? NetworkImage(currentOrg!.logoUrl!)
+                  : null,
+              child: currentOrg?.logoUrl == null
+                  ? Text(
+                      currentOrg?.name.isNotEmpty == true
+                          ? currentOrg!.name[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    currentOrg?.name ?? 'No Organization',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Switch organization',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.keyboard_arrow_down,
+              color: Colors.white.withValues(alpha: 0.7),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Organization Menu Bottom Sheet
+class OrganizationMenuSheet extends StatelessWidget {
+  const OrganizationMenuSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                const Text(
+                  'Switch Organization',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
+          const Flexible(
+            child: OrganizationList(),
+          ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context); // Close the menu first
+                  showDialog(
+                    context: context,
+                    builder: (context) => const CreateOrganizationDialog(),
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Create New Organization'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Organization List in Bottom Sheet
+class OrganizationList extends StatelessWidget {
+  const OrganizationList({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    final currentOrg = appState.selectedOrganization;
+
+    return StreamBuilder<List<Organization>>(
+      stream: OrganizationService().getUserOrganizations(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+
+        final organizations = snapshot.data ?? [];
+
+        if (organizations.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text('No organizations found'),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          itemCount: organizations.length,
+          itemBuilder: (context, index) {
+            final org = organizations[index];
+            final isSelected = currentOrg?.id == org.id;
+
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundImage: org.logoUrl != null
+                    ? NetworkImage(org.logoUrl!)
+                    : null,
+                child: org.logoUrl == null
+                    ? Text(
+                        org.name.isNotEmpty ? org.name[0].toUpperCase() : '?',
+                      )
+                    : null,
+              ),
+              title: Text(
+                org.name,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              subtitle: org.description.isNotEmpty ? Text(org.description) : null,
+              trailing: isSelected
+                  ? const Icon(Icons.check_circle, color: Color(0xFF2D53DA))
+                  : null,
+              onTap: () {
+                appState.setSelectedOrganization(org);
+                Navigator.pop(context);
+              },
+            );
+          },
+        );
+      },
+    );
   }
 }

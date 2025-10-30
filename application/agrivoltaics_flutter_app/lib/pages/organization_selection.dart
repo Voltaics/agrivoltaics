@@ -4,6 +4,7 @@ import '../models/organization.dart';
 import '../services/organization_service.dart';
 import '../app_state.dart';
 import 'home/home.dart';
+import 'create_organization_dialog.dart';
 
 class OrganizationSelectionPage extends StatefulWidget {
   const OrganizationSelectionPage({super.key});
@@ -79,11 +80,9 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
-                // TODO: Implement organization creation
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Organization creation coming soon!'),
-                  ),
+                showDialog(
+                  context: context,
+                  builder: (context) => const CreateOrganizationDialog(),
                 );
               },
               icon: const Icon(Icons.add),
@@ -158,11 +157,9 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
           padding: const EdgeInsets.all(16.0),
           child: OutlinedButton.icon(
             onPressed: () {
-              // TODO: Implement organization creation
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Organization creation coming soon!'),
-                ),
+              showDialog(
+                context: context,
+                builder: (context) => const CreateOrganizationDialog(),
               );
             },
             icon: const Icon(Icons.add),
