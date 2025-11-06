@@ -4,6 +4,7 @@ import '../../app_state.dart' hide Site;
 import '../../models/site.dart';
 import '../../services/site_service.dart';
 import '../create_site_dialog.dart';
+import '../edit_site_dialog.dart';
 
 class SitesPanel extends StatelessWidget {
   const SitesPanel({super.key});
@@ -99,9 +100,9 @@ class SitesPanel extends StatelessWidget {
                 if (sites.isEmpty) {
                   return Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.location_off,
@@ -111,6 +112,7 @@ class SitesPanel extends StatelessWidget {
                           const SizedBox(height: 16),
                           Text(
                             'No sites yet',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey[600],
@@ -120,6 +122,7 @@ class SitesPanel extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             'Create your first site to get started',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[500],
@@ -138,10 +141,21 @@ class SitesPanel extends StatelessWidget {
                   }
                 });
 
+                // Sort sites: selected site first, then alphabetically
+                final sortedSites = List<Site>.from(sites);
+                sortedSites.sort((a, b) {
+                  final aIsSelected = appState.selectedSite?.id == a.id;
+                  final bIsSelected = appState.selectedSite?.id == b.id;
+                  
+                  if (aIsSelected && !bIsSelected) return -1;
+                  if (!aIsSelected && bIsSelected) return 1;
+                  return a.name.compareTo(b.name);
+                });
+
                 return ListView.builder(
-                  itemCount: sites.length,
+                  itemCount: sortedSites.length,
                   itemBuilder: (context, index) {
-                    final site = sites[index];
+                    final site = sortedSites[index];
                     final isSelected = appState.selectedSite?.id == site.id;
 
                     return ListTile(
@@ -193,6 +207,23 @@ class SitesPanel extends StatelessWidget {
                                 shape: BoxShape.circle,
                               ),
                             ),
+                          const SizedBox(width: 8),
+                          // Edit button
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 16),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => EditSiteDialog(
+                                  organizationId: selectedOrg.id,
+                                  site: site,
+                                ),
+                              );
+                            },
+                            tooltip: 'Edit site',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
                         ],
                       ),
                       onTap: () {
@@ -243,15 +274,6 @@ class SitesPanel extends StatelessWidget {
 
           final sites = snapshot.data ?? [];
 
-          if (sites.isEmpty) {
-            return Center(
-              child: Text(
-                'No sites - tap + to create',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            );
-          }
-
           // Auto-select first site if none selected
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (appState.selectedSite == null && sites.isNotEmpty) {
@@ -259,19 +281,46 @@ class SitesPanel extends StatelessWidget {
             }
           });
 
+          // Sort sites: selected site first, then alphabetically
+          final sortedSites = List<Site>.from(sites);
+          sortedSites.sort((a, b) {
+            final aIsSelected = appState.selectedSite?.id == a.id;
+            final bIsSelected = appState.selectedSite?.id == b.id;
+            
+            if (aIsSelected && !bIsSelected) return -1;
+            if (!aIsSelected && bIsSelected) return 1;
+            return a.name.compareTo(b.name);
+          });
+
           return Row(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: sites.map((site) {
+                child: sites.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No sites - tap + to create',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: sortedSites.map((site) {
                       final isSelected = appState.selectedSite?.id == site.id;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: GestureDetector(
                           onTap: () {
                             appState.setSelectedSite(site);
+                          },
+                          onLongPress: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => EditSiteDialog(
+                                organizationId: selectedOrg.id,
+                                site: site,
+                              ),
+                            );
                           },
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -318,10 +367,10 @@ class SitesPanel extends StatelessWidget {
                             ),
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ),
-                ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
               ),
               IconButton(
                 icon: const Icon(Icons.add, size: 20),
