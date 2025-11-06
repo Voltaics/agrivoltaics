@@ -27,7 +27,7 @@ abstract class AppConstants {
   static List<String> authorizedEmails = const String.fromEnvironment(
     'AUTHORIZED_EMAILS',
     defaultValue: ''
-  ).split('|');
+  ).split(RegExp(r'[|,]')).where((email) => email.trim().isNotEmpty).map((email) => email.trim()).toList();
 
   static const String timezone = String.fromEnvironment(
     'TIMEZONE',

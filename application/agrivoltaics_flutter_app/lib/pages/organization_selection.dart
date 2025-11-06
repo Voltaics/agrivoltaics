@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/organization.dart';
 import '../services/organization_service.dart';
 import '../app_state.dart';
 import 'home/home.dart';
 import 'create_organization_dialog.dart';
 import 'edit_organization_dialog.dart';
+import 'login.dart';
 
 class OrganizationSelectionPage extends StatefulWidget {
   const OrganizationSelectionPage({super.key});
@@ -17,12 +19,36 @@ class OrganizationSelectionPage extends StatefulWidget {
 class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
   final OrganizationService _orgService = OrganizationService();
 
+  Future<void> _logout() async {
+    final appState = Provider.of<AppState>(context, listen: false);
+    
+    // Sign out from Firebase
+    await FirebaseAuth.instance.signOut();
+    
+    // Clear app state (this also clears selectedOrganization)
+    appState.clearCurrentUser();
+    
+    if (!mounted) return;
+    
+    // Navigate to login page
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Select Organization'),
         automaticallyImplyLeading: false, // Remove back button
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => _logout(),
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: StreamBuilder<List<Organization>>(
         stream: _orgService.getUserOrganizations(),

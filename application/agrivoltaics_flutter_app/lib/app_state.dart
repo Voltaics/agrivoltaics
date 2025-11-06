@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:agrivoltaics_flutter_app/app_constants.dart';
 import 'package:agrivoltaics_flutter_app/models/organization.dart';
 import 'package:agrivoltaics_flutter_app/models/user.dart';
+import 'package:agrivoltaics_flutter_app/models/site.dart' as models;
 import 'package:agrivoltaics_flutter_app/pages/home/notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -100,11 +101,19 @@ class AppState with ChangeNotifier {
   // Selected Organization
   Organization? selectedOrganization;
 
+  // Selected Site
+  models.Site? selectedSite;
+
   // Current User
   AppUser? currentUser;
 
   void setSelectedOrganization(Organization org) {
     selectedOrganization = org;
+    notifyListeners();
+  }
+
+  void setSelectedSite(models.Site site) {
+    selectedSite = site;
     notifyListeners();
   }
 
@@ -116,6 +125,7 @@ class AppState with ChangeNotifier {
   void clearCurrentUser() {
     currentUser = null;
     selectedOrganization = null;
+    selectedSite = null;
     notifyListeners();
   }
 

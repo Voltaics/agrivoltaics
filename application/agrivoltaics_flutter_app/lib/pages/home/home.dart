@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-
+import 'sites_panel.dart';
 import '../dashboard/dashboard_new.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
 
@@ -108,7 +108,7 @@ class HomePage extends State<HomeState> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   const Divider(color: Colors.white38),
                   const SizedBox(height: 8),
                   
@@ -116,6 +116,14 @@ class HomePage extends State<HomeState> {
                   OrganizationSelector(),
                   
                   const SizedBox(height: 8),
+                  const Divider(color: Colors.white38),
+
+                  // Sites Panel
+                  SizedBox(
+                    height: 250,
+                    child: SitesPanel(),
+                  ),
+
                   const Divider(color: Colors.white38),
                   const SizedBox(height: 8),
 
@@ -242,11 +250,24 @@ class HomePage extends State<HomeState> {
                                     ),
                                   ),
                                 ),
+                                // Logout button for mobile
+                                IconButton(
+                                  icon: Icon(MdiIcons.logout, color: Colors.white),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) => const SignOutDialog(),
+                                    );
+                                  },
+                                  tooltip: 'Logout',
+                                ),
                               ],
                             ),
                           ),
                         ),
                       ),
+                      // Sites Panel for mobile
+                      SitesPanel(),
                       // Page content
                       Expanded(
                         child: _pages[_selectedIndex],

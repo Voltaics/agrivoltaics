@@ -4,6 +4,7 @@ import '../app_state.dart';
 import '../models/organization.dart';
 import '../services/organization_service.dart';
 import 'organization_selection.dart';
+import 'member_management_dialog.dart';
 
 class EditOrganizationDialog extends StatefulWidget {
   final Organization organization;
@@ -213,10 +214,14 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
   }
 
   void _manageMembers() {
-    // TODO: Implement member management
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Member management coming soon!'),
+    // Close current dialog first
+    Navigator.of(context).pop();
+    
+    // Show member management dialog
+    showDialog(
+      context: context,
+      builder: (context) => MemberManagementDialog(
+        organization: widget.organization,
       ),
     );
   }
