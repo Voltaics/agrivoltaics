@@ -160,13 +160,21 @@ class ZonesPanel extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         trailing: IconButton(
-                          icon: const Icon(Icons.more_vert, size: 16),
+                          icon: const Icon(Icons.edit, size: 16),
                           color: Colors.white.withValues(alpha: 0.7),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () {
-                            _showZoneMenu(context, currentOrg.id, currentSite.id, zone);
+                            showDialog(
+                              context: context,
+                              builder: (context) => EditZoneDialog(
+                                orgId: currentOrg.id,
+                                siteId: currentSite.id,
+                                zone: zone,
+                              ),
+                            );
                           },
+                          tooltip: 'Edit zone',
                         ),
                         onTap: () {
                           appState.setSelectedZone(zone);
@@ -179,88 +187,6 @@ class ZonesPanel extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-
-  void _showZoneMenu(BuildContext context, String orgId, String siteId, models.Zone zone) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('Edit Zone'),
-            onTap: () {
-              Navigator.pop(context);
-              showDialog(
-                context: context,
-                builder: (context) => EditZoneDialog(
-                  orgId: orgId,
-                  siteId: siteId,
-                  zone: zone,
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text('Delete Zone', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              Navigator.pop(context);
-              _confirmDelete(context, orgId, siteId, zone);
-            },
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context, String orgId, String siteId, models.Zone zone) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Zone?'),
-        content: Text(
-          'Are you sure you want to delete "${zone.name}"? This will also delete all sensors in this zone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await ZoneService().deleteZone(orgId, siteId, zone.id);
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  // Clear selected zone if it was deleted
-                  final appState = Provider.of<AppState>(context, listen: false);
-                  if (appState.selectedZone?.id == zone.id) {
-                    appState.selectedZone = null;
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${zone.name} deleted')),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error deleting zone: $e')),
-                  );
-                }
-              }
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
   }
 }

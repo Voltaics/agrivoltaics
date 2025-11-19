@@ -141,13 +141,8 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}
   name: string,                   // "DHT22 Weather Sensor" or "Soil Sensor 1"
   model: string,                  // "DHT22" | "VEML7700" | "DFRobot-Soil" | "SGP30"
   
-  // Arduino Connection
-  arduinoDeviceId: string,        // Which Arduino board this sensor is connected to
-  sensorPin: string,              // Pin/port on Arduino (e.g., "D4", "A0", "I2C")
-  
   // Location
   location: geopoint,
-  installationNotes: string,
   
   // Sensor Fields (multi-output sensors have multiple fields)
   fields: {
@@ -172,7 +167,6 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}
   // Timestamps
   createdAt: timestamp,
   updatedAt: timestamp,
-  createdBy: string,              // userId
 }
 ```
 
@@ -185,20 +179,17 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}
 ---
 
 ### 7. **sensorLookup** (Top-level Collection)
-Fast lookup table mapping arduinoDeviceId to sensor document path. Used by Cloud Function to route Arduino data to correct sensors.
+Fast lookup table for sensor metadata. Document ID = sensorId.
 
 ```javascript
-sensorLookup/{arduinoDeviceId}
+sensorLookup/{sensorId}
 {
-  // Arduino Device ID
-  arduinoDeviceId: string,       // "ARDUINO_001" (matches document ID)
-  
   // Sensor Document Path
   sensorDocPath: string,         // Full Firestore path to sensor document
   organizationId: string,
   siteId: string,
   zoneId: string,
-  sensorId: string,
+  sensorId: string,              // Matches document ID
   
   // Sensor Metadata
   sensorModel: string,           // "DHT22" | "VEML7700" | "DFRobot-Soil" | "SGP30"
@@ -220,12 +211,9 @@ sensorLookup/{arduinoDeviceId}
 }
 ```
 
-**Example Lookup Entries:**
-- `ARDUINO_001` → DHT22 sensor with fields: ["temperature", "humidity"]
-- `ARDUINO_002` → VEML7700 sensor with fields: ["light"]
-- `ARDUINO_003` → Soil sensor with fields: ["soilTemperature", "soilMoisture", "soilEC"]
+**Purpose:** Quick lookup of sensor metadata by sensor ID.
 
-**Note:** One Arduino = one sensor in the lookup table. This collection is automatically maintained by Firestore triggers.
+**Note:** This collection is automatically maintained by SensorService when sensors are created/updated/deleted. All sensor CRUD operations in SensorService automatically update the corresponding sensorLookup entry to keep them in sync.
 
 ---
 

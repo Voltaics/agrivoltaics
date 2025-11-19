@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../app_state.dart';
+import 'sensors_config_section.dart';
+import 'sensor_data_section.dart';
 
 class StationaryDashboardPage extends StatefulWidget {
   const StationaryDashboardPage({super.key});
@@ -60,11 +62,55 @@ class _StationaryDashboardPageState extends State<StationaryDashboardPage> {
       );
     }
 
-    // TODO: Implement sensor list view
-    return _buildEmptyState(
-      icon: Icons.sensors,
-      title: 'No Sensors Yet',
-      message: 'Sensors for ${selectedZone.name} will appear here',
+    // Show sensor configuration and data sections side by side
+    final appState = Provider.of<AppState>(context, listen: false);
+    final selectedOrg = appState.selectedOrganization;
+    
+    if (selectedOrg == null) {
+      return _buildEmptyState(
+        icon: Icons.business,
+        title: 'No Organization Selected',
+        message: 'Please select an organization',
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Mobile layout (vertical stack with dropdown)
+        if (constraints.maxWidth < 800) {
+          return _MobileSensorLayout(
+            orgId: selectedOrg.id,
+            siteId: selectedSite.id,
+            zoneId: selectedZone.id,
+          );
+        }
+        
+        // Desktop layout (side by side)
+        return Row(
+          children: [
+            // Left side: Sensor Configuration
+            Expanded(
+              flex: 1,
+              child: SensorsConfigSection(
+                orgId: selectedOrg.id,
+                siteId: selectedSite.id,
+                zoneId: selectedZone.id,
+              ),
+            ),
+            
+            // Right side: Sensor Data Display
+            Expanded(
+              flex: 1,
+              child: SensorDataSection(
+                orgId: selectedOrg.id,
+                siteId: selectedSite.id,
+                zoneId: selectedZone.id,
+                isDesktop: true,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -101,6 +147,81 @@ class _StationaryDashboardPageState extends State<StationaryDashboardPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Mobile layout widget with dropdown for sensor configuration
+class _MobileSensorLayout extends StatefulWidget {
+  final String orgId;
+  final String siteId;
+  final String zoneId;
+
+  const _MobileSensorLayout({
+    required this.orgId,
+    required this.siteId,
+    required this.zoneId,
+  });
+
+  @override
+  State<_MobileSensorLayout> createState() => _MobileSensorLayoutState();
+}
+
+class _MobileSensorLayoutState extends State<_MobileSensorLayout> {
+  bool _showConfigPanel = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Dropdown button for sensor configuration
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ElevatedButton.icon(
+            onPressed: () {
+              setState(() {
+                _showConfigPanel = !_showConfigPanel;
+              });
+            },
+            icon: Icon(_showConfigPanel ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+            label: const Text('Sensor Configuration'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              alignment: Alignment.centerLeft,
+            ),
+          ),
+        ),
+        
+        // Expandable configuration panel
+        if (_showConfigPanel)
+          Container(
+            height: 300,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: SensorsConfigSection(
+              orgId: widget.orgId,
+              siteId: widget.siteId,
+              zoneId: widget.zoneId,
+            ),
+          ),
+        
+        // Sensor data display (scrollable)
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 32),
+            child: SensorDataSection(
+              orgId: widget.orgId,
+              siteId: widget.siteId,
+              zoneId: widget.zoneId,
+              isDesktop: false,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
