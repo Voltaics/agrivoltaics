@@ -79,14 +79,14 @@ class _PiControlPanelState extends State<PiControlPanel> {
 
             const SizedBox(height: 16),
 
-            Text(
+            const Text(
               "Model: Raspberry Pi 5 8GB",
-              style: const TextStyle(fontSize: 15),
+              style: TextStyle(fontSize: 15),
             ),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               "Camera: MicaSense RedEdge MX",
-              style: const TextStyle(fontSize: 15),
+              style: TextStyle(fontSize: 15),
             ),
 
             const SizedBox(height: 16),

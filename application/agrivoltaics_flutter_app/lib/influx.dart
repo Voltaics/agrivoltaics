@@ -4,7 +4,6 @@ import 'package:influxdb_client/api.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:agrivoltaics_flutter_app/app_state.dart';
-import 'package:agrivoltaics_flutter_app/pages/settings.dart';
 import 'package:timezone/standalone.dart' as tz;
 
 var getIt = GetIt.instance;
