@@ -378,6 +378,15 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         ),
       ),
       actions: [
+        // Delete button on the left
+        TextButton(
+          onPressed: _isLoading ? null : _confirmDelete,
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.red,
+          ),
+          child: const Text('Delete'),
+        ),
+        const Spacer(),
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),

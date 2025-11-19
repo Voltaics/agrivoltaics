@@ -1,4 +1,3 @@
-import 'package:agrivoltaics_flutter_app/pages/dashboard/dashboard_drawer.dart';
 import 'package:agrivoltaics_flutter_app/pages/mobile_dashboard/mobile_sensor_devices.dart';
 import 'package:agrivoltaics_flutter_app/pages/mobile_dashboard/capture_detail.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -28,7 +27,6 @@ class _MobileDashboardPageState extends State<MobileDashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      endDrawer: const DashboardDrawer(),
       body: SafeArea(
         child: Column(
           children: [

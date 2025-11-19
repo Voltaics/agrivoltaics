@@ -5,7 +5,6 @@ import 'package:agrivoltaics_flutter_app/auth.dart';
 import 'package:agrivoltaics_flutter_app/models/organization.dart';
 import 'package:agrivoltaics_flutter_app/services/organization_service.dart';
 import 'package:agrivoltaics_flutter_app/pages/login.dart';
-import 'package:agrivoltaics_flutter_app/pages/settings.dart';
 import 'package:agrivoltaics_flutter_app/pages/home/notifications.dart';
 import 'package:agrivoltaics_flutter_app/pages/create_organization_dialog.dart';
 import 'package:agrivoltaics_flutter_app/pages/edit_organization_dialog.dart';
@@ -17,7 +16,9 @@ import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import 'sites_panel.dart';
-import '../dashboard/dashboard_new.dart';
+import 'zones_panel.dart';
+import 'site_zone_breadcrumb.dart';
+import '../stationary_dashboard/stationary_dashboard.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
 
 class HomeState extends StatefulWidget {
@@ -40,9 +41,8 @@ class HomePage extends State<HomeState> {
   int _selectedIndex = 0;
 
   static final List<Widget> _pages = [
-    TabbedDashboardPage(),         // Stationary Sensors
-    MobileDashboardPage(),   // Mobile Sensors
-    SettingsPage(),          // Settings
+    const StationaryDashboardPage(),  // Stationary Sensors
+    MobileDashboardPage(),            // Mobile Sensors
   ];
 
   void _selectPage(int index) {
@@ -125,9 +125,17 @@ class HomePage extends State<HomeState> {
                   ),
 
                   const Divider(color: Colors.white38),
+
+                  // Zones Panel
+                  SizedBox(
+                    height: 200,
+                    child: ZonesPanel(),
+                  ),
+
+                  const Divider(color: Colors.white38),
                   const SizedBox(height: 8),
 
-                  // Our actual NavRail, but transparent so the gradient shows through
+                  // Navigation items
                   Expanded(
                     child: NavigationRail(
                       extended: true,
@@ -135,7 +143,6 @@ class HomePage extends State<HomeState> {
                       selectedIndex: _selectedIndex,
                       onDestinationSelected: _selectPage,
                       labelType: NavigationRailLabelType.none,
-                      // extended: true, // If you want wide rail with text shown
                       destinations: [
                         NavigationRailDestination(
                           icon: Icon(MdiIcons.radioTower),
@@ -147,12 +154,6 @@ class HomePage extends State<HomeState> {
                           label: Text('Mobile Sensors', style: TextStyle(fontSize: 14),),
                           padding: EdgeInsets.only(bottom: 16),
                         ),
-                        /* settings already found in stationary dashboard
-                          NavigationRailDestination(
-                          icon: Icon(Icons.settings),
-                          label: Text('Settings', style: TextStyle(fontSize: 14),),
-                          padding: EdgeInsets.only(bottom: 16),
-                        ),*/
                       ],
                     ),
                   ),
@@ -266,8 +267,8 @@ class HomePage extends State<HomeState> {
                           ),
                         ),
                       ),
-                      // Sites Panel for mobile
-                      SitesPanel(),
+                      // Site & Zone Breadcrumb for mobile (replaces separate panels)
+                      const SiteZoneBreadcrumb(),
                       // Page content
                       Expanded(
                         child: _pages[_selectedIndex],
@@ -279,7 +280,7 @@ class HomePage extends State<HomeState> {
         ],
       ),
 
-      // 3) Mobile bottom nav bar remains
+      // Mobile bottom nav bar
       bottomNavigationBar: !isWideScreen
           ? BottomNavigationBar(
               currentIndex: _selectedIndex,

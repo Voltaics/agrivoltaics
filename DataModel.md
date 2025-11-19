@@ -125,16 +125,6 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}
   // Settings (migrated from MongoDB)
   zoneChecked: boolean,           // Visibility toggle from MongoDB
   
-  // Sensor Toggles (from MongoDB settings)
-  sensorToggles: {
-    humidity: boolean,
-    temperature: boolean,
-    light: boolean,
-    rain: boolean,
-    frost: boolean,
-    soil: boolean,
-  },
-  
   // Timestamps
   createdAt: timestamp,
   updatedAt: timestamp,
@@ -142,37 +132,42 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}
 ```
 
 #### **Subcollection: organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors**
-Fixed/permanent sensors within a zone.
+Physical sensors connected to Arduino devices. Multi-output sensors (e.g., DHT22) store all readings in one document.
 
 ```javascript
 organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}
 {
   // Basic Info
-  name: string,                   // "Temperature Sensor 1"
-  type: string,                   // "temperature" | "humidity" | "soil_moisture" | "light" | "rain" | "camera"
-  deviceId: string,               // Hardware device identifier (Arduino/ESP32)
+  name: string,                   // "DHT22 Weather Sensor" or "Soil Sensor 1"
+  model: string,                  // "DHT22" | "VEML7700" | "DFRobot-Soil" | "SGP30"
+  
+  // Arduino Connection
+  arduinoDeviceId: string,        // Which Arduino board this sensor is connected to
+  sensorPin: string,              // Pin/port on Arduino (e.g., "D4", "A0", "I2C")
   
   // Location
   location: geopoint,
-  siteId: string,                 // Denormalized for collection-group queries
-  zoneId: string,                 // Denormalized for collection-group queries
   installationNotes: string,
   
-  // InfluxDB Integration
-  influxMeasurement: string,      // Measurement name in InfluxDB
-  influxTags: {                   // Tags to filter InfluxDB queries
-    location: string,
-    sensor_id: string,
-    zone: string,
+  // Sensor Fields (multi-output sensors have multiple fields)
+  fields: {
+    temperature: {                // Field name matches sensor type
+      currentValue: number,       // 72.5
+      unit: string,               // "°F" or "°C"
+      lastUpdated: timestamp,
+    },
+    humidity: {
+      currentValue: number,       // 65.2
+      unit: string,               // "%"
+      lastUpdated: timestamp,
+    },
+    // Other possible fields: light, soilMoisture, soilTemperature, soilEC, co2, tvoc
   },
-  influxField: string,            // Field name (e.g., "temperature", "humidity")
   
   // Status & Health
   status: string,                 // "active" | "inactive" | "maintenance" | "error"
   isOnline: boolean,
-  lastReading: timestamp,
-  lastReadingValue: number,       // Cache last value for quick display
-  lastReadingUnit: string,        // "°F", "%", "lux"
+  lastReading: timestamp,         // Last time any data was received
   
   // Timestamps
   createdAt: timestamp,
@@ -181,9 +176,60 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}
 }
 ```
 
+**Example Sensors:**
+- **DHT22:** Has `fields.temperature` and `fields.humidity`
+- **VEML7700:** Has only `fields.light`
+- **Soil Sensor:** Has `fields.soilTemperature`, `fields.soilMoisture`, and `fields.soilEC`
+- **SGP30:** Has `fields.co2` and `fields.tvoc`
+
 ---
 
-### 3. **mobileSensors** (Top-level Collection)
+### 7. **sensorLookup** (Top-level Collection)
+Fast lookup table mapping arduinoDeviceId to sensor document path. Used by Cloud Function to route Arduino data to correct sensors.
+
+```javascript
+sensorLookup/{arduinoDeviceId}
+{
+  // Arduino Device ID
+  arduinoDeviceId: string,       // "ARDUINO_001" (matches document ID)
+  
+  // Sensor Document Path
+  sensorDocPath: string,         // Full Firestore path to sensor document
+  organizationId: string,
+  siteId: string,
+  zoneId: string,
+  sensorId: string,
+  
+  // Sensor Metadata
+  sensorModel: string,           // "DHT22" | "VEML7700" | "DFRobot-Soil" | "SGP30"
+  sensorName: string,            // "DHT22 Weather Sensor"
+  
+  // Field Mapping (what fields this sensor outputs)
+  fields: [                      // Array of field names this sensor provides
+    "temperature",
+    "humidity"
+  ],
+  
+  // Status
+  isActive: boolean,
+  lastDataReceived: timestamp,
+  
+  // Timestamps
+  registeredAt: timestamp,
+  updatedAt: timestamp,
+}
+```
+
+**Example Lookup Entries:**
+- `ARDUINO_001` → DHT22 sensor with fields: ["temperature", "humidity"]
+- `ARDUINO_002` → VEML7700 sensor with fields: ["light"]
+- `ARDUINO_003` → Soil sensor with fields: ["soilTemperature", "soilMoisture", "soilEC"]
+
+**Note:** One Arduino = one sensor in the lookup table. This collection is automatically maintained by Firestore triggers.
+
+---
+
+### 8. **mobileSensors** (Top-level Collection)
 Temporary/mobile sensing devices (smartphones, portable sensors).
 
 ```javascript
@@ -226,7 +272,7 @@ mobileSensors/{mobileSensorId}
 
 ---
 
-### 4. **alerts** (Top-level Collection)
+### 9. **alerts** (Top-level Collection)
 Weather alerts and sensor threshold alerts.
 
 ```javascript
@@ -270,7 +316,7 @@ alerts/{alertId}
 
 ---
 
-### 5. **imageAnalysis** (Top-level Collection)
+### 10. **imageAnalysis** (Top-level Collection)
 ML model results for disease detection and vine presence.
 
 ```javascript
@@ -314,7 +360,7 @@ imageAnalysis/{analysisId}
 
 ---
 
-### 6. **notifications** (Top-level Collection)
+### 11. **notifications** (Top-level Collection)
 User-specific notification queue (replaces MongoDB notifications + user tracking).
 
 ```javascript
