@@ -1,7 +1,4 @@
-import 'dart:math';
-
 import 'package:agrivoltaics_flutter_app/app_state.dart';
-import 'package:agrivoltaics_flutter_app/pages/home/home.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
@@ -83,7 +80,7 @@ class App extends StatelessWidget {
             onError: Colors.white,
           ),
           scaffoldBackgroundColor: Color(0xFFF2F5FD),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             color: Colors.white,
             surfaceTintColor: Colors.white,
             elevation: 4,

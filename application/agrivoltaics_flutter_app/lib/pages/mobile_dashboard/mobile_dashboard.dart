@@ -1,12 +1,9 @@
-import 'package:agrivoltaics_flutter_app/pages/dashboard/dashboard_appbar.dart';
-import 'package:agrivoltaics_flutter_app/pages/dashboard/dashboard_drawer.dart';
 import 'package:agrivoltaics_flutter_app/pages/mobile_dashboard/mobile_sensor_devices.dart';
 import 'package:agrivoltaics_flutter_app/pages/mobile_dashboard/capture_detail.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
-import 'capture_detail.dart';
 
 class MobileDashboardPage extends StatefulWidget {
   MobileDashboardPage({super.key});
@@ -30,7 +27,6 @@ class _MobileDashboardPageState extends State<MobileDashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      endDrawer: const DashboardDrawer(),
       body: SafeArea(
         child: Column(
           children: [
