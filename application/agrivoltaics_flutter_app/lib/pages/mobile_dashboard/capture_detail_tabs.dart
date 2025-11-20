@@ -65,7 +65,7 @@ class _CaptureDetailDualEqualViewState extends State<CaptureDetailDualEqualView>
             margin: const EdgeInsets.symmetric(horizontal: 8),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isSelected ? primaryColor.withOpacity(0.1) : Colors.transparent,
+              color: isSelected ? primaryColor.withAlpha((0.1 * 255).toInt()) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected ? primaryColor : Colors.grey.shade300,

@@ -9,13 +9,13 @@ RUN apt-get clean
 # download Flutter SDK from Flutter Github repo
 RUN git clone https://github.com/flutter/flutter.git /usr/local/flutter
 WORKDIR /usr/local/flutter
-RUN git checkout 3.7.12
+RUN git checkout stable && git pull origin stable
 
 # Set flutter environment path
 ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
 
-# Run flutter doctor
-RUN flutter doctor
+# Run flutter doctor (web only, skip Android/iOS checks)
+RUN flutter doctor -v
 
 # Enable flutter web
 RUN flutter config --enable-web
@@ -32,6 +32,8 @@ ARG AUTHORIZED_EMAILS
 RUN mkdir /app/
 COPY . /app/
 WORKDIR /app/
+RUN rm -rf /root/.pub-cache
+RUN flutter pub get
 RUN flutter build web --dart-define=INFLUXDB_URL=${INFLUXDB_URL} \
 --dart-define=INFLUXDB_TOKEN=${INFLUXDB_TOKEN} \
 --dart-define=INFLUXDB_ORG=${INFLUXDB_ORG} \

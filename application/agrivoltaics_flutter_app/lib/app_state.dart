@@ -1,6 +1,10 @@
 import 'dart:convert';
 
 import 'package:agrivoltaics_flutter_app/app_constants.dart';
+import 'package:agrivoltaics_flutter_app/models/organization.dart';
+import 'package:agrivoltaics_flutter_app/models/user.dart';
+import 'package:agrivoltaics_flutter_app/models/site.dart' as models;
+import 'package:agrivoltaics_flutter_app/models/zone.dart' as models;
 import 'package:agrivoltaics_flutter_app/pages/home/notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,13 +12,14 @@ import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:http/http.dart' as http;
 
-class Zone {
+// Legacy class for old MongoDB settings - will be removed after migration
+class LegacyZone {
   String name;
   String nickName;
   Map<SensorMeasurement, bool> fields;
   bool checked;
   
-  Zone({
+  LegacyZone({
     required this.name,
     required this.nickName,
     required this.fields,
@@ -22,10 +27,11 @@ class Zone {
   });
 }
 
+// Legacy class for old MongoDB settings - will be removed after migration
 class Site {
   String name;
   String nickName;
-  List<Zone> zones;
+  List<LegacyZone> zones;
   bool checked;
 
   Site({
@@ -57,7 +63,7 @@ class AppState with ChangeNotifier {
         name: 'site 1',
         nickName: '',
         zones: [
-          Zone(
+          LegacyZone(
             name: 'Zone 1',
             nickName: '',
             fields: {
@@ -95,6 +101,51 @@ class AppState with ChangeNotifier {
   // Notifications
   List<AppNotification> notifications = [];
 
+  // Selected Organization
+  Organization? selectedOrganization;
+
+  // Selected Site
+  models.Site? selectedSite;
+
+  // Selected Zone
+  models.Zone? selectedZone;
+
+  // Current User
+  AppUser? currentUser;
+
+  void setSelectedOrganization(Organization org) {
+    selectedOrganization = org;
+    // Clear site and zone when org changes
+    selectedSite = null;
+    selectedZone = null;
+    notifyListeners();
+  }
+
+  void setSelectedSite(models.Site site) {
+    selectedSite = site;
+    // Clear zone when site changes
+    selectedZone = null;
+    notifyListeners();
+  }
+
+  void setSelectedZone(models.Zone zone) {
+    selectedZone = zone;
+    notifyListeners();
+  }
+
+  void setCurrentUser(AppUser user) {
+    currentUser = user;
+    notifyListeners();
+  }
+
+  void clearCurrentUser() {
+    currentUser = null;
+    selectedOrganization = null;
+    selectedSite = null;
+    selectedZone = null;
+    notifyListeners();
+  }
+
   void setSingleGraphToggle(bool value) {
       singleGraphToggle = value;
       notifyListeners();
@@ -105,7 +156,7 @@ class AppState with ChangeNotifier {
         Site(name: 'site ${sites.length + 1}',         
         nickName: '',
         zones: [
-          Zone(
+          LegacyZone(
             name: 'Zone 1',
             nickName: '',
             fields: {
@@ -133,7 +184,7 @@ class AppState with ChangeNotifier {
 
   void addZone(int siteIndex) {
       sites[siteIndex].zones.add(
-        Zone(
+        LegacyZone(
           name: 'Zone ${sites[siteIndex].zones.length + 1}',
           nickName: '',
           fields: {
@@ -155,7 +206,7 @@ class AppState with ChangeNotifier {
         Site(name: 'site ${sites.length + 1}',         
         nickName: siteNickName,
         zones: [
-          Zone(
+          LegacyZone(
             name: 'Zone 1',
             nickName: zoneNickName,
             fields: {
@@ -174,7 +225,7 @@ class AppState with ChangeNotifier {
 
   void addZoneFromDB(int siteIndex, bool zoneChecked, String zoneNickName, bool humidity, bool temperature, bool light, bool frost, bool rain, bool soil) {
       sites[siteIndex].zones.add(
-        Zone(
+        LegacyZone(
           name: 'Zone ${sites[siteIndex].zones.length + 1}',
           nickName: zoneNickName,
           fields: {
@@ -237,7 +288,7 @@ class AppState with ChangeNotifier {
       };
       
       for (int j = 0; j < site.zones.length; j++) {
-        Zone zone = site.zones[j];
+        LegacyZone zone = site.zones[j];
         
         Map<String, dynamic> zoneData = {
           'zone_checked': zone.checked,
