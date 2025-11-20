@@ -14,8 +14,8 @@ RUN git checkout 3.24.5
 # Set flutter environment path
 ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
 
-# Run flutter doctor
-RUN flutter doctor
+# Run flutter doctor (web only, skip Android/iOS checks)
+RUN flutter doctor -v
 
 # Enable flutter web
 RUN flutter config --enable-web
