@@ -31,7 +31,7 @@ class SiteZoneBreadcrumb extends StatelessWidget {
           border: Border.all(color: Colors.grey[300]!),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
+              color: Colors.black.withAlpha((0.05 * 255).toInt()),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),

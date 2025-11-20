@@ -93,14 +93,14 @@ class ZonesPanel extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.layers_outlined,
-                      color: Colors.white.withValues(alpha: 0.3),
+                      color: Colors.white.withAlpha((0.3 * 255).toInt()),
                       size: 32,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'No zones yet',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: Colors.white.withAlpha((0.5 * 255).toInt()),
                         fontSize: 12,
                       ),
                       textAlign: TextAlign.center,
@@ -109,7 +109,7 @@ class ZonesPanel extends StatelessWidget {
                     Text(
                       'Click + to add a zone',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: Colors.white.withAlpha((0.4 * 255).toInt()),
                         fontSize: 11,
                       ),
                       textAlign: TextAlign.center,
@@ -130,7 +130,7 @@ class ZonesPanel extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 4),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Colors.white.withValues(alpha: 0.2)
+                            ? Colors.white.withAlpha((0.2 * 255).toInt())
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(6),
                       ),
@@ -145,14 +145,14 @@ class ZonesPanel extends StatelessWidget {
                           size: 18,
                           color: isSelected
                               ? Colors.white
-                              : Colors.white.withValues(alpha: 0.7),
+                              : Colors.white.withAlpha((0.7 * 255).toInt()),
                         ),
                         title: Text(
                           zone.name,
                           style: TextStyle(
                             color: isSelected
                                 ? Colors.white
-                                : Colors.white.withValues(alpha: 0.9),
+                                : Colors.white.withAlpha((0.9 * 255).toInt()),
                             fontSize: 13,
                             fontWeight:
                                 isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -161,7 +161,7 @@ class ZonesPanel extends StatelessWidget {
                         ),
                         trailing: IconButton(
                           icon: const Icon(Icons.edit, size: 16),
-                          color: Colors.white.withValues(alpha: 0.7),
+                          color: Colors.white.withAlpha((0.7 * 255).toInt()),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () {

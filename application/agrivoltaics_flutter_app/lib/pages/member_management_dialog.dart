@@ -133,7 +133,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                         Text(
                           widget.organization.name,
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: Colors.white.withAlpha((0.9 * 255).toInt()),
                             fontSize: 14,
                           ),
                         ),
@@ -505,7 +505,7 @@ class _MemberListItemState extends State<MemberListItem> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: badgeColor.withValues(alpha: 0.1),
+        color: badgeColor.withAlpha((0.1 * 255).toInt()),
         border: Border.all(color: badgeColor),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -538,7 +538,7 @@ class _MemberListItemState extends State<MemberListItem> {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.1),
+              color: Colors.blue.withAlpha((0.1 * 255).toInt()),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
