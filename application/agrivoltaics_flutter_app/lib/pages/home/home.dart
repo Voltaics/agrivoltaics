@@ -185,7 +185,7 @@ class HomePage extends State<HomeState> {
                           color: Theme.of(context).colorScheme.primary,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
+                              color: Colors.black.withAlpha((0.1 * 255).toInt()),
                               blurRadius: 4,
                               offset: const Offset(0, 2),
                             ),
@@ -211,7 +211,7 @@ class HomePage extends State<HomeState> {
                                           children: [
                                             CircleAvatar(
                                               radius: 16,
-                                              backgroundColor: Colors.white.withValues(alpha: 0.2),
+                                              backgroundColor: Colors.white.withAlpha((0.2 * 255).toInt()),
                                               backgroundImage: currentOrg?.logoUrl != null
                                                   ? NetworkImage(currentOrg!.logoUrl!)
                                                   : null,
@@ -242,7 +242,7 @@ class HomePage extends State<HomeState> {
                                             ),
                                             Icon(
                                               Icons.keyboard_arrow_down,
-                                              color: Colors.white.withValues(alpha: 0.8),
+                                              color: Colors.white.withAlpha((0.8 * 255).toInt()),
                                               size: 24,
                                             ),
                                           ],
@@ -554,10 +554,10 @@ class OrganizationSelector extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 12),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: Colors.white.withAlpha((0.1 * 255).toInt()),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.3),
+            color: Colors.white.withAlpha((0.3 * 255).toInt()),
             width: 1,
           ),
         ),
@@ -565,7 +565,7 @@ class OrganizationSelector extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
+              backgroundColor: Colors.white.withAlpha((0.2 * 255).toInt()),
               backgroundImage: currentOrg?.logoUrl != null
                   ? NetworkImage(currentOrg!.logoUrl!)
                   : null,
@@ -598,9 +598,9 @@ class OrganizationSelector extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'Switch organization',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 11,
+                      style: TextStyle(
+                      color: Colors.white.withAlpha((0.7 * 255).toInt()),
+                      fontSize: 13,
                     ),
                   ),
                 ],
@@ -608,7 +608,7 @@ class OrganizationSelector extends StatelessWidget {
             ),
             Icon(
               Icons.keyboard_arrow_down,
-              color: Colors.white.withValues(alpha: 0.7),
+              color: Colors.white.withAlpha((0.7 * 255).toInt()),
               size: 20,
             ),
           ],

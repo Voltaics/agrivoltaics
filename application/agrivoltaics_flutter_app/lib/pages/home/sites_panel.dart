@@ -161,7 +161,7 @@ class SitesPanel extends StatelessWidget {
                     return ListTile(
                       dense: true,
                       selected: isSelected,
-                      selectedTileColor: const Color(0xFF2D53DA).withValues(alpha: 0.1),
+                      selectedTileColor: const Color(0xFF2D53DA).withAlpha((0.1 * 255).toInt()),
                       leading: Icon(
                         Icons.location_on,
                         color: isSelected ? const Color(0xFF2D53DA) : Colors.grey,

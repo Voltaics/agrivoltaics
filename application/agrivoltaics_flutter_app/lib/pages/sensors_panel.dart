@@ -164,8 +164,8 @@ class _SensorListItemState extends State<_SensorListItem> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: sensor.isOnline
-                        ? Colors.green.withValues(alpha: 0.1)
-                        : Colors.red.withValues(alpha: 0.1),
+                        ? Colors.green.withAlpha((0.1 * 255).toInt())
+                        : Colors.red.withAlpha((0.1 * 255).toInt()),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -213,10 +213,10 @@ class _SensorListItemState extends State<_SensorListItem> {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.05),
+                      color: Colors.blue.withAlpha((0.05 * 255).toInt()),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Colors.blue.withValues(alpha: 0.2),
+                        color: Colors.blue.withAlpha((0.2 * 255).toInt()),
                         width: 1,
                       ),
                     ),
