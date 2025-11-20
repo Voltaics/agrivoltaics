@@ -9,7 +9,7 @@ RUN apt-get clean
 # download Flutter SDK from Flutter Github repo
 RUN git clone https://github.com/flutter/flutter.git /usr/local/flutter
 WORKDIR /usr/local/flutter
-RUN git checkout 3.27.1
+RUN git checkout stable && git pull origin stable
 
 # Set flutter environment path
 ENV PATH="/usr/local/flutter/bin:/usr/local/flutter/bin/cache/dart-sdk/bin:${PATH}"
