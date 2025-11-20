@@ -32,6 +32,8 @@ ARG AUTHORIZED_EMAILS
 RUN mkdir /app/
 COPY . /app/
 WORKDIR /app/
+RUN flutter clean
+RUN flutter pub get
 RUN flutter build web --dart-define=INFLUXDB_URL=${INFLUXDB_URL} \
 --dart-define=INFLUXDB_TOKEN=${INFLUXDB_TOKEN} \
 --dart-define=INFLUXDB_ORG=${INFLUXDB_ORG} \
