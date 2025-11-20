@@ -16,7 +16,7 @@
                 "--dart-define=INFLUXDB_ORG=65831f5e68f42d85",
                 "--dart-define=INFLUXDB_BUCKET=esp32_testing",
                 "--dart-define=INFLUXDB_DEBUG=true",
-                "--dart-define=AUTHORIZED_EMAILS=rindler.eli@gmail.com"
+                "--dart-define=AUTHORIZED_EMAILS=nguye2cy@mail.uc.edu"
             ]
         },
         {
@@ -32,7 +32,7 @@
                 "--dart-define=INFLUXDB_ORG=65831f5e68f42d85",
                 "--dart-define=INFLUXDB_BUCKET=esp32_testing",
                 "--dart-define=INFLUXDB_DEBUG=true",
-                "--dart-define=AUTHORIZED_EMAILS=rindler.eli@gmail.com"
+                "--dart-define=AUTHORIZED_EMAILS=nguye2cy@mail.uc.edu"
             ]
         },
         {
@@ -48,7 +48,7 @@
                 "--dart-define=INFLUXDB_ORG=65831f5e68f42d85",
                 "--dart-define=INFLUXDB_BUCKET=esp32_testing",
                 "--dart-define=INFLUXDB_DEBUG=true",
-                "--dart-define=AUTHORIZED_EMAILS=rindler.eli@gmail.com"
+                "--dart-define=AUTHORIZED_EMAILS=nguye2cy@mail.uc.edu"
             ]
         }
     ]
