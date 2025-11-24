@@ -1,5 +1,15 @@
 # UC Agrivoltaics Senior Design
 
+> ⚠️ **This project was continued for the academic year 2025-2026 by a new team.**  
+> The original README has been preserved for historical and authorship purposes.
+
+## Team Members
+Amogh Silaparasetti (CS)
+Eli Rindler (CS)
+Huy Nguyen (CS)
+Ayushi sharma (CS)
+Dylan Serger (CS)
+
 > ⚠️ **This project was continued for the academic year 2024-2025 by a new team.**  
 > The original README has been preserved for historical and authorship purposes.
 
