@@ -12,6 +12,7 @@ Ayushi Sharma (CS)
 Dylan Serger (CS)
 
 ## Project Abstract
+See below for Abstract
 
 ## Project Description
 * [Project Description](./assignments/2025-2026/Project-Description.md)
@@ -49,7 +50,7 @@ Dylan Serger (CS)
 * [Project Budget](./assignments/2025-2026/Project-Budget.md)
 
 ## Appendix
-
+* [Model Weights](https://drive.google.com/drive/folders/1KKURmwB09EzRrgZmRB3TmkuaCJBb8nOo?usp=sharing)
 ### Code Repositories
 * [Senior Design](https://github.com/erindler/SeniorDesign)
 * [Agrivoltaics - Forked Repo](https://github.com/erindler/agrivoltaics)
