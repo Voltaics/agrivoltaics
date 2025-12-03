@@ -13,7 +13,7 @@ import torchvision.models as models
 import random
 
 #config
-DATA_DIR = "./vine_presence_data"
+DATA_DIR = "./vine_presence_data_64"
 BATCH_SIZE = 32
 EPOCHS = 100
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -39,29 +39,38 @@ class VineAugmentation:
 
 class VinePresenceDataset(Dataset):
     def __init__(self, data_dir, transform=None):
-        self.data_dir = data_dir
         self.transform = transform
-        self.samples = [f for f in sorted(os.listdir(data_dir)) if f.startswith("image_") and f.endswith(".npy")]
         self.global_mean = np.load("global_mean.npy")
         self.global_std = np.load("global_std.npy")
 
+        # preload all samples into memory
+        self.data, self.labels = [], []
+        samples = [f for f in sorted(os.listdir(data_dir)) if f.startswith("image_") and f.endswith(".npy")]
+        for fname in samples:
+            img_path = os.path.join(data_dir, fname)
+            label_path = img_path.replace("image_", "label_").replace(".npy", ".txt")
+
+            image = np.load(img_path).astype(np.float32)
+            label = int(open(label_path).read().strip())
+
+            self.data.append(torch.tensor(image))
+            self.labels.append(torch.tensor(label, dtype=torch.long))
+
     def __len__(self):
-        return len(self.samples)
+        return len(self.data)
 
     def __getitem__(self, idx):
-        img_path = os.path.join(self.data_dir, self.samples[idx])
-        label_path = img_path.replace("image_", "label_").replace(".npy", ".txt")
-        image = np.load(img_path).astype(np.float32)
-        label = int(open(label_path).read().strip())
-        image = torch.tensor(image)
+        image, label = self.data[idx].clone(), self.labels[idx]
 
         if self.transform:
             image = self.transform(image)
 
+        # normalize channels
         for c in range(image.shape[0]):
             image[c] = (image[c] - self.global_mean[c]) / (self.global_std[c] + 1e-8)
 
-        return image, torch.tensor(label, dtype=torch.long)
+        return image, label
+
 
 class VinePresenceResNet18(nn.Module):
     def __init__(self):
