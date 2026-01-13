@@ -264,7 +264,7 @@ class SitesPanel extends StatelessWidget {
           }
 
           if (snapshot.hasError) {
-            return Center(
+            return const Center(
               child: Text(
                 'Error loading sites',
                 style: TextStyle(color: Colors.red, fontSize: 12),

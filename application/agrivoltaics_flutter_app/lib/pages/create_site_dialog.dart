@@ -6,9 +6,9 @@ class CreateSiteDialog extends StatefulWidget {
   final String organizationId;
 
   const CreateSiteDialog({
-    Key? key,
+    super.key,
     required this.organizationId,
-  }) : super(key: key);
+  });
 
   @override
   State<CreateSiteDialog> createState() => _CreateSiteDialogState();
@@ -171,7 +171,7 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _selectedTimezone,
+                  initialValue: _selectedTimezone,
                   decoration: const InputDecoration(
                     labelText: 'Timezone',
                     border: OutlineInputBorder(),

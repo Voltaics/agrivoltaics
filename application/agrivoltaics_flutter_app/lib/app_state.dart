@@ -325,7 +325,7 @@ class AppState with ChangeNotifier {
 
     // Send the Post request
     http.Response response = await http.post(
-      Uri.parse('https://vinovoltaics-notification-api-6ajy6wk4ca-ul.a.run.app/updateSettings?settings=${requestBody}'),
+      Uri.parse('https://vinovoltaics-notification-api-6ajy6wk4ca-ul.a.run.app/updateSettings?settings=$requestBody'),
     );
   }
 }

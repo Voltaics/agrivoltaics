@@ -78,9 +78,9 @@ class HomePage extends State<HomeState> {
             // Container for the brand + navigation rail + sign-out
             Container(
               width: 220,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 // You can replace this gradient with a single color if you prefer
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
@@ -93,9 +93,9 @@ class HomePage extends State<HomeState> {
                 children: [
                   // Logo/Title at the top
                   const SizedBox(height: 24),
-                  Row(
+                  const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.eco, color: Colors.white, size: 24),
                       SizedBox(width: 8),
                       Text(
@@ -113,13 +113,13 @@ class HomePage extends State<HomeState> {
                   const SizedBox(height: 8),
                   
                   // Organization Selector
-                  OrganizationSelector(),
+                  const OrganizationSelector(),
                   
                   const SizedBox(height: 8),
                   const Divider(color: Colors.white38),
 
                   // Sites Panel
-                  SizedBox(
+                  const SizedBox(
                     height: 250,
                     child: SitesPanel(),
                   ),
@@ -127,7 +127,7 @@ class HomePage extends State<HomeState> {
                   const Divider(color: Colors.white38),
 
                   // Zones Panel
-                  SizedBox(
+                  const SizedBox(
                     height: 200,
                     child: ZonesPanel(),
                   ),
@@ -146,13 +146,13 @@ class HomePage extends State<HomeState> {
                       destinations: [
                         NavigationRailDestination(
                           icon: Icon(MdiIcons.radioTower),
-                          label: Text('Stationary Sensors', style: TextStyle(fontSize: 14),),
-                          padding: EdgeInsets.only(bottom: 16),
+                          label: const Text('Stationary Sensors', style: TextStyle(fontSize: 14),),
+                          padding: const EdgeInsets.only(bottom: 16),
                         ),
                         NavigationRailDestination(
                           icon: Icon(MdiIcons.quadcopter),
-                          label: Text('Mobile Sensors', style: TextStyle(fontSize: 14),),
-                          padding: EdgeInsets.only(bottom: 16),
+                          label: const Text('Mobile Sensors', style: TextStyle(fontSize: 14),),
+                          padding: const EdgeInsets.only(bottom: 16),
                         ),
                       ],
                     ),
@@ -411,7 +411,7 @@ class SignOutButton extends StatelessWidget {
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (BuildContext context) => SignOutDialog()
+                builder: (BuildContext context) => const SignOutDialog()
               );
             },
             icon: Icon(MdiIcons.logout)
@@ -483,7 +483,7 @@ class AppSettings {
 
 Future<void> getSettings(String? email, AppState appstate) async {
   try {
-  http.Response response = await http.get(Uri.parse('https://vinovoltaics-notification-api-6ajy6wk4ca-ul.a.run.app/getSettings?email=${email}'));
+  http.Response response = await http.get(Uri.parse('https://vinovoltaics-notification-api-6ajy6wk4ca-ul.a.run.app/getSettings?email=$email'));
   
   if (response.statusCode == 200) {
     appstate.sites = [];

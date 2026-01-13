@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 
 class MobileDashboardPage extends StatefulWidget {
-  MobileDashboardPage({super.key});
+  const MobileDashboardPage({super.key});
 
   @override
   State<MobileDashboardPage> createState() => _MobileDashboardPageState();
@@ -89,7 +89,7 @@ class MobileDashboard extends StatelessWidget {
   final bool showAllCaptures;
   final void Function(DocumentSnapshot doc) onCaptureSelected;
 
-  MobileDashboard({
+  const MobileDashboard({super.key, 
     required this.showAllCaptures,
     required this.onCaptureSelected,
   });
@@ -298,7 +298,7 @@ class MobileDashboard extends StatelessWidget {
               width: 419,
               padding: const EdgeInsets.all(12),
               color: Colors.grey[100],
-              child: PiControlPanel(
+              child: const PiControlPanel(
                 // piOnline: true, // TODO: replace with actual ping logic
                 // onStartCapture: () {
                 //   // TODO: add capture trigger logic
@@ -319,7 +319,7 @@ class MobileDashboard extends StatelessWidget {
               width: 419,
               padding: const EdgeInsets.all(12),
               color: Colors.grey[100],
-              child: PiControlPanel(
+              child: const PiControlPanel(
                 // piOnline: true, // TODO: replace with actual ping logic
                 // onStartCapture: () {
                 //   // TODO: add capture trigger logic
@@ -508,6 +508,6 @@ class MobileDashboard extends StatelessWidget {
       );
     }
 
-    return Placeholder();
+    return const Placeholder();
   }
 }

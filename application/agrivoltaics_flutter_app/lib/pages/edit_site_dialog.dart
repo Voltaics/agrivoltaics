@@ -10,10 +10,10 @@ class EditSiteDialog extends StatefulWidget {
   final Site site;
 
   const EditSiteDialog({
-    Key? key,
+    super.key,
     required this.organizationId,
     required this.site,
-  }) : super(key: key);
+  });
 
   @override
   State<EditSiteDialog> createState() => _EditSiteDialogState();
@@ -309,7 +309,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _selectedTimezone,
+                  initialValue: _selectedTimezone,
                   decoration: const InputDecoration(
                     labelText: 'Timezone',
                     border: OutlineInputBorder(),

@@ -20,13 +20,13 @@ class _StationaryDashboardPageState extends State<StationaryDashboardPage> {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Title
-              const Text(
+              Text(
                 'Stationary Sensors',
                 style: TextStyle(
                   fontSize: 20,

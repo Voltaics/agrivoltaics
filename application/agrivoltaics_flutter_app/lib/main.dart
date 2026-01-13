@@ -72,14 +72,12 @@ class App extends StatelessWidget {
             onPrimary: Colors.white,              // Text on primary
             secondary: Color(0xFF2D53DA),           // Optional
             onSecondary: Colors.white,
-            background: Color(0xFFF2F5FD),        // App background
-            onBackground: Colors.black,
             surface: Colors.white,                // Cards, nav rail
             onSurface: Colors.black,
             error: Colors.red,
             onError: Colors.white,
           ),
-          scaffoldBackgroundColor: Color(0xFFF2F5FD),
+          scaffoldBackgroundColor: const Color(0xFFF2F5FD),
           cardTheme: CardThemeData(
             color: Colors.white,
             surfaceTintColor: Colors.white,
@@ -105,7 +103,7 @@ class App extends StatelessWidget {
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF2D53DA),
+              backgroundColor: const Color(0xFF2D53DA),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
