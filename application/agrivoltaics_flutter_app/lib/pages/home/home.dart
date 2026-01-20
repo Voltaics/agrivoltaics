@@ -42,7 +42,7 @@ class HomePage extends State<HomeState> {
 
   static final List<Widget> _pages = [
     const StationaryDashboardPage(),  // Stationary Sensors
-    MobileDashboardPage(),            // Mobile Sensors
+    const MobileDashboardPage(),            // Mobile Sensors
   ];
 
   void _selectPage(int index) {
@@ -267,8 +267,6 @@ class HomePage extends State<HomeState> {
                           ),
                         ),
                       ),
-                      // Site & Zone Breadcrumb for mobile (replaces separate panels)
-                      const SiteZoneBreadcrumb(),
                       // Page content
                       Expanded(
                         child: _pages[_selectedIndex],

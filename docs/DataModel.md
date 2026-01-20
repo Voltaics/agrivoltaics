@@ -110,7 +110,7 @@ organizations/{orgId}/sites/{siteId}
 ```
 
 #### **Subcollection: organizations/{orgId}/sites/{siteId}/zones**
-Zones within a site (optional subdivision of sites).
+Zones within a site (must be at least 1 zone per site).
 
 ```javascript
 organizations/{orgId}/sites/{siteId}/zones/{zoneId}
@@ -125,10 +125,36 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}
   // Settings (migrated from MongoDB)
   zoneChecked: boolean,           // Visibility toggle from MongoDB
   
+  // Primary Sensor Readings (Dynamic mapping)
+  readings: {
+    [readingFieldName: string]: string,  // Map of reading field name -> sensorId
+  },
+  
   // Timestamps
   createdAt: timestamp,
   updatedAt: timestamp,
 }
+```
+
+**Purpose:** The `readings` object is a flexible map that allows users to designate which sensor is the "primary" source for any reading type. The keys are user-defined reading field names.
+
+**Example:**
+```javascript
+readings: {
+  "temperature": "sensor-dht22-001",
+  "humidity": "sensor-dht22-001",
+  "light": "sensor-veml7700-001",
+  "soilMoisture": "sensor-soil-002",
+  "customReading1": "sensor-custom-001",  // User-defined reading name
+  "vineStress": "sensor-ndvi-001",        // Any custom field name
+}
+```
+
+**Note:** 
+- Keys can be any string (user-defined reading names)
+- Values are sensor IDs that provide that reading
+- The readings object is completely dynamic and can contain any field names
+- If no primary sensor is designated for a reading type, that key simply won't exist in the map
 ```
 
 #### **Subcollection: organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors**
