@@ -31,13 +31,13 @@ jobs:
 
       - name: Enable web and get deps
         working-directory: application/agrivoltaics_flutter_app
-        run:
+        run: |
           flutter config --enable-web
           flutter pub get
 
       - name: Build web with base href
         working-directory: application/agrivoltaics_flutter_app
-        run:
+        run: |
           flutter build web --release --base-href "/agrivoltaics/"
           cp build/web/index.html build/web/404.html
 
