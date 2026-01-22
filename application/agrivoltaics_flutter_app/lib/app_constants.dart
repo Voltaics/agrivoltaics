@@ -76,8 +76,6 @@ extension TimeIntervalExtension on TimeInterval {
         return Duration(days: this.value * 7);
       case TimeUnit.month:
         return Duration(days: this.value * 30);
-      default:
-        return null;
     }
   }
 }
@@ -97,8 +95,6 @@ extension TimeUnitExtension on TimeUnit {
         return 'w';
       case TimeUnit.month:
         return 'mo';
-      default:
-        return '';
     }
   }
 }
@@ -130,8 +126,6 @@ extension SensorMeasurementExtension on SensorMeasurement {
         return 'soil_moisture';
       case SensorMeasurement.rssi:
         return 'rssi';
-      default:
-        return '';
     }
   }
 
