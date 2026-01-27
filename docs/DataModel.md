@@ -204,7 +204,26 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}
 
 ---
 
-### 7. **sensorLookup** (Top-level Collection)
+### 7. **readings** (Top-level Collection)
+Standardized reading type definitions used across all sensors. Document ID = readingAlias.
+
+```javascript
+readings/{readingAlias}
+{
+  // Reading Identity
+  alias: string,                  // Unique identifier (camelCase) - e.g., "soilTemperature"
+  name: string,                   // Human-readable name - e.g., "Soil Temperature"
+  description: string,            // Detailed description of this reading
+  
+  // Units
+  validUnits: [string],           // Array of acceptable units - e.g., ["°F", "°C"]
+  defaultUnit: string,            // Preferred unit - e.g., "°F"
+}
+```
+
+---
+
+### 9. **sensorLookup** (Top-level Collection)
 Fast lookup table for sensor metadata. Document ID = sensorId.
 
 ```javascript
@@ -243,7 +262,7 @@ sensorLookup/{sensorId}
 
 ---
 
-### 8. **mobileSensors** (Top-level Collection)
+### 10. **mobileSensors** (Top-level Collection)
 Temporary/mobile sensing devices (smartphones, portable sensors).
 
 ```javascript
@@ -286,7 +305,7 @@ mobileSensors/{mobileSensorId}
 
 ---
 
-### 9. **alerts** (Top-level Collection)
+### 11. **alerts** (Top-level Collection)
 Weather alerts and sensor threshold alerts.
 
 ```javascript
@@ -330,7 +349,7 @@ alerts/{alertId}
 
 ---
 
-### 10. **imageAnalysis** (Top-level Collection)
+### 12. **imageAnalysis** (Top-level Collection)
 ML model results for disease detection and vine presence.
 
 ```javascript
@@ -374,7 +393,7 @@ imageAnalysis/{analysisId}
 
 ---
 
-### 11. **notifications** (Top-level Collection)
+### 13. **notifications** (Top-level Collection)
 User-specific notification queue (replaces MongoDB notifications + user tracking).
 
 ```javascript

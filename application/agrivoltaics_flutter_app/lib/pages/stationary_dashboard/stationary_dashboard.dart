@@ -6,6 +6,7 @@ import '../../models/zone.dart';
 import '../../models/sensor.dart';
 import '../../services/zone_service.dart';
 import '../../services/sensor_service.dart';
+import '../../services/readings_service.dart';
 import '../home/site_zone_breadcrumb.dart';
 
 class StationaryDashboardPage extends StatefulWidget {
@@ -1107,7 +1108,7 @@ class _AddSensorDialogState extends State<_AddSensorDialog> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    '${reading.name} (${reading.unit})',
+                                    '${reading.displayName} (${reading.unit})',
                                     style: const TextStyle(fontSize: 13),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -1212,88 +1213,252 @@ class _AddSensorDialogState extends State<_AddSensorDialog> {
   }
 
   void _showAddReadingDialog() {
-    final readingNameController = TextEditingController();
-    final readingUnitController = TextEditingController();
+    final readingsService = ReadingsService();
+    final allReadings = readingsService.getAllReadings(); // Pre-load outside dialog
+    String? selectedReadingAlias;
+    String? selectedReadingDisplayName;
+    String? selectedUnit;
     final outerContext = context; // Capture outer context
+    late List<Reading> readingsList;
+
+    if (allReadings.isEmpty) {
+      // Handle empty case before opening dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No readings available')),
+      );
+      return;
+    }
+
+    readingsList = allReadings.values.toList(); // Pre-compute list
 
     showDialog(
       context: outerContext,
-      builder: (innerContext) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Add Reading',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+      builder: (innerContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Add Reading',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Reading Name *',
+                        hintText: 'Search or select a reading',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: selectedReadingAlias != null
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  setDialogState(() {
+                                    selectedReadingAlias = null;
+                                    selectedUnit = null;
+                                  });
+                                },
+                              )
+                            : null,
+                      ),
+                      readOnly: true,
+                      controller: TextEditingController(
+                        text: selectedReadingAlias != null
+                            ? readingsList.firstWhere((r) => r.alias == selectedReadingAlias, orElse: () => Reading(alias: '', name: '', description: '', validUnits: [], defaultUnit: '')).name
+                            : '',
+                      ),
+                      onTap: () async {
+                        final result = await _showSearchableDropdown(
+                          innerContext,
+                          readingsList,
+                          (r) => r.name,
+                        );
+                        if (result != null) {
+                          setDialogState(() {
+                            selectedReadingAlias = result.alias;
+                            selectedReadingDisplayName = result.name;
+                            selectedUnit = result.defaultUnit;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    if (selectedReadingAlias != null) ...[
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'Unit *',
+                          hintText: 'Search or select a unit',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: selectedUnit != null
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      selectedUnit = null;
+                                    });
+                                  },
+                                )
+                              : null,
+                        ),
+                        readOnly: true,
+                        controller: TextEditingController(text: selectedUnit ?? ''),
+                        onTap: () async {
+                          final validUnits =
+                              readingsService.getValidUnits(selectedReadingAlias!);
+                          final result = await _showSearchableDropdown(
+                            innerContext,
+                            validUnits,
+                            (u) => u,
+                          );
+                          if (result != null) {
+                            setDialogState(() {
+                              selectedUnit = result as String;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[300],
+                            ),
+                            onPressed: () => Navigator.pop(innerContext),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(color: Colors.black),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: selectedReadingAlias != null &&
+                                    selectedUnit != null
+                                ? () {
+                                    setState(() {
+                                      _readings.add(_ReadingItem(
+                                        name: selectedReadingAlias!,
+                                        displayName: selectedReadingDisplayName!,
+                                        unit: selectedUnit!,
+                                      ));
+                                    });
+                                    Navigator.pop(innerContext);
+                                  }
+                                : null,
+                            child: const Text('Add'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: readingNameController,
-                label: 'Reading Name',
-                hint: 'e.g., temperature',
-                isRequired: true,
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: readingUnitController,
-                label: 'Unit',
-                hint: 'e.g., °F',
-                isRequired: true,
-              ),
-              const SizedBox(height: 20),
-              Row(
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<T?> _showSearchableDropdown<T>(
+    BuildContext context,
+    List<T> items,
+    String Function(T) getLabel,
+  ) async {
+    String searchText = '';
+    late List<T> filtered = items;
+
+    return showDialog<T>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+            ),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+            child: SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[300],
-                      ),
-                      onPressed: () => Navigator.pop(innerContext),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(color: Colors.black),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: TextField(
+                      autofocus: true,
+                      onChanged: (value) {
+                        setState(() {
+                          searchText = value;
+                          filtered = items
+                              .where((item) => getLabel(item)
+                                  .toLowerCase()
+                                  .contains(searchText.toLowerCase()))
+                              .toList();
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        isDense: true,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final name = readingNameController.text.trim();
-                        final unit = readingUnitController.text.trim();
-
-                        if (name.isEmpty || unit.isEmpty) {
-                          ScaffoldMessenger.of(innerContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please fill in all fields'),
+                    child: filtered.isEmpty
+                        ? Center(
+                            child: Text(
+                              searchText.isEmpty
+                                  ? 'No items'
+                                  : 'No results for "$searchText"',
+                              style: TextStyle(color: Colors.grey[600]),
                             ),
-                          );
-                          return;
-                        }
-
-                        setState(() {
-                          _readings.add(_ReadingItem(name: name, unit: unit));
-                        });
-
-                        Navigator.pop(innerContext);
-                      },
-                      child: const Text('Add'),
-                    ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: false,
+                            padding: EdgeInsets.zero,
+                            itemExtent: 48,
+                            addAutomaticKeepAlives: false,
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) {
+                              final item = filtered[index];
+                              return ListTile(
+                                dense: true,
+                                title: Text(getLabel(item)),
+                                onTap: () {
+                                  Navigator.pop(dialogContext, item);
+                                },
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -1452,10 +1617,15 @@ class _AddSensorDialogState extends State<_AddSensorDialog> {
 
 // Helper class for readings
 class _ReadingItem {
-  final String name;
+  final String name; // alias (for storage/reference)
+  final String displayName; // human-readable name
   final String unit;
 
-  _ReadingItem({required this.name, required this.unit});
+  _ReadingItem({
+    required this.name,
+    required this.displayName,
+    required this.unit,
+  });
 }
 
 // Small row for displaying key/value pairs in dialogs
@@ -1575,8 +1745,17 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
     }
     
     // Initialize readings from sensor's fields
+    final readingsService = ReadingsService();
+    final allReadings = readingsService.getAllReadings();
     _readings = widget.sensor.fields.entries
-        .map((e) => _ReadingItem(name: e.key, unit: e.value.unit))
+        .map((e) {
+          final reading = allReadings[e.key];
+          return _ReadingItem(
+            name: e.key,
+            displayName: reading?.name ?? e.key,
+            unit: e.value.unit,
+          );
+        })
         .toList();
   }
 
@@ -1590,59 +1769,230 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
   }
 
   Future<void> _showAddReadingDialog() async {
-    final nameController = TextEditingController();
-    final unitController = TextEditingController();
+    final readingsService = ReadingsService();
+    final allReadings = readingsService.getAllReadings(); // Pre-load outside dialog
+    String? selectedReadingAlias;
+    String? selectedReadingDisplayName;
+    String? selectedUnit;
     
-    final result = await showDialog<_ReadingItem>(
+    if (allReadings.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No readings available')),
+      );
+      return;
+    }
+
+    final allReadingsList = allReadings.values.toList(); // Pre-compute list
+    
+    await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Reading'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Reading Name',
-                hintText: 'e.g., temperature',
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Filter out readings already added
+            final availableReadings = allReadingsList
+                .where((r) => !_readings.any((item) => item.name == r.alias))
+                .toList();
+
+            return AlertDialog(
+              title: const Text('Add Reading'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: 'Reading Name *',
+                        hintText: 'Search or select a reading',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: selectedReadingAlias != null
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  setDialogState(() {
+                                    selectedReadingAlias = null;
+                                    selectedUnit = null;
+                                  });
+                                },
+                              )
+                            : null,
+                      ),
+                      readOnly: true,
+                      controller: TextEditingController(
+                        text: selectedReadingAlias != null
+                            ? allReadings[selectedReadingAlias]?.name ?? ''
+                            : '',
+                      ),
+                      onTap: () async {
+                        final result = await _showSearchableDropdown(
+                          context,
+                          availableReadings,
+                          (r) => r.name,
+                        );
+                        if (result != null) {
+                          setDialogState(() {
+                            selectedReadingAlias = result.alias;
+                            selectedReadingDisplayName = result.name;
+                            selectedUnit = result.defaultUnit;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    if (selectedReadingAlias != null)
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'Unit *',
+                          hintText: 'Search or select a unit',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: selectedUnit != null
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      selectedUnit = null;
+                                    });
+                                  },
+                                )
+                              : null,
+                        ),
+                        readOnly: true,
+                        controller: TextEditingController(text: selectedUnit ?? ''),
+                        onTap: () async {
+                          final validUnits =
+                              readingsService.getValidUnits(selectedReadingAlias!);
+                          final result = await _showSearchableDropdown(
+                            context,
+                            validUnits,
+                            (u) => u,
+                          );
+                          if (result != null) {
+                            setDialogState(() {
+                              selectedUnit = result as String;
+                            });
+                          }
+                        },
+                      ),
+                  ],
+                ),
               ),
-              autofocus: true,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: selectedReadingAlias != null &&
+                          selectedUnit != null
+                      ? () {
+                          setState(() {
+                            _readings.add(_ReadingItem(
+                              name: selectedReadingAlias!,
+                              displayName: selectedReadingDisplayName!,
+                              unit: selectedUnit!,
+                            ));
+                          });
+                          Navigator.pop(context);
+                        }
+                      : null,
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<T?> _showSearchableDropdown<T>(
+    BuildContext context,
+    List<T> items,
+    String Function(T) getLabel,
+  ) async {
+    String searchText = '';
+    late List<T> filtered = items;
+
+    return showDialog<T>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return Dialog(
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: unitController,
-              decoration: const InputDecoration(
-                labelText: 'Unit',
-                hintText: 'e.g., °C',
+            insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+            child: SizedBox(
+              width: double.maxFinite,
+              height: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: TextField(
+                      autofocus: true,
+                      onChanged: (value) {
+                        setState(() {
+                          searchText = value;
+                          filtered = items
+                              .where((item) => getLabel(item)
+                                  .toLowerCase()
+                                  .contains(searchText.toLowerCase()))
+                              .toList();
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? Center(
+                            child: Text(
+                              searchText.isEmpty
+                                  ? 'No items'
+                                  : 'No results for "$searchText"',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: false,
+                            padding: EdgeInsets.zero,
+                            itemExtent: 48,
+                            addAutomaticKeepAlives: false,
+                            itemCount: filtered.length,
+                            itemBuilder: (context, index) {
+                              final item = filtered[index];
+                              return ListTile(
+                                dense: true,
+                                title: Text(getLabel(item)),
+                                onTap: () {
+                                  Navigator.pop(dialogContext, item);
+                                },
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = nameController.text.trim();
-              final unit = unitController.text.trim();
-              if (name.isNotEmpty && unit.isNotEmpty) {
-                Navigator.pop(context, _ReadingItem(name: name, unit: unit));
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
+          );
+        },
       ),
     );
-
-    if (result != null) {
-      setState(() {
-        _readings.add(result);
-      });
-    }
   }
+
 
   void _removeReading(int index) {
     setState(() {
@@ -2179,7 +2529,7 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          reading.name,
+                                          reading.displayName,
                                           style: const TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w500,
