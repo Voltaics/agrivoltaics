@@ -5,6 +5,8 @@
 #include "Adafruit_VEML7700.h"
 #include "DHT.h"
 #include <ModbusMaster.h>
+#include <time.h>
+#include <sys/time.h>
 
 // -----------------------------
 // WiFi + Google Script
@@ -28,6 +30,16 @@ const char* SENSOR_ID_TEMP_HUMIDITY = "sdkJbkRh6hkK4XJYpPrP";
 const char* SENSOR_ID_LIGHT = "EFR2gToaxfxtPLkQFeYG";
 const char* SENSOR_ID_SOIL = "qx8EIYdyf8VGUxWh38AO";
 const char* SENSOR_ID_CO2_TVOC = "zgDucecynnHWDlGwmfp1";
+
+// Reading Field Aliases
+const char* READING_TEMPERATURE = "temperature";
+const char* READING_HUMIDITY = "humidity";
+const char* READING_LIGHT = "light";
+const char* READING_SOIL_MOISTURE = "soilMoisture";
+const char* READING_SOIL_TEMPERATURE = "soilTemperature";
+const char* READING_SOIL_EC = "soilEC";
+const char* READING_CO2 = "co2";
+const char* READING_TVOC = "tvoc";
 
 // Unit Constants
 const char* UNIT_FAHRENHEIT = "°F";
@@ -95,6 +107,9 @@ void setup() {
 
   Serial.println("\nWiFi connected");
   setLEDColor(0, 0, 255); // BLUE = WiFi Connected
+
+  // Set system time via NTP (non-blocking, will sync in background)
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 
   Wire.begin(26, 27);
   Wire.setClock(100000);
@@ -202,8 +217,9 @@ void sendDataToCloud() {
   http.begin(cloudFunctionURL);
   http.addHeader("Content-Type", "application/json");
 
-  // Get current timestamp
-  unsigned long timestamp = millis() / 1000; // Simple timestamp in seconds
+  // Get current Unix timestamp in seconds
+  time_t now = time(nullptr);
+  unsigned long timestamp = (unsigned long)now;
 
   // Build JSON payload
   String jsonPayload = "{";
@@ -217,8 +233,8 @@ void sendDataToCloud() {
   jsonPayload += "\"sensorId\":\"" + String(SENSOR_ID_TEMP_HUMIDITY) + "\",";
   jsonPayload += "\"timestamp\":" + String(timestamp) + ",";
   jsonPayload += "\"readings\":{";
-  jsonPayload += "\"temperature\":{\"value\":" + String(tempF, 1) + ",\"unit\":\"" + UNIT_FAHRENHEIT + "\"},";
-  jsonPayload += "\"humidity\":{\"value\":" + String(humidity, 1) + ",\"unit\":\"" + UNIT_PERCENT + "\"}";
+  jsonPayload += "\"" + String(READING_TEMPERATURE) + "\":{\"value\":" + String(tempF, 1) + ",\"unit\":\"" + UNIT_FAHRENHEIT + "\"},";
+  jsonPayload += "\"" + String(READING_HUMIDITY) + "\":{\"value\":" + String(humidity, 1) + ",\"unit\":\"" + UNIT_PERCENT + "\"}";
   jsonPayload += "}";
   jsonPayload += "},";
 
@@ -227,7 +243,7 @@ void sendDataToCloud() {
   jsonPayload += "\"sensorId\":\"" + String(SENSOR_ID_LIGHT) + "\",";
   jsonPayload += "\"timestamp\":" + String(timestamp) + ",";
   jsonPayload += "\"readings\":{";
-  jsonPayload += "\"light\":{\"value\":" + String(luxValue, 1) + ",\"unit\":\"" + UNIT_LUX + "\"}";
+  jsonPayload += "\"" + String(READING_LIGHT) + "\":{\"value\":" + String(luxValue, 1) + ",\"unit\":\"" + UNIT_LUX + "\"}";
   jsonPayload += "}";
   jsonPayload += "},";
 
@@ -236,9 +252,9 @@ void sendDataToCloud() {
   jsonPayload += "\"sensorId\":\"" + String(SENSOR_ID_SOIL) + "\",";
   jsonPayload += "\"timestamp\":" + String(timestamp) + ",";
   jsonPayload += "\"readings\":{";
-  jsonPayload += "\"soilMoisture\":{\"value\":" + String(soilMoisture) + ",\"unit\":\"" + UNIT_MOISTURE + "\"},";
-  jsonPayload += "\"soilTemperature\":{\"value\":" + String(soilTempF, 1) + ",\"unit\":\"" + UNIT_CELSIUS + "\"},";
-  jsonPayload += "\"soilElectricalConductivity\":{\"value\":" + String(soilEC) + ",\"unit\":\"" + UNIT_EC + "\"}";
+  jsonPayload += "\"" + String(READING_SOIL_MOISTURE) + "\":{\"value\":" + String(soilMoisture) + ",\"unit\":\"" + UNIT_MOISTURE + "\"},";
+  jsonPayload += "\"" + String(READING_SOIL_TEMPERATURE) + "\":{\"value\":" + String(soilTempF, 1) + ",\"unit\":\"" + UNIT_CELSIUS + "\"},";
+  jsonPayload += "\"" + String(READING_SOIL_EC) + "\":{\"value\":" + String(soilEC) + ",\"unit\":\"" + UNIT_EC + "\"}";
   jsonPayload += "}";
   jsonPayload += "},";
 
@@ -247,8 +263,8 @@ void sendDataToCloud() {
   jsonPayload += "\"sensorId\":\"" + String(SENSOR_ID_CO2_TVOC) + "\",";
   jsonPayload += "\"timestamp\":" + String(timestamp) + ",";
   jsonPayload += "\"readings\":{";
-  jsonPayload += "\"co2\":{\"value\":" + String(co2) + ",\"unit\":\"" + UNIT_PPM + "\"},";
-  jsonPayload += "\"tvoc\":{\"value\":" + String(tvoc) + ",\"unit\":\"" + UNIT_PPM + "\"}";
+  jsonPayload += "\"" + String(READING_CO2) + "\":{\"value\":" + String(co2) + ",\"unit\":\"" + UNIT_PPM + "\"},";
+  jsonPayload += "\"" + String(READING_TVOC) + "\":{\"value\":" + String(tvoc) + ",\"unit\":\"" + UNIT_PPM + "\"}";
   jsonPayload += "}";
   jsonPayload += "}";
 

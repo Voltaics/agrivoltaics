@@ -277,7 +277,13 @@ exports.ingestSensorData = functions.https.onRequest(async (req, res) => {
         console.log(`Inserted ${allBqRows.length} rows to BigQuery ` +
           `for ${processedSensors.length} sensors`);
       } catch (bqError) {
-        console.error('BigQuery insert error:', bqError);
+        console.error('BigQuery insert error:', bqError.message);
+        if (bqError.errors && Array.isArray(bqError.errors)) {
+          console.error('Detailed insert errors:');
+          bqError.errors.forEach((err, index) => {
+            console.error(`  Error ${index}:`, JSON.stringify(err, null, 2));
+          });
+        }
         // Log error but don't fail the request - data is persisted in Firestore
       }
     }

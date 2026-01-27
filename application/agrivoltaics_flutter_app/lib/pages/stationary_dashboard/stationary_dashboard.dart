@@ -315,17 +315,23 @@ class _StationaryDashboardPageState extends State<StationaryDashboardPage> {
     );
   }
 
-  // Format reading name for display (e.g., "temperature" -> "Temperature")
-  String _formatReadingName(String name) {
-    if (name.isEmpty) return name;
+  // Format reading name for display - get from ReadingsService, fallback to camelCase conversion
+  String _formatReadingName(String alias) {
+    // Try to get the display name from ReadingsService
+    final readingsService = ReadingsService();
+    final reading = readingsService.getReading(alias);
+    if (reading != null) {
+      return reading.name;
+    }
     
-    // Convert camelCase to Title Case with spaces
-    final words = name.replaceAllMapped(
+    // Fallback: Convert camelCase to Title Case if reading not found
+    if (alias.isEmpty) return alias;
+    
+    final words = alias.replaceAllMapped(
       RegExp(r'([a-z])([A-Z])'),
       (match) => '${match.group(1)} ${match.group(2)}',
     );
     
-    // Capitalize first letter
     return words[0].toUpperCase() + words.substring(1);
   }
 
@@ -791,7 +797,7 @@ class _SensorConfigDialogState extends State<_SensorConfigDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            readingName,
+                            _formatReadingName(readingName),
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -919,17 +925,23 @@ class _SensorConfigDialogState extends State<_SensorConfigDialog> {
     );
   }
 
-  // Format reading name for display
-  String _formatReadingName(String name) {
-    if (name.isEmpty) return name;
+  // Format reading name for display - get from ReadingsService, fallback to camelCase conversion
+  String _formatReadingName(String alias) {
+    // Try to get the display name from ReadingsService
+    final readingsService = ReadingsService();
+    final reading = readingsService.getReading(alias);
+    if (reading != null) {
+      return reading.name;
+    }
     
-    // Convert camelCase to Title Case with spaces
-    final words = name.replaceAllMapped(
+    // Fallback: Convert camelCase to Title Case if reading not found
+    if (alias.isEmpty) return alias;
+    
+    final words = alias.replaceAllMapped(
       RegExp(r'([a-z])([A-Z])'),
       (match) => '${match.group(1)} ${match.group(2)}',
     );
     
-    // Capitalize first letter
     return words[0].toUpperCase() + words.substring(1);
   }
 }
@@ -1213,6 +1225,10 @@ class _AddSensorDialogState extends State<_AddSensorDialog> {
   }
 
   void _showAddReadingDialog() {
+    _showAddReadingDialogAsync();
+  }
+
+  Future<void> _showAddReadingDialogAsync() async {
     final readingsService = ReadingsService();
     final allReadings = readingsService.getAllReadings(); // Pre-load outside dialog
     String? selectedReadingAlias;
@@ -1223,6 +1239,7 @@ class _AddSensorDialogState extends State<_AddSensorDialog> {
 
     if (allReadings.isEmpty) {
       // Handle empty case before opening dialog
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No readings available')),
       );
@@ -1230,6 +1247,12 @@ class _AddSensorDialogState extends State<_AddSensorDialog> {
     }
 
     readingsList = allReadings.values.toList(); // Pre-compute list
+
+    if (!mounted) return;
+
+    // Create controllers once, outside the builder
+    final readingController = TextEditingController();
+    final unitController = TextEditingController();
 
     showDialog(
       context: outerContext,
@@ -1267,21 +1290,25 @@ class _AddSensorDialogState extends State<_AddSensorDialog> {
                                   setDialogState(() {
                                     selectedReadingAlias = null;
                                     selectedUnit = null;
+                                    readingController.clear();
+                                    unitController.clear();
                                   });
                                 },
                               )
                             : null,
                       ),
                       readOnly: true,
-                      controller: TextEditingController(
-                        text: selectedReadingAlias != null
-                            ? readingsList.firstWhere((r) => r.alias == selectedReadingAlias, orElse: () => Reading(alias: '', name: '', description: '', validUnits: [], defaultUnit: '')).name
-                            : '',
-                      ),
+                      focusNode: FocusNode(skipTraversal: true)..canRequestFocus = false,
+                      controller: readingController,
                       onTap: () async {
+                        // Filter out readings already added
+                        final availableReadings = readingsList
+                            .where((r) => !_readings.any((item) => item.name == r.alias))
+                            .toList();
+                        
                         final result = await _showSearchableDropdown(
                           innerContext,
-                          readingsList,
+                          availableReadings,
                           (r) => r.name,
                         );
                         if (result != null) {
@@ -1289,6 +1316,8 @@ class _AddSensorDialogState extends State<_AddSensorDialog> {
                             selectedReadingAlias = result.alias;
                             selectedReadingDisplayName = result.name;
                             selectedUnit = result.defaultUnit;
+                            readingController.text = result.name;
+                            unitController.text = result.defaultUnit;
                           });
                         }
                       },
@@ -1312,7 +1341,8 @@ class _AddSensorDialogState extends State<_AddSensorDialog> {
                               : null,
                         ),
                         readOnly: true,
-                        controller: TextEditingController(text: selectedUnit ?? ''),
+                        focusNode: FocusNode(skipTraversal: true)..canRequestFocus = false,
+                        controller: unitController,
                         onTap: () async {
                           final validUnits =
                               readingsService.getValidUnits(selectedReadingAlias!);
@@ -1324,6 +1354,7 @@ class _AddSensorDialogState extends State<_AddSensorDialog> {
                           if (result != null) {
                             setDialogState(() {
                               selectedUnit = result as String;
+                              unitController.text = result;
                             });
                           }
                         },
@@ -1776,6 +1807,7 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
     String? selectedUnit;
     
     if (allReadings.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No readings available')),
       );
@@ -1784,6 +1816,11 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
 
     final allReadingsList = allReadings.values.toList(); // Pre-compute list
     
+    if (!mounted) return;
+
+    // Create controllers once, outside the builder
+    final readingController = TextEditingController();
+    final unitController = TextEditingController();
     await showDialog(
       context: context,
       builder: (context) {
@@ -1818,11 +1855,8 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
                             : null,
                       ),
                       readOnly: true,
-                      controller: TextEditingController(
-                        text: selectedReadingAlias != null
-                            ? allReadings[selectedReadingAlias]?.name ?? ''
-                            : '',
-                      ),
+                      focusNode: FocusNode(skipTraversal: true)..canRequestFocus = false,
+                      controller: readingController,
                       onTap: () async {
                         final result = await _showSearchableDropdown(
                           context,
@@ -1834,6 +1868,8 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
                             selectedReadingAlias = result.alias;
                             selectedReadingDisplayName = result.name;
                             selectedUnit = result.defaultUnit;
+                            readingController.text = result.name;
+                            unitController.text = result.defaultUnit;
                           });
                         }
                       },
@@ -1857,7 +1893,8 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
                               : null,
                         ),
                         readOnly: true,
-                        controller: TextEditingController(text: selectedUnit ?? ''),
+                        focusNode: FocusNode(skipTraversal: true)..canRequestFocus = false,
+                        controller: unitController,
                         onTap: () async {
                           final validUnits =
                               readingsService.getValidUnits(selectedReadingAlias!);
@@ -1869,6 +1906,7 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
                           if (result != null) {
                             setDialogState(() {
                               selectedUnit = result as String;
+                              unitController.text = result;
                             });
                           }
                         },
@@ -2149,10 +2187,11 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
       // Track reading changes for summary
       final Map<String, String?> readingChanges = {};
       
-      // Find removed readings
+      // Find removed and new readings
       final oldReadings = widget.sensor.fields.keys.toSet();
       final newReadingNames = _readings.map((r) => r.name).toSet();
       final removedReadings = oldReadings.difference(newReadingNames);
+      final addedReadings = newReadingNames.difference(oldReadings);
 
       // Fetch latest zone readings to avoid stale state
       final currentZone = await widget.zoneService.getZone(widget.orgId, widget.siteId, widget.zone.id);
@@ -2183,6 +2222,17 @@ class _EditSensorDialogState extends State<_EditSensorDialog> {
             );
           }
         }
+      }
+
+      // Handle new readings - add them to zone readings
+      for (final reading in addedReadings) {
+        await widget.zoneService.setPrimarySensor(
+          orgId: widget.orgId,
+          siteId: widget.siteId,
+          zoneId: widget.zone.id,
+          readingFieldName: reading,
+          sensorId: widget.sensor.id,
+        );
       }
 
       // Update the sensor
