@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'firebase_options.dart';
 import 'app_constants.dart';
+import 'services/readings_service.dart';
 import 'pages/login.dart';
 
 void main() async {
@@ -37,6 +38,10 @@ void main() async {
 
   // Initialize timezone database
   tz.initializeTimeZones();
+
+  // Initialize ReadingsService (load reading definitions from Firestore)
+  final readingsService = ReadingsService();
+  await readingsService.loadReadings();
 
   // Launch application
   runApp(

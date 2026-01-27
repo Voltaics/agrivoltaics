@@ -1,11 +1,9 @@
 import 'package:agrivoltaics_flutter_app/app_constants.dart';
-import 'package:agrivoltaics_flutter_app/influx.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get_it/get_it.dart';
 
 Future<UserCredential> signInWithGoogleWeb() async {
-  getIt = GetIt.instance;
-  GoogleAuthProvider googleAuthProvider = getIt.get<GoogleAuthProvider>();
+  GoogleAuthProvider googleAuthProvider = GetIt.instance.get<GoogleAuthProvider>();
 
   return await FirebaseAuth.instance.signInWithPopup(googleAuthProvider);
 }

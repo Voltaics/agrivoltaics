@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/sensor.dart';
 import '../services/sensor_service.dart';
+import '../services/readings_service.dart';
 import '../app_state.dart';
 import 'create_sensor_dialog.dart';
 import 'edit_sensor_dialog.dart';
@@ -332,10 +333,8 @@ class _SensorListItemState extends State<_SensorListItem> {
     }
   }
 
-  String _formatFieldName(String fieldName) {
-    // Convert field names like "temperature" to "Temperature"
-    if (fieldName.isEmpty) return fieldName;
-    return fieldName[0].toUpperCase() + fieldName.substring(1);
+  String _formatFieldName(String alias) {
+    return ReadingsService().formatFieldName(alias);
   }
 
   String _formatDateTime(DateTime dateTime) {

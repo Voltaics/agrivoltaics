@@ -126,6 +126,10 @@ exports.ingestSensorData = functions.https.onRequest(async (req, res) => {
     const processedSensors = [];
     const errors = [];
 
+    // Pre-load all valid reading aliases once
+    const readingsSnapshot = await db.collection('readings').get();
+    const validReadingAliases = new Set(readingsSnapshot.docs.map((doc) => doc.id));
+
     // Process each sensor
     for (let i = 0; i < sensors.length; i++) {
       const sensor = sensors[i];
@@ -172,6 +176,14 @@ exports.ingestSensorData = functions.https.onRequest(async (req, res) => {
             });
             hasInvalidReading = true;
             break;
+          }
+
+          // Warn if reading alias not found in readings collection
+          if (!validReadingAliases.has(fieldName)) {
+            console.warn(
+                `Warning: Reading alias '${fieldName}' not found in readings collection. ` +
+                `Sensor ${sensorId} may have unrecognized field.`,
+            );
           }
         }
 
@@ -265,7 +277,13 @@ exports.ingestSensorData = functions.https.onRequest(async (req, res) => {
         console.log(`Inserted ${allBqRows.length} rows to BigQuery ` +
           `for ${processedSensors.length} sensors`);
       } catch (bqError) {
-        console.error('BigQuery insert error:', bqError);
+        console.error('BigQuery insert error:', bqError.message);
+        if (bqError.errors && Array.isArray(bqError.errors)) {
+          console.error('Detailed insert errors:');
+          bqError.errors.forEach((err, index) => {
+            console.error(`  Error ${index}:`, JSON.stringify(err, null, 2));
+          });
+        }
         // Log error but don't fail the request - data is persisted in Firestore
       }
     }
@@ -315,7 +333,7 @@ exports.syncSensorLookup = functions.firestore
       const {orgId, siteId, zoneId, sensorId} = context.params;
 
       try {
-      // Sensor deleted
+        // Sensor deleted
         if (!change.after.exists) {
           const sensorData = change.before.data();
 
@@ -359,7 +377,7 @@ exports.syncSensorLookup = functions.firestore
         console.log(`Updated lookup for Arduino device: ${arduinoDeviceId}`);
       } catch (error) {
         console.error('Error syncing sensor lookup:', error);
-      // Don't throw - we don't want to fail the sensor write operation
+        // Don't throw - we don't want to fail the sensor write operation
       }
     });
 

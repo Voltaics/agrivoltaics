@@ -17,7 +17,6 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 
 import 'sites_panel.dart';
 import 'zones_panel.dart';
-import 'site_zone_breadcrumb.dart';
 import '../stationary_dashboard/stationary_dashboard.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
 
@@ -42,7 +41,7 @@ class HomePage extends State<HomeState> {
 
   static final List<Widget> _pages = [
     const StationaryDashboardPage(),  // Stationary Sensors
-    MobileDashboardPage(),            // Mobile Sensors
+    const MobileDashboardPage(),            // Mobile Sensors
   ];
 
   void _selectPage(int index) {
@@ -267,8 +266,6 @@ class HomePage extends State<HomeState> {
                           ),
                         ),
                       ),
-                      // Site & Zone Breadcrumb for mobile (replaces separate panels)
-                      const SiteZoneBreadcrumb(),
                       // Page content
                       Expanded(
                         child: _pages[_selectedIndex],

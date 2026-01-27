@@ -110,7 +110,7 @@ organizations/{orgId}/sites/{siteId}
 ```
 
 #### **Subcollection: organizations/{orgId}/sites/{siteId}/zones**
-Zones within a site (optional subdivision of sites).
+Zones within a site (must be at least 1 zone per site).
 
 ```javascript
 organizations/{orgId}/sites/{siteId}/zones/{zoneId}
@@ -125,10 +125,36 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}
   // Settings (migrated from MongoDB)
   zoneChecked: boolean,           // Visibility toggle from MongoDB
   
+  // Primary Sensor Readings (Dynamic mapping)
+  readings: {
+    [readingFieldName: string]: string,  // Map of reading field name -> sensorId
+  },
+  
   // Timestamps
   createdAt: timestamp,
   updatedAt: timestamp,
 }
+```
+
+**Purpose:** The `readings` object is a flexible map that allows users to designate which sensor is the "primary" source for any reading type. The keys are user-defined reading field names.
+
+**Example:**
+```javascript
+readings: {
+  "temperature": "sensor-dht22-001",
+  "humidity": "sensor-dht22-001",
+  "light": "sensor-veml7700-001",
+  "soilMoisture": "sensor-soil-002",
+  "customReading1": "sensor-custom-001",  // User-defined reading name
+  "vineStress": "sensor-ndvi-001",        // Any custom field name
+}
+```
+
+**Note:** 
+- Keys can be any string (user-defined reading names)
+- Values are sensor IDs that provide that reading
+- The readings object is completely dynamic and can contain any field names
+- If no primary sensor is designated for a reading type, that key simply won't exist in the map
 ```
 
 #### **Subcollection: organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors**
@@ -178,7 +204,26 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}
 
 ---
 
-### 7. **sensorLookup** (Top-level Collection)
+### 7. **readings** (Top-level Collection)
+Standardized reading type definitions used across all sensors. Document ID = readingAlias.
+
+```javascript
+readings/{readingAlias}
+{
+  // Reading Identity
+  alias: string,                  // Unique identifier (camelCase) - e.g., "soilTemperature"
+  name: string,                   // Human-readable name - e.g., "Soil Temperature"
+  description: string,            // Detailed description of this reading
+  
+  // Units
+  validUnits: [string],           // Array of acceptable units - e.g., ["°F", "°C"]
+  defaultUnit: string,            // Preferred unit - e.g., "°F"
+}
+```
+
+---
+
+### 9. **sensorLookup** (Top-level Collection)
 Fast lookup table for sensor metadata. Document ID = sensorId.
 
 ```javascript
@@ -217,7 +262,7 @@ sensorLookup/{sensorId}
 
 ---
 
-### 8. **mobileSensors** (Top-level Collection)
+### 10. **mobileSensors** (Top-level Collection)
 Temporary/mobile sensing devices (smartphones, portable sensors).
 
 ```javascript
@@ -260,7 +305,7 @@ mobileSensors/{mobileSensorId}
 
 ---
 
-### 9. **alerts** (Top-level Collection)
+### 11. **alerts** (Top-level Collection)
 Weather alerts and sensor threshold alerts.
 
 ```javascript
@@ -304,7 +349,7 @@ alerts/{alertId}
 
 ---
 
-### 10. **imageAnalysis** (Top-level Collection)
+### 12. **imageAnalysis** (Top-level Collection)
 ML model results for disease detection and vine presence.
 
 ```javascript
@@ -348,7 +393,7 @@ imageAnalysis/{analysisId}
 
 ---
 
-### 11. **notifications** (Top-level Collection)
+### 13. **notifications** (Top-level Collection)
 User-specific notification queue (replaces MongoDB notifications + user tracking).
 
 ```javascript
