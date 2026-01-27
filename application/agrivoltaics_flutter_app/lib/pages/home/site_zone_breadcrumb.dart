@@ -356,7 +356,7 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
                       Navigator.pop(context);
                     },
                   );
-                }).toList(),
+                }),
                 ],
               );
             },

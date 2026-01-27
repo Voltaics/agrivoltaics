@@ -76,8 +76,6 @@ extension TimeIntervalExtension on TimeInterval {
         return Duration(days: this.value * 7);
       case TimeUnit.month:
         return Duration(days: this.value * 30);
-      default:
-        return null;
     }
   }
 }
@@ -97,8 +95,6 @@ extension TimeUnitExtension on TimeUnit {
         return 'w';
       case TimeUnit.month:
         return 'mo';
-      default:
-        return '';
     }
   }
 }
@@ -111,67 +107,6 @@ enum SensorMeasurement {
   frost,
   soil,
   rssi
-}
-
-extension SensorMeasurementExtension on SensorMeasurement {
-  String get fluxQuery {
-    switch (this) {
-      case SensorMeasurement.humidity:
-        return 'humidity';
-      case SensorMeasurement.temperature:
-        return 'temperature';
-      case SensorMeasurement.light:
-        return 'light_intensity';
-      case SensorMeasurement.rain:
-        return 'rain_events';
-      case SensorMeasurement.frost:
-        return 'Radiation Fahrenheit';
-      case SensorMeasurement.soil:
-        return 'soil_moisture';
-      case SensorMeasurement.rssi:
-        return 'rssi';
-      default:
-        return '';
-    }
-  }
-
-  String get displayName {
-    switch (this) {
-      case SensorMeasurement.humidity:
-        return 'Humidity';
-      case SensorMeasurement.temperature:
-        return 'Temp';
-      case SensorMeasurement.light:
-        return 'Light';
-      case SensorMeasurement.rain:
-        return 'Rain';
-      case SensorMeasurement.frost:
-        return 'Frost';
-      case SensorMeasurement.soil:
-        return 'Soil';
-      default:
-        return '';
-    }
-  }
-
-  String get unit {
-    switch (this) {
-      case SensorMeasurement.humidity:
-        return '%';
-      case SensorMeasurement.temperature:
-        return 'F';
-      case SensorMeasurement.light:
-        return 'Lux';
-      case SensorMeasurement.rain:
-        return '%';
-      case SensorMeasurement.frost:
-        return 'Radiation Fahrenheit';
-      case SensorMeasurement.soil:
-        return '%';
-      default:
-        return '';
-    }
-  }
 }
 
 // Where site selection will resolve to

@@ -8,13 +8,13 @@ class CaptureDetailDualEqualView extends StatefulWidget {
   final String heatmapUrl;
 
   const CaptureDetailDualEqualView({
-    Key? key,
+    super.key,
     required this.rawUrl,
     required this.ndviUrl,
     required this.ndreUrl,
     required this.overlayUrl,
     required this.heatmapUrl,
-  }) : super(key: key);
+  });
 
   @override
   _CaptureDetailDualEqualViewState createState() =>
@@ -142,8 +142,8 @@ class _CaptureDetailDualEqualViewState extends State<CaptureDetailDualEqualView>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 60, left: 16),
+        const Padding(
+          padding: EdgeInsets.only(top: 60, left: 16),
           /*child: Text(
             "Overlay Slider",
             style: Theme.of(context).textTheme.headline6,

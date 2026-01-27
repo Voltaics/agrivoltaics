@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'firebase_options.dart';
 import 'app_constants.dart';
+import 'services/readings_service.dart';
 import 'pages/login.dart';
 
 void main() async {
@@ -37,6 +38,10 @@ void main() async {
 
   // Initialize timezone database
   tz.initializeTimeZones();
+
+  // Initialize ReadingsService (load reading definitions from Firestore)
+  final readingsService = ReadingsService();
+  await readingsService.loadReadings();
 
   // Launch application
   runApp(
@@ -72,14 +77,12 @@ class App extends StatelessWidget {
             onPrimary: Colors.white,              // Text on primary
             secondary: Color(0xFF2D53DA),           // Optional
             onSecondary: Colors.white,
-            background: Color(0xFFF2F5FD),        // App background
-            onBackground: Colors.black,
             surface: Colors.white,                // Cards, nav rail
             onSurface: Colors.black,
             error: Colors.red,
             onError: Colors.white,
           ),
-          scaffoldBackgroundColor: Color(0xFFF2F5FD),
+          scaffoldBackgroundColor: const Color(0xFFF2F5FD),
           cardTheme: CardThemeData(
             color: Colors.white,
             surfaceTintColor: Colors.white,
@@ -105,7 +108,7 @@ class App extends StatelessWidget {
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF2D53DA),
+              backgroundColor: const Color(0xFF2D53DA),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

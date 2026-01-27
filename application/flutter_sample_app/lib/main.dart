@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
         ),
-        home: MyHomePage(),
+        home: const MyHomePage(),
       ),
     );
   }
@@ -45,6 +45,8 @@ class MyAppState extends ChangeNotifier {
 }
 
 class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
@@ -57,10 +59,10 @@ class _MyHomePageState extends State<MyHomePage> {
     Widget page;
     switch (selectedIndex) {
       case 0:
-        page = GeneratorPage();
+        page = const GeneratorPage();
         break;
       case 1:
-        page = FavoritesPage();
+        page = const FavoritesPage();
         break;
       default:
         throw UnimplementedError('no widget for $selectedIndex');
@@ -73,7 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
             SafeArea(
               child: NavigationRail(
                 extended: constraints.maxWidth >= 600,
-                destinations: [
+                destinations: const [
                   NavigationRailDestination(
                     icon: Icon(Icons.home),
                     label: Text('Home'),
@@ -105,6 +107,8 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class FavoritesPage extends StatefulWidget {
+  const FavoritesPage({super.key});
+
   @override
   State<FavoritesPage> createState() => _FavoritesPageState();
 }
@@ -119,10 +123,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
         for (var favorite in appState.favorites)
           ListTile(
             leading: IconButton(
-              icon: Icon(Icons.favorite),
+              icon: const Icon(Icons.favorite),
               onPressed: () => {
-                setState(() => {
-                  appState.favorites.remove(favorite)
+                setState(() {
+                  appState.favorites.remove(favorite);
                 })
               },
             ),
@@ -134,6 +138,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
 }
 
 class GeneratorPage extends StatelessWidget {
+  const GeneratorPage({super.key});
+
   // Generator meaning random word generator
   @override
   Widget build(BuildContext context) {
@@ -152,7 +158,7 @@ class GeneratorPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           BigCard(pair: pair),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -161,14 +167,14 @@ class GeneratorPage extends StatelessWidget {
                   appState.toggleFavorite();
                 },
                 icon: Icon(icon),
-                label: Text('Like'),
+                label: const Text('Like'),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () {
                   appState.getNext();
                 },
-                child: Text('Next'),
+                child: const Text('Next'),
               ),
             ],
           ),

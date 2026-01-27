@@ -72,7 +72,7 @@ class _CreateSensorDialogState extends State<CreateSensorDialog> {
 
                 // Model
                 DropdownButtonFormField<String>(
-                  value: _selectedModel,
+                  initialValue: _selectedModel,
                   decoration: const InputDecoration(
                     labelText: 'Sensor Model',
                   ),

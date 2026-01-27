@@ -1,234 +1,305 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <Wire.h>
+#include "Adafruit_SGP30.h"
+#include "Adafruit_VEML7700.h"
+#include "DHT.h"
+#include <ModbusMaster.h>
+#include <time.h>
+#include <sys/time.h>
 
-#if defined(ESP32)
-  #include <WiFiMulti.h>
-  WiFiMulti wifiMulti;
-  #define DEVICE "ESP32"
-  //Change Number in Quotations to adjust Zone area
-  #define Zone "1"
-  /*#elif defined(ESP8266)
-  #include <ESP8266WiFiMulti.h>
-  ESP8266WiFiMulti wifiMulti;
-  #define DEVICE "ESP8266"*/
-  #endif
+// -----------------------------
+// WiFi + Google Script
+// -----------------------------
+const char* ssid = "SpectrumSetup-1840";
+const char* password = "suredrama311";
 
-  #include <InfluxDbClient.h>
-  #include <InfluxDbCloud.h>
-  #include <DHT.h>
+String scriptURL =
+  "https://script.google.com/macros/s/AKfycbz4J7s8mP5pNpOV2S5WLDN7AIYCFtmoZuq9-tSolxDw_2oxGKJuR1vHLDr9ELy08F05/exec";
 
-//Bluetooth Code
-  //#include "BluetoothSerial.h"  
+// Cloud Function Endpoint
+const char* cloudFunctionURL = "https://us-central1-agrivoltaics-flutter-firebase.cloudfunctions.net/ingestSensorData";
 
-  // WiFi AP SSID
-  #define WIFI_SSID  "main" //"1819_Guest" //"1819_Guest" //"Anthony's iPhone" //"UC_Secure" //"iPhone" //"TeneComp"
-  // WiFi password
-  #define WIFI_PASSWORD "5139191357" //"NULL" //"EKkJ-Txsy-3LNB-NqiN" //"Priv0naut~" //"tzrkh9gzw16ku" //"~!IWantOut!~"
-  
-  #define INFLUXDB_URL "https://us-east-1-1.aws.cloud2.influxdata.com"
-  #define INFLUXDB_TOKEN "04Jp10DtN5eThatcNnnUAxdqnEmCRKPjX0t0RudEcw9GnC5CJo-gEaMO4YxJmZYV-dQstd6_BCvA3lBHWoTL3w=="
-  #define INFLUXDB_ORG "11188411442f6b61"
-  #define INFLUXDB_BUCKET "Presentation_Day"
-  
-  // Time zone info
-  #define TZ_INFO "UTC-5"
-  
-#include <DHT.h>;
-#define LIGHTSENSORPIN 32
-#define RAINSENSORPIN 33
-#define FROSTSENSORPIN 34
-#define VIN 4095
-#define SOILPIN 35
-#define DHTPIN 26     // what pin we're connected to
-#define DHTTYPE DHT22   // DHT 22  (AM2302)
-DHT dht(DHTPIN, DHTTYPE); //// Initialize DHT sensor for normal 16mhz Arduino
+// Organization, Site, and Zone IDs
+const char* ORGANIZATION_ID = "GS6e4032WK70vQ42WTYc";
+const char* SITE_ID = "5LvgyAAaFpAmlfcUrpTU";
+const char* ZONE_ID = "7aZzv6juGouqsbicdC8J";
 
-#define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  3        /* Time ESP32 will go to sleep (in seconds) */
+// Sensor IDs
+const char* SENSOR_ID_TEMP_HUMIDITY = "sdkJbkRh6hkK4XJYpPrP";
+const char* SENSOR_ID_LIGHT = "EFR2gToaxfxtPLkQFeYG";
+const char* SENSOR_ID_SOIL = "qx8EIYdyf8VGUxWh38AO";
+const char* SENSOR_ID_CO2_TVOC = "zgDucecynnHWDlGwmfp1";
 
-  Point sensor("Site 1");
-  InfluxDBClient InfluxClient(INFLUXDB_URL, INFLUXDB_ORG, INFLUXDB_BUCKET, INFLUXDB_TOKEN, InfluxDbCloud2CACert);
- 
+// Reading Field Aliases
+const char* READING_TEMPERATURE = "temperature";
+const char* READING_HUMIDITY = "humidity";
+const char* READING_LIGHT = "light";
+const char* READING_SOIL_MOISTURE = "soilMoisture";
+const char* READING_SOIL_TEMPERATURE = "soilTemperature";
+const char* READING_SOIL_EC = "soilEC";
+const char* READING_CO2 = "co2";
+const char* READING_TVOC = "tvoc";
 
+// Unit Constants
+const char* UNIT_FAHRENHEIT = "°F";
+const char* UNIT_CELSIUS = "°C";
+const char* UNIT_PERCENT = "%";
+const char* UNIT_LUX = "lux";
+const char* UNIT_PPM = "ppm";
+const char* UNIT_MOISTURE = "VWC%";
+const char* UNIT_EC = "μS/cm";
 
-//Bluetooth Code
-//BluetoothSerial SerialBT;
+// -----------------------------
+// LED Logic Config
+// -----------------------------
+// ⚠️ Set to true if using COMMON ANODE RGB LED
+#define COMMON_ANODE false
 
+const int redPin = 4;
+const int greenPin = 18;
+const int bluePin = 19;
+
+// -----------------------------
+// Sensors
+// -----------------------------
+Adafruit_SGP30 sgp;
+Adafruit_VEML7700 veml;
+TwoWire I2C_VEML = TwoWire(1);
+
+#define DHTPIN 14
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+ModbusMaster node;
+
+// -----------------------------
+// Sensor Data
+// -----------------------------
+float tempF = 0;
+float humidity = 0;
+uint16_t soilMoisture = 0;
+float soilTempF = 0;
+uint16_t soilEC = 0;
+float luxValue = 0;
+uint16_t co2 = 400;
+uint16_t tvoc = 0;
+
+// -----------------------------
+unsigned long lastSend = 0;
+const unsigned long SEND_INTERVAL = 15000;
+// -----------------------------
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
-    //Bluetooth Code
-    Serial.println("BLE OFF");
-    //btStop(); 
+  // RGB LED Setup
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+  setLEDColor(255, 0, 0); // RED = Starting, no WiFi
 
+  // Connect to WiFi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500); Serial.print(".");
+  }
 
+  Serial.println("\nWiFi connected");
+  setLEDColor(0, 0, 255); // BLUE = WiFi Connected
+
+  // Set system time via NTP (non-blocking, will sync in background)
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+
+  Wire.begin(26, 27);
+  Wire.setClock(100000);
+
+  if (!sgp.begin()) {
+    Serial.println("SGP30 failed");
+    while (1);
+  }
+  sgp.IAQinit();
+
+  I2C_VEML.begin(32, 33);
+  veml.begin(&I2C_VEML);
 
   dht.begin();
-  Serial.println(F("DHTxx test!"));
 
-  // Connect to Wi-Fi network with SSID and password
-
-  // Print local IP address and start web server
-
-    // Setup wifi
-    WiFi.mode(WIFI_STA);
-    wifiMulti.addAP(WIFI_SSID, WIFI_PASSWORD); //WIFI_PASSWORD MUST BE ADDED, DON'T FORGET. IF THERE IS ON WIFI_PASSWORD GET RID OF THE VALUE AND WRITE NULL FOR THE PASSWORD INITIALIZATION
-    Serial.print("Connecting to wifi");
-    while (wifiMulti.run() != WL_CONNECTED) {
-      Serial.print(".");
-      delay(100);
-    }
-
-  // Print local IP address and start web server
-  Serial.println("");
-  Serial.println("WiFi connected.");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-  Serial.println();
-  
-    // Accurate time is necessary for certificate validation and writing in batches
-    // We use the NTP servers in your area as provided by: https://www.pool.ntp.org/zone/
-    // Syncing progress and the time will be printed to Serial.
-    timeSync(TZ_INFO, "pool.ntp.org", "time.nis.gov");
-
-    // Check server connection
-    if (InfluxClient.validateConnection()) {
-      Serial.print("Connected to InfluxDB: ");
-      Serial.println(InfluxClient.getServerUrl());
-    } else {
-      Serial.print("InfluxDB connection failed: ");
-      Serial.println(InfluxClient.getLastErrorMessage());
-    }
-    // ... code in setup() from Initialize Client
-   
-    // Add tags to the data point
-    //sensor.addTag("device", DEVICE);
-    //sensor.addTag("SSID", WiFi.SSID());
-    sensor.addTag("Zone", Zone);
-
-
+  Serial2.begin(9600, SERIAL_8N1, 16, 17);
+  node.begin(1, Serial2);
 }
 
-void loop(){
+void loop() {
+  // If WiFi drops, turn RED
+  if (WiFi.status() != WL_CONNECTED) {
+    setLEDColor(255, 0, 0); // RED = No WiFi
+  }
 
+  // SGP30 should be read every 1 second
+  static unsigned long lastSGP = 0;
+  if (millis() - lastSGP >= 1000) {
+    lastSGP = millis();
+    if (sgp.IAQmeasure()) {
+      co2 = sgp.eCO2;
+      tvoc = sgp.TVOC;
+    }
+  }
 
+  // Send data every SEND_INTERVAL
+  if (millis() - lastSend >= SEND_INTERVAL) {
+    lastSend = millis();
 
-float square_ratio;
+    // Read Soil Sensor
+    if (node.readHoldingRegisters(0x00, 3) == node.ku8MBSuccess) {
+      soilMoisture = node.getResponseBuffer(0);
+      soilTempF = (node.getResponseBuffer(1) / 10.0) * 9.0 / 5.0 + 32.0;
+      soilEC = node.getResponseBuffer(2);
+    }
 
-  float reading = analogRead(LIGHTSENSORPIN);
-  square_ratio = reading / 1023.0; //Get percent of maximum value (1023)
-  square_ratio = pow(square_ratio, 2.0);
-  Serial.print("Lux: ");
-  Serial.print(square_ratio);
-  Serial.print(" ");
+    // Read DHT11
+    float tC = dht.readTemperature();
+    float h = dht.readHumidity();
+    if (!isnan(tC)) tempF = tC * 1.8 + 32;
+    if (!isnan(h)) humidity = h;
 
-  delay(500);
+    // Read Lux
+    luxValue = veml.readLux();
 
+    // Send to Cloud
+    sendDataToCloud();
 
+    // Backup send to Google Sheet
+    sendToGoogleSheet();
+  }
+}
 
-float Precipitation;
-float num;
-  
-  num = analogRead(RAINSENSORPIN);
-  Precipitation = (num/4095)*100;
-  Serial.print("Rain Fall Sensor:");
-  
-  Serial.print(Precipitation);
-  Serial.print(" ");
-  delay(500);
-
-
-  float h = dht.readHumidity();
-  // Read temperature as Celsius (the default)
-  float t = dht.readTemperature();
-  // Read temperature as Fahrenheit (isFahrenheit = true)
-  float f = dht.readTemperature(true);
-
-
-  // Check if any reads failed and exit early (to try again).
- /* if (isnan(h) || isnan(t) || isnan(f)) {
-    Serial.println(F("Failed to read from DHT sensor!"));
+void sendToGoogleSheet() {
+  if (WiFi.status() != WL_CONNECTED) {
+    setLEDColor(255, 0, 0); // RED = No WiFi
     return;
-  }*/
+  }
 
-  // Compute heat index in Fahrenheit (the default)
-  float hif = dht.computeHeatIndex(f, h);
-  // Compute heat index in Celsius (isFahreheit = false)
-  float hic = dht.computeHeatIndex(t, h, false);
+  HTTPClient http;
 
-  Serial.print(F("Humidity: "));
-  Serial.print(h);
-  Serial.print(F("%  Temperature: "));
-  Serial.print(t);
-  Serial.print(F("°C "));
-  Serial.print(f);
-  Serial.print(F("°F  Heat index: "));
-  Serial.print(hic);
-  Serial.print(F("°C "));
-  Serial.print(hif);
-  Serial.println(F("°F"));
+  String url = scriptURL +
+    "?temp=" + String(tempF, 1) +
+    "&hum=" + String(humidity, 1) +
+    "&moist=" + String(soilMoisture) +
+    "&soiltemp=" + String(soilTempF, 1) +
+    "&ec=" + String(soilEC) +
+    "&lux=" + String(luxValue, 1) +
+    "&co2=" + String(co2) +
+    "&tvoc=" + String(tvoc);
 
+  Serial.println(url);
 
+  http.begin(url);
+  int httpCode = http.GET();
+  http.end();
 
-  float frost_reading_fahrenheit;
+  if (httpCode >= 200 && httpCode < 400) {
+    setLEDColor(0, 255, 0); // GREEN = Success
+  } else {
+    setLEDColor(255, 0, 0); // RED = Fail
+  }
 
-  float frost_reading_analog = analogRead(FROSTSENSORPIN);
-  float frost_reading = 24900*((VIN / frost_reading_analog) - 1);
-  float frost_reading_kelvin = 1 / ((1.129241 * pow(10,-3)) + (2.341077* pow(10, -4) * log(frost_reading)) + (8.775468* pow(10, -8) * pow(log(frost_reading), 3)));
-  frost_reading_fahrenheit = (frost_reading_kelvin - 273) * 9/5 + 32;
+  delay(2000); // Briefly show result color
+  setLEDColor(0, 0, 255); // BLUE = idle, WiFi OK
+}
 
-  Serial.print("Frost Reading Analog: ");
-  Serial.println(frost_reading_analog);
-  Serial.print("Frost Reading Temp Kelvin: ");
-  Serial.println(frost_reading_kelvin);
-  Serial.print("Frost Reading Temp Fahrenheit: ");
-  Serial.println(frost_reading_fahrenheit);
-  delay(1000);
+void sendDataToCloud() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi not connected, skipping cloud send");
+    return;
+  }
 
+  HTTPClient http;
+  http.begin(cloudFunctionURL);
+  http.addHeader("Content-Type", "application/json");
 
- float math; 
- float val;
+  // Get current Unix timestamp in seconds
+  time_t now = time(nullptr);
+  unsigned long timestamp = (unsigned long)now;
 
-  	math = analogRead(35);	// Read the analog value form sensor
-    val = 100-((math/4095)*100);
-    Serial.println(math);
+  // Build JSON payload
+  String jsonPayload = "{";
+  jsonPayload += "\"organizationId\":\"" + String(ORGANIZATION_ID) + "\",";
+  jsonPayload += "\"siteId\":\"" + String(SITE_ID) + "\",";
+  jsonPayload += "\"zoneId\":\"" + String(ZONE_ID) + "\",";
+  jsonPayload += "\"sensors\":[";
 
+  // Sensor 1: Temperature and Humidity
+  jsonPayload += "{";
+  jsonPayload += "\"sensorId\":\"" + String(SENSOR_ID_TEMP_HUMIDITY) + "\",";
+  jsonPayload += "\"timestamp\":" + String(timestamp) + ",";
+  jsonPayload += "\"readings\":{";
+  jsonPayload += "\"" + String(READING_TEMPERATURE) + "\":{\"value\":" + String(tempF, 1) + ",\"unit\":\"" + UNIT_FAHRENHEIT + "\"},";
+  jsonPayload += "\"" + String(READING_HUMIDITY) + "\":{\"value\":" + String(humidity, 1) + ",\"unit\":\"" + UNIT_PERCENT + "\"}";
+  jsonPayload += "}";
+  jsonPayload += "},";
 
+  // Sensor 2: Light
+  jsonPayload += "{";
+  jsonPayload += "\"sensorId\":\"" + String(SENSOR_ID_LIGHT) + "\",";
+  jsonPayload += "\"timestamp\":" + String(timestamp) + ",";
+  jsonPayload += "\"readings\":{";
+  jsonPayload += "\"" + String(READING_LIGHT) + "\":{\"value\":" + String(luxValue, 1) + ",\"unit\":\"" + UNIT_LUX + "\"}";
+  jsonPayload += "}";
+  jsonPayload += "},";
 
+  // Sensor 3: Soil Data
+  jsonPayload += "{";
+  jsonPayload += "\"sensorId\":\"" + String(SENSOR_ID_SOIL) + "\",";
+  jsonPayload += "\"timestamp\":" + String(timestamp) + ",";
+  jsonPayload += "\"readings\":{";
+  jsonPayload += "\"" + String(READING_SOIL_MOISTURE) + "\":{\"value\":" + String(soilMoisture) + ",\"unit\":\"" + UNIT_MOISTURE + "\"},";
+  jsonPayload += "\"" + String(READING_SOIL_TEMPERATURE) + "\":{\"value\":" + String(soilTempF, 1) + ",\"unit\":\"" + UNIT_CELSIUS + "\"},";
+  jsonPayload += "\"" + String(READING_SOIL_EC) + "\":{\"value\":" + String(soilEC) + ",\"unit\":\"" + UNIT_EC + "\"}";
+  jsonPayload += "}";
+  jsonPayload += "},";
 
-    sensor.clearFields();
+  // Sensor 4: CO2 and TVOC
+  jsonPayload += "{";
+  jsonPayload += "\"sensorId\":\"" + String(SENSOR_ID_CO2_TVOC) + "\",";
+  jsonPayload += "\"timestamp\":" + String(timestamp) + ",";
+  jsonPayload += "\"readings\":{";
+  jsonPayload += "\"" + String(READING_CO2) + "\":{\"value\":" + String(co2) + ",\"unit\":\"" + UNIT_PPM + "\"},";
+  jsonPayload += "\"" + String(READING_TVOC) + "\":{\"value\":" + String(tvoc) + ",\"unit\":\"" + UNIT_PPM + "\"}";
+  jsonPayload += "}";
+  jsonPayload += "}";
 
-    //sensor.addField("rssi", Wifi.RSSI());
-    sensor.addField("Fahrenheit", t);
-    sensor.addField("Humidity", h);
-    sensor.addField("Lux", square_ratio);
-    sensor.addField("Dryness Intensity", Precipitation);
-    sensor.addField("Radiation Fahrenheit", frost_reading_fahrenheit );
-    sensor.addField("Soil Moisture", val);
+  jsonPayload += "]";
+  jsonPayload += "}";
 
-    // Print what are we exactly writing
-    Serial.print("Writing: ");
-    Serial.println(sensor.toLineProtocol());
+  Serial.println("Sending to cloud:");
+  Serial.println(jsonPayload);
 
-    // Check WiFi connection and reconnect if needed
-    if (wifiMulti.run() != WL_CONNECTED) {
-      Serial.println("Wifi connection lost");
-    }
-   
+  int httpCode = http.POST(jsonPayload);
+  String response = http.getString();
 
-    // Write point
-    if (!InfluxClient.writePoint(sensor)) {
-      Serial.print("InfluxDB write failed: ");
-      Serial.println(InfluxClient.getLastErrorMessage());
-    }
-    
-    InfluxClient.writePoint(sensor);
+  http.end();
 
-  
+  Serial.print("Cloud response code: ");
+  Serial.println(httpCode);
+  Serial.print("Cloud response: ");
+  Serial.println(response);
+}
 
-    Serial.println("Waiting 1 second");
-    delay(1000);
+// -----------------------------
+// RGB LED Helper
+// -----------------------------
+void setLEDColor(int r, int g, int b) {
+  if (COMMON_ANODE) {
+    r = 255 - r;
+    g = 255 - g;
+    b = 255 - b;
+  }
 
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-  esp_deep_sleep_start();
+  analogWrite(redPin,   r);
+  analogWrite(greenPin, g);
+  analogWrite(bluePin,  b);
 
+  Serial.print("LED set to R:"); Serial.print(r);
+  Serial.print(" G:"); Serial.print(g);
+  Serial.print(" B:"); Serial.println(b);
 }

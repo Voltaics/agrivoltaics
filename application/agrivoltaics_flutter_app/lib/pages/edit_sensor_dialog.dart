@@ -108,7 +108,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
 
                 // Model (disabled, can't change model)
                 DropdownButtonFormField<String>(
-                  value: _selectedModel,
+                  initialValue: _selectedModel,
                   decoration: const InputDecoration(
                     labelText: 'Sensor Model',
                     helperText: 'Model cannot be changed',
@@ -164,7 +164,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
 
                 // Status
                 DropdownButtonFormField<String>(
-                  value: _status,
+                  initialValue: _status,
                   decoration: const InputDecoration(
                     labelText: 'Status',
                   ),
@@ -218,7 +218,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                       ],
                     ),
                   );
-                }).toList(),
+                }),
               ],
             ),
           ),

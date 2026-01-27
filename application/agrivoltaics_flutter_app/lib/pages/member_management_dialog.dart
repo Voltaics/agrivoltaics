@@ -107,9 +107,9 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
             // Header
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D53DA),
-                borderRadius: const BorderRadius.vertical(
+              decoration: const BoxDecoration(
+                color: Color(0xFF2D53DA),
+                borderRadius: BorderRadius.vertical(
                   top: Radius.circular(4),
                 ),
               ),
@@ -236,7 +236,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _selectedRole,
+                          initialValue: _selectedRole,
                           decoration: const InputDecoration(
                             labelText: 'Role',
                             border: OutlineInputBorder(),

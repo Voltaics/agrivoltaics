@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/sensor.dart';
 import '../../services/sensor_service.dart';
+import '../../services/readings_service.dart';
 
 class SensorDataSection extends StatelessWidget {
   final String orgId;
@@ -294,13 +295,8 @@ class _SensorDataCard extends StatelessWidget {
     );
   }
 
-  String _formatFieldName(String fieldName) {
-    // Convert camelCase to Title Case
-    final result = fieldName.replaceAllMapped(
-      RegExp(r'([A-Z])'),
-      (match) => ' ${match.group(0)}',
-    );
-    return result[0].toUpperCase() + result.substring(1);
+  String _formatFieldName(String alias) {
+    return ReadingsService().formatFieldName(alias);
   }
 
   String _formatLastReading(DateTime dateTime) {

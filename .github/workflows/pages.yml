@@ -1,0 +1,58 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - huy
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Enable web and get deps
+        working-directory: application/agrivoltaics_flutter_app
+        run: |
+          flutter config --enable-web
+          flutter pub get
+
+      - name: Build web with base href
+        working-directory: application/agrivoltaics_flutter_app
+        run: |
+          flutter build web --release --base-href "/agrivoltaics/"
+          cp build/web/index.html build/web/404.html
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: application/agrivoltaics_flutter_app/build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
