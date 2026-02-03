@@ -209,6 +209,11 @@ exports.ingestSensorData = functions.https.onRequest(async (req, res) => {
 
         const sensorData = sensorDoc.data();
 
+        // Check if this sensor is a primary sensor for the zone
+        const zoneDocPath = `organizations/${organizationId}/sites/${siteId}/zones/${zoneId}`;
+        const zoneDoc = await db.doc(zoneDocPath).get();
+        const zoneData = zoneDoc.exists ? zoneDoc.data() : {};
+
         // Check if sensor is active
         if (sensorData.status !== 'active') {
           errors.push({
@@ -237,18 +242,24 @@ exports.ingestSensorData = functions.https.onRequest(async (req, res) => {
         const date = new Date(timestamp * 1000);
         const isoTimestamp = date.toISOString();
 
-        const sensorBqRows = Object.entries(readings).map(([field, reading]) => ({
-          timestamp: isoTimestamp,
-          organizationId: organizationId,
-          siteId: siteId,
-          zoneId: zoneId,
-          sensorId: sensorId,
-          sensorModel: sensorData.model || 'Unknown',
-          sensorName: sensorData.name || 'Unnamed',
-          field: field,
-          value: reading.value,
-          unit: reading.unit,
-        }));
+        const sensorBqRows = Object.entries(readings).map(([field, reading]) => {
+          // Check if this sensor is the primary for this specific field
+          const zoneReadings = zoneData.readings || {};
+          const isPrimaryForField = zoneReadings[field] === sensorId;
+          return {
+            timestamp: isoTimestamp,
+            organizationId: organizationId,
+            siteId: siteId,
+            zoneId: zoneId,
+            sensorId: sensorId,
+            sensorModel: sensorData.model || 'Unknown',
+            sensorName: sensorData.name || 'Unnamed',
+            field: field,
+            value: reading.value,
+            unit: reading.unit,
+            primarySensor: isPrimaryForField,
+          };
+        });
 
         allBqRows.push(...sensorBqRows);
         processedSensors.push({
@@ -314,74 +325,6 @@ exports.ingestSensorData = functions.https.onRequest(async (req, res) => {
 });
 
 /**
- * Firestore Trigger: Sync Sensor Lookup
- *
- * Automatically maintains the sensorLookup collection when sensors are created,
- * updated, or deleted. This lookup table enables fast O(1) lookups by Arduino
- * device ID without traversing the nested organization/site/zone hierarchy.
- *
- * Trigger Path: organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}
- * Trigger Event: onCreate, onUpdate, onDelete
- *
- * @param {Object} change - Firestore change object containing before/after snapshots
- * @param {Object} context - Function context with path parameters
- * @returns {Promise<void>}
- */
-exports.syncSensorLookup = functions.firestore
-    .document('organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}')
-    .onWrite(async (change, context) => {
-      const {orgId, siteId, zoneId, sensorId} = context.params;
-
-      try {
-        // Sensor deleted
-        if (!change.after.exists) {
-          const sensorData = change.before.data();
-
-          if (sensorData && sensorData.arduinoDeviceId) {
-            await db.doc(`sensorLookup/${sensorData.arduinoDeviceId}`).delete();
-            console.log(`Deleted lookup for Arduino device: ${sensorData.arduinoDeviceId}`);
-          }
-          return;
-        }
-
-        const sensorData = change.after.data();
-        const {arduinoDeviceId, model, name, fields, status} = sensorData;
-
-        // Skip if no Arduino device assigned yet
-        if (!arduinoDeviceId) {
-          console.log(`Sensor ${sensorId} has no arduinoDeviceId assigned yet`);
-          return;
-        }
-
-        // Extract field names from sensor's fields object
-        const fieldNames = fields ? Object.keys(fields) : [];
-
-        // Update or create lookup entry
-        await db.doc(`sensorLookup/${arduinoDeviceId}`).set({
-          arduinoDeviceId: arduinoDeviceId,
-          sensorDocPath: change.after.ref.path,
-          organizationId: orgId,
-          siteId: siteId,
-          zoneId: zoneId,
-          sensorId: sensorId,
-          sensorModel: model || 'Unknown',
-          sensorName: name || 'Unnamed Sensor',
-          fields: fieldNames,
-          isActive: status === 'active',
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          registeredAt: change.before.exists ?
-          (change.before.data().registeredAt || admin.firestore.FieldValue.serverTimestamp()) :
-          admin.firestore.FieldValue.serverTimestamp(),
-        }, {merge: true});
-
-        console.log(`Updated lookup for Arduino device: ${arduinoDeviceId}`);
-      } catch (error) {
-        console.error('Error syncing sensor lookup:', error);
-        // Don't throw - we don't want to fail the sensor write operation
-      }
-    });
-
-/**
  * HTTPS Cloud Function: Setup BigQuery
  *
  * One-time setup function to create BigQuery dataset and table with optimized
@@ -411,26 +354,28 @@ exports.setupBigQuery = functions.https.onRequest(async (req, res) => {
       console.log(`Dataset ${DATASET_ID} already exists`);
     }
 
+    // Define expected schema
+    const expectedSchema = [
+      {name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED'},
+      {name: 'organizationId', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'siteId', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'zoneId', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'sensorId', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'sensorModel', type: 'STRING', mode: 'NULLABLE'},
+      {name: 'sensorName', type: 'STRING', mode: 'NULLABLE'},
+      {name: 'field', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'value', type: 'FLOAT', mode: 'REQUIRED'},
+      {name: 'unit', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'primarySensor', type: 'BOOLEAN', mode: 'NULLABLE'},
+    ];
+
     // Create table with schema, partitioning, and clustering
     const table = dataset.table(TABLE_ID);
     const [tableExists] = await table.exists();
 
     if (!tableExists) {
-      const schema = [
-        {name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED'},
-        {name: 'organizationId', type: 'STRING', mode: 'REQUIRED'},
-        {name: 'siteId', type: 'STRING', mode: 'REQUIRED'},
-        {name: 'zoneId', type: 'STRING', mode: 'REQUIRED'},
-        {name: 'sensorId', type: 'STRING', mode: 'REQUIRED'},
-        {name: 'sensorModel', type: 'STRING', mode: 'NULLABLE'},
-        {name: 'sensorName', type: 'STRING', mode: 'NULLABLE'},
-        {name: 'field', type: 'STRING', mode: 'REQUIRED'},
-        {name: 'value', type: 'FLOAT', mode: 'REQUIRED'},
-        {name: 'unit', type: 'STRING', mode: 'REQUIRED'},
-      ];
-
       const options = {
-        schema: schema,
+        schema: expectedSchema,
         timePartitioning: {
           type: 'DAY',
           field: 'timestamp',
@@ -454,12 +399,49 @@ exports.setupBigQuery = functions.https.onRequest(async (req, res) => {
         clustering: 'sensorId, field',
       });
     } else {
-      return res.status(200).json({
-        success: true,
-        message: 'BigQuery table already exists',
-        dataset: DATASET_ID,
-        table: TABLE_ID,
-      });
+      // Table exists - verify schema matches
+      const [metadata] = await table.getMetadata();
+      const currentSchema = metadata.schema.fields;
+
+      // Compare schemas
+      const schemaMatches = expectedSchema.every((expectedField) => {
+        const currentField = currentSchema.find((f) => f.name === expectedField.name);
+        if (!currentField) {
+          console.log(`Missing field: ${expectedField.name}`);
+          return false;
+        }
+        if (currentField.type !== expectedField.type) {
+          console.log(
+              `Type mismatch for ${expectedField.name}: expected ${expectedField.type}, got ${currentField.type}`);
+          return false;
+        }
+        const currentMode = currentField.mode || 'NULLABLE';
+        if (currentMode !== expectedField.mode) {
+          console.log(`Mode mismatch for ${expectedField.name}: expected ${expectedField.mode}, got ${currentMode}`);
+          return false;
+        }
+        return true;
+      }) && currentSchema.length === expectedSchema.length;
+
+      if (schemaMatches) {
+        return res.status(200).json({
+          success: true,
+          message: 'BigQuery table already exists with correct schema',
+          dataset: DATASET_ID,
+          table: TABLE_ID,
+          schemaValid: true,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'BigQuery table exists but schema does not match',
+          dataset: DATASET_ID,
+          table: TABLE_ID,
+          schemaValid: false,
+          expectedSchema: expectedSchema,
+          currentSchema: currentSchema,
+        });
+      }
     }
   } catch (error) {
     console.error('BigQuery setup error:', error);
@@ -476,14 +458,14 @@ exports.setupBigQuery = functions.https.onRequest(async (req, res) => {
  * Periodically monitors sensor health by checking for stale data.
  * Marks sensors as offline if they haven't sent data in 30 minutes.
  *
- * Schedule: Every 15 minutes
+ * Schedule: Once daily
  * Timeout Threshold: 30 minutes of inactivity
  *
  * @param {Object} context - Function context
  * @returns {Promise<void>}
  */
 exports.checkSensorStatus = functions.pubsub
-    .schedule('every 15 minutes')
+    .schedule('every 24 hours')
     .onRun(async (context) => {
       const thirtyMinutesAgo = Timestamp.fromMillis(Date.now() - 30 * 60 * 1000);
 
