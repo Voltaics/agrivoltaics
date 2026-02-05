@@ -6,6 +6,7 @@ import 'sites_panel.dart';
 import 'zones_panel.dart';
 import '../stationary_dashboard/stationary_dashboard.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
+import '../historical_dashboard/historical_dashboard.dart';
 import 'widgets/organization_menu_sheet.dart';
 import 'widgets/organization_selector.dart';
 import 'widgets/sign_out_dialog.dart';
@@ -30,9 +31,10 @@ class HomePage extends State<HomeState> {
 
   int _selectedIndex = 0;
 
-  static final List<Widget> _pages = [
-    const StationaryDashboardPage(),  // Stationary Sensors
-    const MobileDashboardPage(),            // Mobile Sensors
+  final List<Widget> _pages = const [
+    StationaryDashboardPage(),  // Stationary Sensors
+    HistoricalDashboardPage(),        // Historical Trends
+    MobileDashboardPage(),            // Mobile Sensors
   ];
 
   void _selectPage(int index) {
@@ -137,6 +139,11 @@ class HomePage extends State<HomeState> {
                         NavigationRailDestination(
                           icon: Icon(MdiIcons.radioTower),
                           label: const Text('Stationary Sensors', style: TextStyle(fontSize: 14),),
+                          padding: const EdgeInsets.only(bottom: 16),
+                        ),
+                        NavigationRailDestination(
+                          icon: Icon(MdiIcons.chartLine),
+                          label: const Text('Historical Trends', style: TextStyle(fontSize: 14),),
                           padding: const EdgeInsets.only(bottom: 16),
                         ),
                         NavigationRailDestination(
@@ -279,6 +286,10 @@ class HomePage extends State<HomeState> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.radar),
                   label: 'Stationary',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.show_chart),
+                  label: 'History',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.camera_alt),

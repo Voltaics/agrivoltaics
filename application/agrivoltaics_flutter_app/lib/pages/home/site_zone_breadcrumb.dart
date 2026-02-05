@@ -11,14 +11,27 @@ import '../create_zone_dialog.dart';
 import '../edit_zone_dialog.dart';
 
 class SiteZoneBreadcrumb extends StatelessWidget {
-  const SiteZoneBreadcrumb({super.key});
+  final bool showZoneSelector;
+  final models.Site? selectedSite;
+  final models.Zone? selectedZone;
+  final ValueChanged<models.Site>? onSiteSelected;
+  final ValueChanged<models.Zone?>? onZoneSelected;
+
+  const SiteZoneBreadcrumb({
+    super.key,
+    this.showZoneSelector = true,
+    this.selectedSite,
+    this.selectedZone,
+    this.onSiteSelected,
+    this.onZoneSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final currentOrg = appState.selectedOrganization;
-    final currentSite = appState.selectedSite;
-    final currentZone = appState.selectedZone;
+    final currentSite = selectedSite ?? appState.selectedSite;
+    final currentZone = selectedZone ?? appState.selectedZone;
 
     return InkWell(
       onTap: currentOrg != null ? () => _showSiteZoneSelector(context) : null,
@@ -66,8 +79,10 @@ class SiteZoneBreadcrumb extends StatelessWidget {
   }
 
   String _getBreadcrumbText(models.Site? site, models.Zone? zone) {
-    if (site == null) return 'Select Site & Zone';
-    if (zone == null) return site.name;
+    if (site == null) {
+      return showZoneSelector ? 'Select Site & Zone' : 'Select Site';
+    }
+    if (!showZoneSelector || zone == null) return site.name;
     return '${site.name} › ${zone.name}';
   }
 
@@ -79,13 +94,32 @@ class SiteZoneBreadcrumb extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => const SiteZoneSelectorSheet(),
+      builder: (context) => SiteZoneSelectorSheet(
+        showZoneSelector: showZoneSelector,
+        selectedSite: selectedSite,
+        selectedZone: selectedZone,
+        onSiteSelected: onSiteSelected,
+        onZoneSelected: onZoneSelected,
+      ),
     );
   }
 }
 
 class SiteZoneSelectorSheet extends StatelessWidget {
-  const SiteZoneSelectorSheet({super.key});
+  final bool showZoneSelector;
+  final models.Site? selectedSite;
+  final models.Zone? selectedZone;
+  final ValueChanged<models.Site>? onSiteSelected;
+  final ValueChanged<models.Zone?>? onZoneSelected;
+
+  const SiteZoneSelectorSheet({
+    super.key,
+    this.showZoneSelector = true,
+    this.selectedSite,
+    this.selectedZone,
+    this.onSiteSelected,
+    this.onZoneSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -170,6 +204,11 @@ class SiteZoneSelectorSheet extends StatelessWidget {
                       return SiteExpansionTile(
                         site: site,
                         orgId: currentOrg.id,
+                        showZoneSelector: showZoneSelector,
+                        selectedSite: selectedSite,
+                        selectedZone: selectedZone,
+                        onSiteSelected: onSiteSelected,
+                        onZoneSelected: onZoneSelected,
                       );
                     },
                   );
@@ -186,11 +225,21 @@ class SiteZoneSelectorSheet extends StatelessWidget {
 class SiteExpansionTile extends StatefulWidget {
   final models.Site site;
   final String orgId;
+  final bool showZoneSelector;
+  final models.Site? selectedSite;
+  final models.Zone? selectedZone;
+  final ValueChanged<models.Site>? onSiteSelected;
+  final ValueChanged<models.Zone?>? onZoneSelected;
 
   const SiteExpansionTile({
     super.key,
     required this.site,
     required this.orgId,
+    this.showZoneSelector = true,
+    this.selectedSite,
+    this.selectedZone,
+    this.onSiteSelected,
+    this.onZoneSelected,
   });
 
   @override
@@ -203,7 +252,9 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
-    final isSelected = appState.selectedSite?.id == widget.site.id;
+    final currentSite = widget.selectedSite ?? appState.selectedSite;
+    final currentZone = widget.selectedZone ?? appState.selectedZone;
+    final isSelected = currentSite?.id == widget.site.id;
 
     return Column(
       children: [
@@ -243,24 +294,41 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
                 },
                 tooltip: 'Edit',
               ),
-              // Expand/collapse button
-              IconButton(
-                icon: Icon(
-                  _isExpanded ? Icons.expand_less : Icons.expand_more,
-                  color: Colors.grey,
+              // Expand/collapse button - only show if zones are selectable
+              if (widget.showZoneSelector)
+                IconButton(
+                  icon: Icon(
+                    _isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: Colors.grey,
+                  ),
+                  onPressed: () {
+                    setState(() => _isExpanded = !_isExpanded);
+                  },
                 ),
-                onPressed: () {
-                  setState(() => _isExpanded = !_isExpanded);
-                },
-              ),
             ],
           ),
           onTap: () {
-            appState.setSelectedSite(widget.site);
-            Navigator.pop(context);
+            if (widget.showZoneSelector) {
+              if (widget.onSiteSelected != null) {
+                widget.onSiteSelected!(widget.site);
+                widget.onZoneSelected?.call(null);
+              } else {
+                appState.setSelectedSite(widget.site);
+                appState.clearSelectedZone();
+              }
+              Navigator.pop(context);
+            } else {
+              if (widget.onSiteSelected != null) {
+                widget.onSiteSelected!(widget.site);
+                widget.onZoneSelected?.call(null);
+              } else {
+                appState.setSelectedSite(widget.site);
+              }
+              Navigator.pop(context);
+            }
           },
         ),
-        if (_isExpanded)
+        if (_isExpanded && widget.showZoneSelector)
           StreamBuilder<List<models.Zone>>(
             stream: ZoneService().getZones(widget.orgId, widget.site.id),
             builder: (context, zoneSnapshot) {
@@ -315,7 +383,7 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
                   ),
                   // Zone list
                   ...zones.map((zone) {
-                  final isZoneSelected = appState.selectedZone?.id == zone.id;
+                  final isZoneSelected = currentZone?.id == zone.id;
                   return ListTile(
                     contentPadding: const EdgeInsets.only(left: 72, right: 16),
                     leading: Icon(
@@ -351,8 +419,25 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
                       tooltip: 'Edit',
                     ),
                     onTap: () {
-                      appState.setSelectedSite(widget.site);
-                      appState.setSelectedZone(zone);
+                      if (widget.onSiteSelected != null) {
+                        widget.onSiteSelected!(widget.site);
+                      } else {
+                        appState.setSelectedSite(widget.site);
+                      }
+
+                      if (isZoneSelected) {
+                        if (widget.onZoneSelected != null) {
+                          widget.onZoneSelected!(null);
+                        } else {
+                          appState.clearSelectedZone();
+                        }
+                      } else {
+                        if (widget.onZoneSelected != null) {
+                          widget.onZoneSelected!(zone);
+                        } else {
+                          appState.setSelectedZone(zone);
+                        }
+                      }
                       Navigator.pop(context);
                     },
                   );

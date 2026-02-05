@@ -33,6 +33,12 @@ abstract class AppConstants {
     'TIMEZONE',
     defaultValue: 'America/New_York'
   );
+
+  static const String historicalSeriesEndpoint = String.fromEnvironment(
+    'HISTORICAL_SERIES_ENDPOINT',
+    defaultValue:
+        'https://us-central1-agrivoltaics-flutter-firebase.cloudfunctions.net/getHistoricalSeries'
+  );
   
   static const int numSites = 1;
   static const int numZones = 4;
