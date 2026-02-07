@@ -79,7 +79,7 @@ The Agrivoltaics System is a Progressive Web App (PWA) that works like a native 
 5. The app icon will appear on your home screen and app drawer
 6. Tap the icon to launch the app
 
-![Android_AddToHomeScreen](./.assets/Android_AddToHomeScreen.png)
+![Android_AddToHomeScreen](./.assets/Android_AddToHomeScreen.webp)
 
 #### Accessing Without Installation
 
@@ -88,7 +88,6 @@ You can always use the web app directly in any browser:
 2. Bookmark for easy access
 3. Works on both desktop and mobile browsers
 
-![Web application login screen](./.assets/web_application_login.png)
 ### Setting Up Hardware (For System Administrators)
 
 **Note:** Hardware setup is typically performed by OMID technicians or trained personnel. If you need to install sensors yourself, please refer to the [Hardware Installation Guide](./Hardware-Installation.md) or contact support.
@@ -193,7 +192,7 @@ A **site** represents a physical farm location.
    - Crop type
 4. Tap **Save**
 
-![Add site form](./.assets/AddSite.png)
+![Add site form](./.assets/AddSite.webp)
 
 #### Editing a Site
 
@@ -233,7 +232,7 @@ Zones allow you to:
    - Area coverage
 5. Tap **Save**
 
-![Zone creation screen](./.assets/ZoneCreation.png)
+![Zone creation screen](./.assets/ZoneCreation.webp)
 
 **Note:** Every site must have at least one zone before you can add sensors.
 
@@ -275,7 +274,7 @@ Zones allow you to:
 4. Tap **Register Sensor**
 5. The system will verify the sensor connection
 
-![Add sensor form](./.assets/AddNewSensor.png)
+![Add sensor form](./.assets/AddNewSensor.webp)
 
 #### Editing Sensor Information
 
