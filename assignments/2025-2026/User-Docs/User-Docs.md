@@ -72,7 +72,7 @@ The Agrivoltaics System is a Progressive Web App (PWA) that works like a native 
 #### Android
 
 1. Open **Chrome** (or your preferred browser) on your device
-2. Navigate to: **[Agrivoltaics Web App][agrivoltaics-web-app]** *(URL placeholder)*
+2. Navigate to: **[Agrivoltaics Web App][agrivoltaics-web-app]**
 3. You'll see a prompt at the bottom: **"Add Agrivoltaics to Home screen"**
    - If you don't see the prompt, tap the **menu icon** (⋮) → **Install app** or **Add to Home screen**
 4. Tap **Install** or **Add**
@@ -84,7 +84,7 @@ The Agrivoltaics System is a Progressive Web App (PWA) that works like a native 
 #### Accessing Without Installation
 
 You can always use the web app directly in any browser:
-1. Navigate to: **[Agrivoltaics Web App][agrivoltaics-web-app]** *(URL placeholder)*
+1. Navigate to: **[Agrivoltaics Web App][agrivoltaics-web-app]**
 2. Bookmark for easy access
 3. Works on both desktop and mobile browsers
 
