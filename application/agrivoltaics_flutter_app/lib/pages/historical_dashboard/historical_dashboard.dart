@@ -31,10 +31,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
   models.Site? _selectedSite;
   String? _lastSyncedSiteId;
 
-  PickerDateRange _dateRange = PickerDateRange(
-    DateTime.now().subtract(const Duration(days: 7)),
-    DateTime.now(),
-  );
+  late PickerDateRange _dateRange;
 
   final Set<String> _selectedZoneIds = <String>{};
   final Set<String> _selectedReadings = <String>{};
@@ -58,6 +55,11 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
     _seriesService = HistoricalSeriesService(
       endpointUrl: AppConstants.historicalSeriesEndpoint,
     );
+    
+    // Initialize date range: exactly 7 days (168 hours) ago to now
+    final now = DateTime.now();
+    final sevenDaysAgo = now.subtract(const Duration(days: 7));
+    _dateRange = PickerDateRange(sevenDaysAgo, now);
   }
 
   @override
@@ -367,8 +369,20 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       return;
     }
 
-    final start = _dateRange.startDate ?? DateTime.now().subtract(const Duration(days: 7));
-    final end = _dateRange.endDate ?? DateTime.now();
+    // Use date range or fallback to 7 days ago (normalized)
+    final DateTime start;
+    final DateTime end;
+    
+    if (_dateRange.startDate != null && _dateRange.endDate != null) {
+      start = _dateRange.startDate!;
+      end = _dateRange.endDate!;
+    } else {
+      // Fallback: 7 days ago at 00:00:00 to now
+      final now = DateTime.now();
+      final sevenDaysAgo = now.subtract(const Duration(days: 7));
+      start = DateTime(sevenDaysAgo.year, sevenDaysAgo.month, sevenDaysAgo.day);
+      end = now;
+    }
 
     setState(() {
       _errorMessage = null;
@@ -379,6 +393,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
         readings: _selectedReadings.toList(),
         start: start,
         end: end,
+        timezone: selectedSite.timezone,
       );
     });
   }
@@ -390,6 +405,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
     required List<String> readings,
     required DateTime start,
     required DateTime end,
+    required String timezone,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     final idToken = user != null ? await user.getIdToken() : null;
@@ -401,6 +417,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       readings: readings,
       start: start,
       end: end,
+      timezone: timezone,
       idToken: idToken,
     );
   }

@@ -54,7 +54,35 @@ void showDateRangePickerDialog(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  onApplied(tempRange);
+                  // Normalize the date range based on business rules
+                  final start = tempRange.startDate;
+                  final end = tempRange.endDate;
+                  
+                  if (start != null && end != null) {
+                    final now = DateTime.now();
+                    final today = DateTime(now.year, now.month, now.day);
+                    
+                    // Normalize start to beginning of day (00:00:00)
+                    final normalizedStart = DateTime(start.year, start.month, start.day);
+                    
+                    // Normalize end based on whether it's today or not
+                    final endDate = DateTime(end.year, end.month, end.day);
+                    final DateTime normalizedEnd;
+                    
+                    if (endDate.isAtSameMomentAs(today)) {
+                      // End date is today - use current time
+                      normalizedEnd = now;
+                    } else {
+                      // End date is not today - use end of day (23:59:59)
+                      normalizedEnd = DateTime(end.year, end.month, end.day, 23, 59, 59);
+                    }
+                    
+                    final normalizedRange = PickerDateRange(normalizedStart, normalizedEnd);
+                    onApplied(normalizedRange);
+                  } else {
+                    onApplied(tempRange);
+                  }
+                  
                   Navigator.pop(context);
                 },
                 child: const Text('Apply range'),

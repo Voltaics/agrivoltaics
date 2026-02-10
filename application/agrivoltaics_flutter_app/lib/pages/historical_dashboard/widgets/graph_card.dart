@@ -59,6 +59,8 @@ class GraphCardWidget extends StatelessWidget {
                     overflowMode: LegendItemOverflowMode.wrap,
                   ),
                   primaryXAxis: DateTimeAxis(
+                    minimum: dateRange.startDate,
+                    maximum: dateRange.endDate,
                     edgeLabelPlacement: EdgeLabelPlacement.shift,
                     dateFormat: dateFormat,
                   ),
