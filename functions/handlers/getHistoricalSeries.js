@@ -6,10 +6,9 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const pickInterval = (startMillis, endMillis) => {
   const range = Math.max(0, endMillis - startMillis);
 
-  if (range <= 2 * MS_PER_DAY) return 'HOUR';
-  if (range <= 14 * MS_PER_DAY) return 'HOUR';
-  if (range <= 60 * MS_PER_DAY) return 'DAY';
-  if (range <= 365 * MS_PER_DAY) return 'WEEK';
+  if (range <= 7 * MS_PER_DAY) return 'HOUR';
+  if (range <= 14 * MS_PER_DAY) return 'DAY';
+  if (range <= 90 * MS_PER_DAY) return 'WEEK';
   return 'MONTH';
 };
 
@@ -54,7 +53,11 @@ const getHistoricalSeries = functions.https.onRequest(async (req, res) => {
       end,
       interval,
       sensorId,
+      timezone,
     } = req.body || {};
+
+    // Default to America/New_York if timezone not provided
+    const resolvedTimezone = timezone || 'America/New_York';
 
     if (!organizationId || !siteId) {
       return res.status(400).json({
@@ -106,7 +109,7 @@ const getHistoricalSeries = functions.https.onRequest(async (req, res) => {
       SELECT
         field,
         zoneId,
-        TIMESTAMP_TRUNC(timestamp, ${intervalSql}) AS bucket,
+        TIMESTAMP_TRUNC(timestamp, ${intervalSql}, @timezone) AS bucket,
         AVG(value) AS avg_value,
         ANY_VALUE(unit) AS unit
       FROM \`${bigquery.projectId}.${DATASET_ID}.${TABLE_ID}\`
@@ -127,6 +130,7 @@ const getHistoricalSeries = functions.https.onRequest(async (req, res) => {
       fields: readings,
       start: startDate.toISOString(),
       end: endDate.toISOString(),
+      timezone: resolvedTimezone,
     };
 
     if (sensorId) {
