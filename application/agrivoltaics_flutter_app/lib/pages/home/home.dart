@@ -1,16 +1,3 @@
-import 'dart:convert';
-
-import 'package:agrivoltaics_flutter_app/app_state.dart';
-import 'package:agrivoltaics_flutter_app/auth.dart';
-import 'package:agrivoltaics_flutter_app/models/organization.dart';
-import 'package:agrivoltaics_flutter_app/services/organization_service.dart';
-import 'package:agrivoltaics_flutter_app/pages/login.dart';
-import 'package:agrivoltaics_flutter_app/pages/home/notifications.dart';
-import 'package:agrivoltaics_flutter_app/pages/create_organization_dialog.dart';
-import 'package:agrivoltaics_flutter_app/pages/edit_organization_dialog.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
-import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -19,6 +6,11 @@ import 'sites_panel.dart';
 import 'zones_panel.dart';
 import '../stationary_dashboard/stationary_dashboard.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
+import '../historical_dashboard/historical_dashboard.dart';
+import 'widgets/organization_menu_sheet.dart';
+import 'widgets/organization_selector.dart';
+import 'widgets/sign_out_dialog.dart';
+import '../../app_state.dart';
 
 class HomeState extends StatefulWidget {
   const HomeState({
@@ -39,9 +31,10 @@ class HomePage extends State<HomeState> {
 
   int _selectedIndex = 0;
 
-  static final List<Widget> _pages = [
-    const StationaryDashboardPage(),  // Stationary Sensors
-    const MobileDashboardPage(),            // Mobile Sensors
+  final List<Widget> _pages = const [
+    StationaryDashboardPage(),  // Stationary Sensors
+    HistoricalDashboardPage(),        // Historical Trends
+    MobileDashboardPage(),            // Mobile Sensors
   ];
 
   void _selectPage(int index) {
@@ -146,6 +139,11 @@ class HomePage extends State<HomeState> {
                         NavigationRailDestination(
                           icon: Icon(MdiIcons.radioTower),
                           label: const Text('Stationary Sensors', style: TextStyle(fontSize: 14),),
+                          padding: const EdgeInsets.only(bottom: 16),
+                        ),
+                        NavigationRailDestination(
+                          icon: Icon(MdiIcons.chartLine),
+                          label: const Text('Historical Trends', style: TextStyle(fontSize: 14),),
                           padding: const EdgeInsets.only(bottom: 16),
                         ),
                         NavigationRailDestination(
@@ -290,6 +288,10 @@ class HomePage extends State<HomeState> {
                   label: 'Stationary',
                 ),
                 BottomNavigationBarItem(
+                  icon: Icon(Icons.show_chart),
+                  label: 'History',
+                ),
+                BottomNavigationBarItem(
                   icon: Icon(Icons.camera_alt),
                   label: 'Mobile',
                 ),
@@ -379,389 +381,10 @@ class HomePage extends State<HomeState> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       AppState appState = context.read<AppState>();
-      await getSettings(FirebaseAuth.instance.currentUser?.email, appState);
+      // Note: getSettings has been moved to home_utils.dart
+      // await getSettings(FirebaseAuth.instance.currentUser?.email, appState);
       // appState.addSite();
       appState.finalizeState();
     });
-  }
-}
-
-/*
-
-Sign Out button
-- Signs out user from Firebase and rest of application
-
-*/
-class SignOutButton extends StatelessWidget {
-  const SignOutButton({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-
-    return Builder(
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: IconButton(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) => const SignOutDialog()
-              );
-            },
-            icon: Icon(MdiIcons.logout)
-          ),
-        );
-      }
-    );
-  }
-}
-
-/*
-
-Sign Out Dialog
-- Dialog which prompts whether user would like to sign out
-
-*/
-class SignOutDialog extends StatelessWidget {
-  const SignOutDialog({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Sign out?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'Cancel'),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () async {
-            // Clear user state
-            final appState = Provider.of<AppState>(context, listen: false);
-            appState.clearCurrentUser();
-            
-            // Sign out from Firebase
-            await signOut();
-            
-            if (!context.mounted) return;
-            
-            // Navigate to login
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LoginPage()
-              )
-            );
-          },
-          child: const Text('Sign out')
-        )
-      ]
-    );
-  }
-}
-
-class AppSettings {
-  AppSettings(this.body, this.siteChecked);
-  AppNotificationBody body;
-  String siteChecked;
-
-  factory AppSettings.fromJson(Map<String, dynamic> json) {
-    return AppSettings(
-      AppNotificationBody.fromJson(json['settings']),
-      json['site1'].toString().split('/')[0]
-    );
-  }
-}
-
-Future<void> getSettings(String? email, AppState appstate) async {
-  try {
-  http.Response response = await http.get(Uri.parse('https://vinovoltaics-notification-api-6ajy6wk4ca-ul.a.run.app/getSettings?email=$email'));
-  
-  if (response.statusCode == 200) {
-    appstate.sites = [];
-    bool siteChecked = false;
-    String siteNickName;
-    bool zoneChecked = false;
-    String zoneNickName;
-    bool temperature = false;
-    bool humidity = false;
-    bool frost = false;
-    bool rain = false;
-    bool soil = false;
-    bool light = false;
-
-    for (int i = 0; i < jsonDecode(response.body)['settings'].length - 3; i++) {
-      for (int j = 0; j < jsonDecode(response.body)['settings']['site${i+1}'].length - 2; j++) {
-        siteChecked = json.decode(response.body)['settings']['site${i+1}']['site_checked'];
-        siteNickName = json.decode(response.body)['settings']['site${i+1}']['nickName'];
-        zoneChecked = json.decode(response.body)['settings']['site${i+1}']['zone${j+1}']['zone_checked'];
-        zoneNickName = json.decode(response.body)['settings']['site${i+1}']['zone${j+1}']['nickName'];
-        temperature = json.decode(response.body)['settings']['site${i+1}']['zone${j+1}']['temperature'];
-        humidity = json.decode(response.body)['settings']['site${i+1}']['zone${j+1}']['humidity'];
-        frost = json.decode(response.body)['settings']['site${i+1}']['zone${j+1}']['frost'];
-        rain = json.decode(response.body)['settings']['site${i+1}']['zone${j+1}']['rain'];
-        soil = json.decode(response.body)['settings']['site${i+1}']['zone${j+1}']['soil'];
-        light = json.decode(response.body)['settings']['site${i+1}']['zone${j+1}']['light'];
-
-        if (j == 0) {
-          appstate.addSiteFromDB(siteChecked, siteNickName, zoneChecked, zoneNickName, humidity, temperature, light, frost, rain, soil);
-        } else {
-          appstate.addZoneFromDB(i, zoneChecked, zoneNickName, humidity, temperature, light, frost, rain, soil);
-        }
-      }
-    }
-
-    appstate.singleGraphToggle = json.decode(response.body)['settings']['singleGraphToggle'];
-    appstate.timezone = tz.getLocation(json.decode(response.body)['settings']['timeZone']); 
-    appstate.returnDataValue = json.decode(response.body)['settings']['returnDataFilter'];
-  }
-
-  // ignore: empty_catches
-  } catch (e) {
-    print(e);
-  }
-}
-
-// Organization Selector Widget
-class OrganizationSelector extends StatelessWidget {
-  const OrganizationSelector({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    final currentOrg = appState.selectedOrganization;
-
-    return InkWell(
-      onTap: () {
-        showModalBottomSheet(
-          context: context,
-          backgroundColor: Colors.white,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          builder: (context) => const OrganizationMenuSheet(),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withAlpha((0.1 * 255).toInt()),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.white.withAlpha((0.3 * 255).toInt()),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.white.withAlpha((0.2 * 255).toInt()),
-              backgroundImage: currentOrg?.logoUrl != null
-                  ? NetworkImage(currentOrg!.logoUrl!)
-                  : null,
-              child: currentOrg?.logoUrl == null
-                  ? Text(
-                      currentOrg?.name.isNotEmpty == true
-                          ? currentOrg!.name[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    currentOrg?.name ?? 'No Organization',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Switch organization',
-                      style: TextStyle(
-                      color: Colors.white.withAlpha((0.7 * 255).toInt()),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.keyboard_arrow_down,
-              color: Colors.white.withAlpha((0.7 * 255).toInt()),
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Organization Menu Bottom Sheet
-class OrganizationMenuSheet extends StatelessWidget {
-  const OrganizationMenuSheet({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                const Text(
-                  'Switch Organization',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-          const Divider(),
-          const Flexible(
-            child: OrganizationList(),
-          ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context); // Close the menu first
-                  showDialog(
-                    context: context,
-                    builder: (context) => const CreateOrganizationDialog(),
-                  );
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Create New Organization'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Organization List in Bottom Sheet
-class OrganizationList extends StatelessWidget {
-  const OrganizationList({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-    final currentOrg = appState.selectedOrganization;
-
-    return StreamBuilder<List<Organization>>(
-      stream: OrganizationService().getUserOrganizations(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(
-            child: Text('Error: ${snapshot.error}'),
-          );
-        }
-
-        final organizations = snapshot.data ?? [];
-
-        if (organizations.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('No organizations found'),
-            ),
-          );
-        }
-
-        return ListView.builder(
-          shrinkWrap: true,
-          itemCount: organizations.length,
-          itemBuilder: (context, index) {
-            final org = organizations[index];
-            final isSelected = currentOrg?.id == org.id;
-
-            return ListTile(
-              leading: CircleAvatar(
-                backgroundImage: org.logoUrl != null
-                    ? NetworkImage(org.logoUrl!)
-                    : null,
-                child: org.logoUrl == null
-                    ? Text(
-                        org.name.isNotEmpty ? org.name[0].toUpperCase() : '?',
-                      )
-                    : null,
-              ),
-              title: Text(
-                org.name,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-              subtitle: org.description.isNotEmpty ? Text(org.description) : null,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isSelected)
-                    const Icon(Icons.check_circle, color: Color(0xFF2D53DA)),
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 20),
-                    onPressed: () {
-                      Navigator.pop(context); // Close the menu
-                      showDialog(
-                        context: context,
-                        builder: (context) => EditOrganizationDialog(
-                          organization: org,
-                        ),
-                      );
-                    },
-                    tooltip: 'Edit organization',
-                  ),
-                ],
-              ),
-              onTap: () {
-                appState.setSelectedOrganization(org);
-                Navigator.pop(context);
-              },
-            );
-          },
-        );
-      },
-    );
   }
 }

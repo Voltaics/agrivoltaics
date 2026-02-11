@@ -38,6 +38,72 @@ Automatically maintains the `sensorLookup` collection when sensors are created, 
 ### 3. checkSensorStatus (Scheduled)
 Runs every 15 minutes to mark sensors offline if no data received in 30 minutes.
 
+### 4. getHistoricalSeries (HTTPS)
+Returns multi-graph time-series data from BigQuery for charting in the Flutter app.
+
+**Endpoint:** `https://[REGION]-[PROJECT-ID].cloudfunctions.net/getHistoricalSeries`
+
+**Auth:** Requires Firebase ID token in `Authorization: Bearer <token>` header.
+
+**Request Format:**
+```json
+{
+  "organizationId": "org1",
+  "siteId": "site1",
+  "zoneIds": ["zoneA", "zoneB"],
+  "readings": ["temperature", "humidity"],
+  "start": "2026-02-01T00:00:00Z",
+  "end": "2026-02-05T00:00:00Z",
+  "interval": "HOUR",
+  "sensorId": "sensor123"
+}
+```
+
+**Notes:**
+- `interval` is optional; the function selects a sensible default based on the time range.
+- If `sensorId` is omitted, the function uses the primary sensor (`primarySensor = true`).
+
+**Response (Success):**
+```json
+{
+  "success": true,
+  "interval": "HOUR",
+  "graphs": [
+    {
+      "field": "temperature",
+      "unit": "°F",
+      "series": [
+        {
+          "zoneId": "zoneA",
+          "points": [
+            {"t": "2026-02-01T01:00:00.000Z", "v": 71.8},
+            {"t": "2026-02-01T02:00:00.000Z", "v": 72.1}
+          ]
+        },
+        {
+          "zoneId": "zoneB",
+          "points": [
+            {"t": "2026-02-01T01:00:00.000Z", "v": 70.5}
+          ]
+        }
+      ]
+    },
+    {
+      "field": "humidity",
+      "unit": "%",
+      "series": [
+        {
+          "zoneId": "zoneA",
+          "points": [
+            {"t": "2026-02-01T01:00:00.000Z", "v": 64.2}
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
 ## Setup
 
 ### Prerequisites

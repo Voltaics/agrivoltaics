@@ -11,11 +11,11 @@ def parse_args():
                         help="Set to 'single' for one capture or 'continuous' for looping.")
     return parser.parse_args()
 
-CAPTURE_SCRIPT = "/home/hover-squad/senior_design/camera_data.py"
-ALIGN_SCRIPT   = "/home/hover-squad/senior_design/align_images.py"
-PROCESS_SCRIPT = "/home/hover-squad/senior_design/process_images_new.py"
-UPLOAD_SCRIPT  = "/home/hover-squad/senior_design/firebase_upload.py"
-INFERENCE_SCRIPT = "/home/hover-squad/senior_design/run_inference.py"
+CAPTURE_SCRIPT = "/application/pi_code/camera_data.py"
+ALIGN_SCRIPT   = "/application/pi_code/align_images.py"
+PROCESS_SCRIPT = "/application/pi_code/process_images_new.py"
+UPLOAD_SCRIPT  = "/application/pi_code/firebase_upload.py"
+INFERENCE_SCRIPT = "/application/pi_code/run_inference.py"
 
 #Queue to pass capture folder paths from the capture thread to the processing thread
 capture_queue = queue.Queue()

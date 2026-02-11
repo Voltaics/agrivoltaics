@@ -133,6 +133,11 @@ class AppState with ChangeNotifier {
     notifyListeners();
   }
 
+  void clearSelectedZone() {
+    selectedZone = null;
+    notifyListeners();
+  }
+
   void setCurrentUser(AppUser user) {
     currentUser = user;
     notifyListeners();

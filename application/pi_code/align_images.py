@@ -1,4 +1,5 @@
 import cv2
+import tifffile as tiff
 import numpy as np
 import glob
 import os
@@ -11,7 +12,25 @@ def align_images(input_folder,  output_folder):
         print("No images in the input folder.")
         return
 
-    images = [cv2.imread(path, cv2.IMREAD_GRAYSCALE) for path in image_paths]
+    images = [tiff.imread(path).astype(np.float32) for path in image_paths]
+    
+
+    # Ensure single-channel for ORB
+    images_for_orb = []
+    for img in images:
+        if img.ndim == 3:
+            images_for_orb.append(img[:, :, 0])  # take first channel
+        else:
+            images_for_orb.append(img)
+
+    # Convert to uint8 for ORB
+    images_uint8 = [
+        np.uint8(255 * (img - img.min()) / (img.max() - img.min() + 1e-8))
+        for img in images_for_orb
+    ]
+
+
+
 
     #Choose the middle band as the reference (adjust index as needed)
     reference_index = 2
@@ -22,14 +41,14 @@ def align_images(input_folder,  output_folder):
     #Use ORB for feature detection & matching
     orb = cv2.ORB_create(5000)
 
-    kp_ref, des_ref = orb.detectAndCompute(reference_image, None)
+    kp_ref, des_ref = orb.detectAndCompute(images_uint8[reference_index], None)
 
     for i, img in enumerate(images):
         if i == reference_index:
             continue  #Skip reference image
 
         #Detect keypoints and compute descriptors
-        kp_img, des_img = orb.detectAndCompute(img, None)
+        kp_img, des_img = orb.detectAndCompute(images_uint8[i], None)
 
         #Use BFMatcher to find feature matches
         bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
@@ -62,7 +81,7 @@ if __name__ == "__main__":
     
     input_folder = args.folder
     #Create a corresponding aligned folder (e.g., aligned_images/capture_<timestamp>)
-    base_aligned_dir = "/home/hover-squad/senior_design/aligned_images"
+    base_aligned_dir = r"F:\Documents\Things\school work\Senior Design\test_inference_data\aligned_images"
     capture_name = os.path.basename(input_folder)
     output_folder = os.path.join(base_aligned_dir, capture_name)
     

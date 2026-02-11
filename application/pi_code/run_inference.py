@@ -4,6 +4,7 @@
 
 import os
 import cv2
+import tifffile as tiff
 import torch
 import numpy as np
 import torch.nn as nn
@@ -19,8 +20,10 @@ STRIDE = 32
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 #MODEL PATHS
-VINE_MODEL_PATH = "vine_presence_resnet.pth"
-DISEASE_MODEL_PATH = "disease_model_resnet_aug.pth"
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+VINE_MODEL_PATH = os.path.join(PROJECT_ROOT, "model_training", "vine_presence_resnet.pth")
+DISEASE_MODEL_PATH = os.path.join(PROJECT_ROOT, "model_training", "student_resnet18_distilled.pth")
+DISEASE_TRAIN_PATH = os.path.join(PROJECT_ROOT, "model_training", "disease_train.py")
 
 #SLIDING WINDOW FUNCTION
 def sliding_window(image, tile_size, stride):
@@ -31,6 +34,44 @@ def sliding_window(image, tile_size, stride):
             patch = image[:, y:y+tile_size, x:x+tile_size]
             yield (x, y, patch)
 
+#STUDENT RESNET-18 WRAPPER (for disease classifier)
+class StudentResNetWrapper(nn.Module):
+    def __init__(self, num_classes=2, in_ch=7):
+        super().__init__()
+        # load base ResNet-18
+        base = models.resnet18(weights=None)  # no ImageNet weights
+        self.base = base
+        self._adapt_first_conv(in_ch)
+        self._replace_head(num_classes)
+
+    def _adapt_first_conv(self, in_ch):
+        conv = self.base.conv1
+        new_conv = nn.Conv2d(
+            in_ch, conv.out_channels,
+            kernel_size=conv.kernel_size,
+            stride=conv.stride,
+            padding=conv.padding,
+            bias=(conv.bias is not None)
+        )
+        with torch.no_grad():
+            if conv.weight.shape[1] == 3:
+                new_conv.weight[:, :3, :, :] = conv.weight
+                avg = conv.weight.mean(dim=1, keepdim=True)
+                new_conv.weight[:, 3:, :, :] = avg.repeat(1, in_ch - 3, 1, 1)
+        self.base.conv1 = new_conv
+
+    def _replace_head(self, num_classes):
+        in_features = self.base.fc.in_features
+        self.base.fc = nn.Sequential(
+            nn.Linear(in_features, 1000),
+            nn.BatchNorm1d(1000),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(1000, num_classes)
+        )
+
+    def forward(self, x):
+        return self.base(x)
 
 def main(input_folder, output_folder): 
     #BAND PATHS 
@@ -47,11 +88,13 @@ def main(input_folder, output_folder):
             raise FileNotFoundError(f"Missing band file: {path}")
 
     #LOAD IMAGE BANDS
-    bands = []
-    for p in BAND_PATHS:
-        band = cv2.imread(p, cv2.IMREAD_GRAYSCALE).astype(np.float32)
-        bands.append(band)
-    image = np.stack(bands, axis=0)  # shape: (5, H, W)
+    bands = [tiff.imread(p).astype(np.float32) for p in BAND_PATHS]
+
+    # If the band is HxWxC (e.g., RGB/1-channel), take first channel
+    bands = [b[:, :, 0] if b.ndim == 3 else b for b in bands]
+
+    image = np.stack(bands)  # shape: (num_bands, H, W)
+
 
     #Compute NDVI and NDRE
     red = image[2]
@@ -71,26 +114,39 @@ def main(input_folder, output_folder):
 
     H, W = image.shape[1], image.shape[2]
 
+    def normalize_to_uint8(img):
+        """Normalize a single-channel or multi-channel array to uint8 [0, 255]."""
+        img = np.asarray(img, dtype=np.float32)
+        min_val = float(np.min(img))
+        max_val = float(np.max(img))
+        if max_val <= min_val:
+            return np.zeros_like(img, dtype=np.uint8)
+        scaled = (img - min_val) / (max_val - min_val)
+        return (scaled * 255.0).clip(0, 255).astype(np.uint8)
+
     #Create a composite image for visualization
-    #Here we use a simple RGB composite (channels: Blue, Green, Red)
-    composite = cv2.merge([bands[0], bands[1], bands[2]])
+    #Here we use a simple RGB composite (channels: Green, Red, NIR) → (B, G, R) for false color
+    composite = cv2.merge([
+        normalize_to_uint8(bands[1]), # Green
+        normalize_to_uint8(bands[2]), # Red
+        normalize_to_uint8(bands[0]), # Blue
+    ])
     composite_color = composite.copy()
 
     #Load Vine Classifier (ResNet-18)
     vine_model = models.resnet18(weights=None)
     vine_model.conv1 = nn.Conv2d(7, 64, kernel_size=7, stride=2, padding=3, bias=False)
     vine_model.fc = nn.Linear(512, 2)
-    vine_model.load_state_dict(torch.load(VINE_MODEL_PATH, map_location=DEVICE))
+    vine_model.load_state_dict(torch.load(VINE_MODEL_PATH, map_location=DEVICE, weights_only=True))
     vine_model.to(DEVICE)
     vine_model.eval()
 
     #Load Disease Classifier (ResNet-18)
-    disease_model = models.resnet18(weights=None)
-    disease_model.conv1 = nn.Conv2d(7, 64, kernel_size=7, stride=2, padding=3, bias=False)
-    disease_model.fc = nn.Linear(512, 2)
-    disease_model.load_state_dict(torch.load(DISEASE_MODEL_PATH, map_location=DEVICE))
+    disease_model = StudentResNetWrapper(num_classes=2, in_ch=7)
+    disease_model.load_state_dict(torch.load(DISEASE_MODEL_PATH, map_location=DEVICE, weights_only=True))
     disease_model.to(DEVICE)
     disease_model.eval()
+
 
     #Register Grad-CAM hooks on disease_model
     gradcam_activations = {}
@@ -103,9 +159,9 @@ def main(input_folder, output_folder):
         gradcam_gradients['value'] = grad_output[0].detach()
 
     #Hook into the last conv layer of ResNet-18:
-    target_layer = disease_model.layer4[-1].conv2
+    target_layer = disease_model.base.layer4[-1].conv2
     target_layer.register_forward_hook(forward_hook)
-    target_layer.register_backward_hook(backward_hook)
+    target_layer.register_full_backward_hook(backward_hook)
 
     heatmap = np.zeros((H, W), dtype=np.float32)
     count_map = np.zeros((H, W), dtype=np.float32)
@@ -171,10 +227,11 @@ def main(input_folder, output_folder):
     heatmap[valid_mask] /= count_map[valid_mask]
     heatmap_vis = (heatmap * 255).astype(np.uint8)
     heatmap_color = cv2.applyColorMap(heatmap_vis, cv2.COLORMAP_JET)
-    overlay = cv2.addWeighted(composite_color.astype(np.uint8), 0.6, heatmap_color, 0.4, 0)
+    overlay = cv2.addWeighted(composite_color, 0.6, heatmap_color, 0.4, 0)
 
-    #cv2.imwrite(f"{output_folder}/FINAL_combined_overlay_with_boxes.png", overlay)
-    print("Output saved: FINAL_ombined_overlay_with_boxes.png")
+    cv2.imwrite(f"{output_folder}/FINAL_combined_overlay_with_boxes.png", overlay)
+    print("Output saved: FINAL_combined_overlay_with_boxes.png")
+
 
     cv2.imwrite(f"{output_folder}/FINAL_combined_heatmap.png", heatmap_color)
     print("Output saved: FINAL_combined_heatmap.png")        
@@ -183,7 +240,7 @@ def main(input_folder, output_folder):
     cv2.imwrite(f"{output_folder}/FINAL_combined_cam_boxes.png", composite_color)
     print("Output saved: FINAL_combined_cam_boxes.png")
     plt.figure(figsize=(10, 10))
-    plt.imshow(cv2.cvtColor(composite_color, cv2.COLOR_BGR2RGB))
+    plt.imshow(cv2.cvtColor(composite_color, cv2.COLOR_BGR2RGB).astype(np.uint8))
     plt.title("CAM-based Bounding Boxes")
     plt.axis("off")
     #plt.show()

@@ -13,7 +13,10 @@ import torchvision.models as models
 import random
 
 #config
-DATA_DIR = "./vine_presence_data_64"
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+GLOBAL_MEAN_PTH = os.path.join(PROJECT_ROOT, "pi_code", "global_mean.npy")
+GLOBAL_STD_PTH = os.path.join(PROJECT_ROOT, "pi_code", "global_std.npy")
+DATA_DIR = r"F:\Documents\Things\school work\Senior Design\DataSet Used for training\vine_presence_data_64_meta"
 BATCH_SIZE = 32
 EPOCHS = 100
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -40,8 +43,8 @@ class VineAugmentation:
 class VinePresenceDataset(Dataset):
     def __init__(self, data_dir, transform=None):
         self.transform = transform
-        self.global_mean = np.load("global_mean.npy")
-        self.global_std = np.load("global_std.npy")
+        self.global_mean = np.load(GLOBAL_MEAN_PTH)
+        self.global_std = np.load(GLOBAL_STD_PTH)
 
         # preload all samples into memory
         self.data, self.labels = [], []
