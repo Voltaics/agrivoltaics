@@ -161,15 +161,6 @@ const ingestSensorData = functions.https.onRequest(async (req, res) => {
         const zoneDoc = await db.doc(zoneDocPath).get();
         const zoneData = zoneDoc.exists ? zoneDoc.data() : {};
 
-        if (sensorData.status !== 'active') {
-          errors.push({
-            index: i,
-            sensorId,
-            error: `Sensor is inactive. Status: ${sensorData.status || 'unknown'}`,
-          });
-          continue;
-        }
-
         const fieldUpdates = {};
         for (const [fieldName, reading] of Object.entries(readings)) {
           fieldUpdates[`fields.${fieldName}.currentValue`] = reading.value;
@@ -180,7 +171,6 @@ const ingestSensorData = functions.https.onRequest(async (req, res) => {
         await db.doc(sensorDocPath).update({
           ...fieldUpdates,
           lastReading: timestampObj,
-          isOnline: true,
         });
 
         const date = new Date(timestamp * 1000);

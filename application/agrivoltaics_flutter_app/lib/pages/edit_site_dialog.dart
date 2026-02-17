@@ -28,7 +28,6 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
   late final TextEditingController _longitudeController;
   
   late String _selectedTimezone;
-  late bool _isActive;
   bool _isLoading = false;
 
   // Common US timezones
@@ -63,7 +62,6 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
     }
     
     _selectedTimezone = widget.site.timezone;
-    _isActive = widget.site.isActive;
   }
 
   @override
@@ -118,7 +116,6 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
           'location': (latitude != null && longitude != null)
               ? GeoPoint(latitude, longitude)
               : null,
-          'isActive': _isActive,
         },
       );
 
@@ -362,16 +359,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                SwitchListTile(
-                  title: const Text('Active'),
-                  subtitle: const Text('Site is currently active and collecting data'),
-                  value: _isActive,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isActive = value;
-                    });
-                  },
-                ),
+
               ],
             ),
           ),

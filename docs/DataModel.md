@@ -96,7 +96,6 @@ organizations/{orgId}/sites/{siteId}
   timezone: string,               // Site-specific timezone
   
   // Status & Stats
-  isActive: boolean,
   lastDataReceived: timestamp,
   
   // Timestamps
@@ -185,12 +184,8 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}
     // Other possible fields: light, soilMoisture, soilTemperature, soilEC, co2, tvoc
   },
   
-  // Status & Health
-  status: string,                 // "active" | "inactive" | "maintenance" | "error"
-  isOnline: boolean,
-  lastReading: timestamp,         // Last time any data was received
-  
   // Timestamps
+  lastReading: timestamp,         // Last time any data was received
   createdAt: timestamp,
   updatedAt: timestamp,
 }
@@ -247,7 +242,6 @@ sensorLookup/{sensorId}
   ],
   
   // Status
-  isActive: boolean,
   lastDataReceived: timestamp,
   
   // Timestamps
@@ -287,7 +281,6 @@ mobileSensors/{mobileSensorId}
   },
   
   // Status
-  isActive: boolean,
   lastActivity: timestamp,
   
   // Current Session

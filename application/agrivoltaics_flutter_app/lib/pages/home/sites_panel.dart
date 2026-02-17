@@ -188,26 +188,6 @@ class SitesPanel extends StatelessWidget {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Active indicator
-                          if (site.isActive)
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Colors.green,
-                                shape: BoxShape.circle,
-                              ),
-                            )
-                          else
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[400],
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          const SizedBox(width: 8),
                           // Edit button
                           IconButton(
                             icon: const Icon(Icons.edit, size: 16),
@@ -352,17 +332,7 @@ class SitesPanel extends StatelessWidget {
                                     color: isSelected ? Colors.white : Colors.black87,
                                   ),
                                 ),
-                                if (site.isActive) ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? Colors.white : Colors.green,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ],
+
                               ],
                             ),
                           ),
