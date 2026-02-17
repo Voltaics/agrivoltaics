@@ -30,6 +30,9 @@ jobs:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
           service_account: service-324259319471@gcp-sa-cloudbuild.iam.gserviceaccount.com
 
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+
       - name: Push image to Google Cloud Container Registry
         id: push-image
         uses: RafikFarhad/push-to-gcr-github-action@v5-beta
@@ -96,6 +99,9 @@ jobs:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
           service_account: service-324259319471@gcp-sa-cloudbuild.iam.gserviceaccount.com
 
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+
       - name: Push image to Google Cloud Container Registry
         id: push-image
         uses: RafikFarhad/push-to-gcr-github-action@v5-beta
@@ -159,6 +165,9 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
           service_account: service-324259319471@gcp-sa-cloudbuild.iam.gserviceaccount.com
+
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
 
       - name: Push image to Google Cloud Container Registry
         id: push-image
