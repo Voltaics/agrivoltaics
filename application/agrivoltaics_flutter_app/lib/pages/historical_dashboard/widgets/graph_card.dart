@@ -10,6 +10,7 @@ class GraphCardWidget extends StatelessWidget {
   final Map<String, String> zoneLookup;
   final bool isWideScreen;
   final PickerDateRange dateRange;
+  final String interval;
 
   const GraphCardWidget({
     super.key,
@@ -17,6 +18,7 @@ class GraphCardWidget extends StatelessWidget {
     required this.zoneLookup,
     required this.isWideScreen,
     required this.dateRange,
+    required this.interval,
   });
 
   @override
@@ -28,7 +30,7 @@ class GraphCardWidget extends StatelessWidget {
         : '';
 
     final hasData = graph.series.any((series) => series.points.isNotEmpty);
-    final dateFormat = _getDateFormat(dateRange);
+    final axisConfig = _getAxisConfig(dateRange, interval);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -62,7 +64,9 @@ class GraphCardWidget extends StatelessWidget {
                     minimum: dateRange.startDate,
                     maximum: dateRange.endDate,
                     edgeLabelPlacement: EdgeLabelPlacement.shift,
-                    dateFormat: dateFormat,
+                    dateFormat: axisConfig.dateFormat,
+                    intervalType: axisConfig.intervalType,
+                    interval: axisConfig.axisInterval,
                   ),
                   primaryYAxis: NumericAxis(
                     majorGridLines: const MajorGridLines(width: 0.5),
@@ -98,20 +102,61 @@ class GraphCardWidget extends StatelessWidget {
     );
   }
 
-  DateFormat _getDateFormat(PickerDateRange dateRange) {
+  ({DateTimeIntervalType intervalType, double axisInterval, DateFormat dateFormat}) _getAxisConfig(
+    PickerDateRange dateRange,
+    String interval,
+  ) {
     final start = dateRange.startDate;
     final end = dateRange.endDate;
+    final duration = (start != null && end != null)
+        ? end.difference(start)
+        : const Duration(days: 7);
 
-    if (start == null || end == null) {
-      return DateFormat('MM/dd');
+    switch (interval) {
+      case 'HOUR':
+        if (duration.inHours <= 24) {
+          return (
+            intervalType: DateTimeIntervalType.hours,
+            axisInterval: 1.0,
+            dateFormat: DateFormat('HH:mm'),
+          );
+        } else if (duration.inHours <= 48) {
+          return (
+            intervalType: DateTimeIntervalType.hours,
+            axisInterval: 6.0,
+            dateFormat: DateFormat('MM/dd\nHH:mm'),
+          );
+        } else {
+          return (
+            intervalType: DateTimeIntervalType.hours,
+            axisInterval: 12.0,
+            dateFormat: DateFormat('MM/dd\nHH:mm'),
+          );
+        }
+      case 'DAY':
+        return (
+          intervalType: DateTimeIntervalType.days,
+          axisInterval: 1.0,
+          dateFormat: DateFormat('MM/dd'),
+        );
+      case 'WEEK':
+        return (
+          intervalType: DateTimeIntervalType.days,
+          axisInterval: 7.0,
+          dateFormat: DateFormat('MM/dd'),
+        );
+      case 'MONTH':
+        return (
+          intervalType: DateTimeIntervalType.months,
+          axisInterval: 1.0,
+          dateFormat: DateFormat('MM/yy'),
+        );
+      default:
+        return (
+          intervalType: DateTimeIntervalType.auto,
+          axisInterval: 1.0,
+          dateFormat: DateFormat('MM/dd'),
+        );
     }
-
-    // Check if range is less than 48 hours
-    final duration = end.difference(start);
-    if (duration.inHours < 48) {
-      return DateFormat('HH:mm');
-    }
-
-    return DateFormat('MM/dd');
   }
 }

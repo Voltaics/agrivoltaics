@@ -98,6 +98,7 @@ class ResultsSectionWidget extends StatelessWidget {
                 zoneLookup: zoneLookup,
                 isWideScreen: isWideScreen,
                 dateRange: dateRange,
+                interval: response.interval,
               );
             }).toList(),
           ],
