@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:agrivoltaics_flutter_app/app_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -73,19 +74,19 @@ class App extends StatelessWidget {
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: const ColorScheme.light(
-            primary: Color(0xFF2D53DA),           // Primary accent (buttons, selected icons)
-            onPrimary: Colors.white,              // Text on primary
-            secondary: Color(0xFF2D53DA),           // Optional
+            primary:     AppColors.primary,
+            onPrimary:   Colors.white,
+            secondary:   AppColors.primary,
             onSecondary: Colors.white,
-            surface: Colors.white,                // Cards, nav rail
-            onSurface: Colors.black,
-            error: Colors.red,
-            onError: Colors.white,
+            surface:     AppColors.surface,
+            onSurface:   Colors.black,
+            error:       AppColors.error,
+            onError:     Colors.white,
           ),
-          scaffoldBackgroundColor: const Color(0xFFF2F5FD),
+          scaffoldBackgroundColor: AppColors.scaffoldBackground,
           cardTheme: CardThemeData(
-            color: Colors.white,
-            surfaceTintColor: Colors.white,
+            color: AppColors.surface,
+            surfaceTintColor: AppColors.surface,
             elevation: 4,
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             shape: RoundedRectangleBorder(
@@ -93,22 +94,22 @@ class App extends StatelessWidget {
             ),
           ),
           appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
             foregroundColor: Colors.black,
             elevation: 1,
           ),
           navigationRailTheme: const NavigationRailThemeData(
-            backgroundColor: Colors.white,
-            selectedIconTheme: IconThemeData(color: Color(0xFF2D53DA)),
-            selectedLabelTextStyle: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
-            unselectedIconTheme: IconThemeData(color: Color.fromARGB(255, 255, 255, 255)),
-            unselectedLabelTextStyle: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
-            indicatorColor: Color.fromARGB(255, 255, 255, 255), // No oval
+            backgroundColor: AppColors.surface,
+            selectedIconTheme: IconThemeData(color: AppColors.primary),
+            selectedLabelTextStyle: TextStyle(color: Colors.white),
+            unselectedIconTheme: IconThemeData(color: Colors.white),
+            unselectedLabelTextStyle: TextStyle(color: Colors.white),
+            indicatorColor: Colors.white, // No oval
             labelType: NavigationRailLabelType.none,
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2D53DA),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

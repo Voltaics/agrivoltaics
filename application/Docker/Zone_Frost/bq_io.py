@@ -1,3 +1,4 @@
+from typing import Optional, Dict, Any
 import pandas as pd
 from google.cloud import bigquery
 from config import Config
@@ -7,7 +8,6 @@ def bq_table(project: str, dataset: str, table: str) -> str:
     if "." in table:
         return f"`{project}.{table}`"
     return f"`{project}.{dataset}.{table}`"
-
 
 def fetch_readings(bq: bigquery.Client, cfg: Config) -> pd.DataFrame:
     query = f"""
@@ -36,6 +36,50 @@ def fetch_readings(bq: bigquery.Client, cfg: Config) -> pd.DataFrame:
         raise RuntimeError("No sensor data returned for this zone in the lookback window.")
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     return df
+
+
+def fetch_prediction_near_time(
+    bq: bigquery.Client,
+    cfg: Config,
+    target_time_utc: pd.Timestamp,
+    tolerance_minutes: int = 20,
+) -> Optional[Dict[str, Any]]:
+    """
+    Fetch the prediction row closest to target_time_utc (within tolerance),
+    but ONLY if it has not yet been resolved (trained_on_label IS NULL).
+    """
+    start = target_time_utc - pd.Timedelta(minutes=tolerance_minutes)
+    end = target_time_utc + pd.Timedelta(minutes=tolerance_minutes)
+
+    query = f"""
+    SELECT *
+    FROM {bq_table(cfg.project_id, cfg.dataset, cfg.predictions_table)}
+    WHERE zoneId = @zoneId
+      AND timestamp BETWEEN @start AND @end
+      AND trained_on_label IS NULL
+    ORDER BY ABS(TIMESTAMP_DIFF(timestamp, @target, SECOND)) ASC
+    LIMIT 1
+    """
+
+    job = bq.query(
+        query,
+        job_config=bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("zoneId", "STRING", cfg.zone_id),
+                bigquery.ScalarQueryParameter("start", "TIMESTAMP", start.to_pydatetime()),
+                bigquery.ScalarQueryParameter("end", "TIMESTAMP", end.to_pydatetime()),
+                bigquery.ScalarQueryParameter("target", "TIMESTAMP", target_time_utc.to_pydatetime()),
+            ]
+        ),
+    )
+
+    df = job.to_dataframe()
+    if df.empty:
+        return None
+
+    row = df.iloc[0].to_dict()
+    row["timestamp"] = pd.to_datetime(row["timestamp"], utc=True)
+    return row
 
 
 def fetch_candle_events(bq: bigquery.Client, cfg: Config, hours: int = 6) -> pd.DataFrame:
@@ -85,7 +129,7 @@ def candles_on_during_window(candle_df: pd.DataFrame, start: pd.Timestamp, end: 
 
 
 def insert_prediction_row(bq: bigquery.Client, cfg: Config, row: dict) -> None:
-    table_id = f"{cfg.project_id}.{cfg.dataset}.{cfg.predictions_table.split('.')[-1]}"
+    table_id = f"{cfg.project_id}.{cfg.dataset}.{cfg.predictions_table}" if "." not in cfg.predictions_table else f"{cfg.project_id}.{cfg.predictions_table}"
     errors = bq.insert_rows_json(table_id, [row])
     if errors:
         raise RuntimeError(f"BigQuery insert errors: {errors}")
@@ -114,32 +158,79 @@ def has_processed_ingest(bq: bigquery.Client, cfg: Config) -> bool:
     return not df.empty
 
 
-def fetch_prediction_near_time(
+def fetch_untrained_matured_predictions(
     bq: bigquery.Client,
     cfg: Config,
-    target: pd.Timestamp,
-    tolerance_minutes: int = 20,
-) -> dict | None:
+    now: pd.Timestamp,
+    limit: int = 50,
+) -> pd.DataFrame:
     query = f"""
     SELECT *
     FROM {bq_table(cfg.project_id, cfg.dataset, cfg.predictions_table)}
     WHERE zoneId = @zoneId
-      AND timestamp BETWEEN TIMESTAMP_SUB(@t, INTERVAL {tolerance_minutes} MINUTE)
-                        AND TIMESTAMP_ADD(@t, INTERVAL {tolerance_minutes} MINUTE)
-    ORDER BY ABS(TIMESTAMP_DIFF(timestamp, @t, SECOND))
-    LIMIT 1
+      AND trained_on_label IS NULL
+      AND timestamp <= TIMESTAMP_SUB(@now, INTERVAL {cfg.horizon_minutes} MINUTE)
+    ORDER BY timestamp ASC
+    LIMIT {limit}
     """
     job = bq.query(
         query,
         job_config=bigquery.QueryJobConfig(
             query_parameters=[
                 bigquery.ScalarQueryParameter("zoneId", "STRING", cfg.zone_id),
-                bigquery.ScalarQueryParameter("t", "TIMESTAMP", target.to_pydatetime()),
+                bigquery.ScalarQueryParameter("now", "TIMESTAMP", now.to_pydatetime()),
             ]
         ),
     )
     df = job.to_dataframe()
     if df.empty:
-        return None
+        return df
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-    return df.iloc[0].to_dict()
+    return df
+
+
+def update_prediction_training_status(
+    bq: bigquery.Client,
+    cfg: Config,
+    pred_timestamp_utc: pd.Timestamp,
+    trained_on_label: bool,
+    skipped_reason: str | None,
+    label_frost_observed: int | None,
+    label_window_start_utc: pd.Timestamp | None,
+    label_window_end_utc: pd.Timestamp | None,
+) -> None:
+    query = f"""
+    UPDATE {bq_table(cfg.project_id, cfg.dataset, cfg.predictions_table)}
+    SET
+      trained_on_label = @trained_on_label,
+      skipped_reason = @skipped_reason,
+      label_frost_observed = @label_frost_observed,
+      label_window_start = @label_window_start,
+      label_window_end = @label_window_end
+    WHERE zoneId = @zoneId
+      AND timestamp = @pred_ts
+    """
+    job = bq.query(
+        query,
+        job_config=bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("trained_on_label", "BOOL", trained_on_label),
+                bigquery.ScalarQueryParameter("skipped_reason", "STRING", skipped_reason),
+                bigquery.ScalarQueryParameter("label_frost_observed", "INT64", label_frost_observed),
+                bigquery.ScalarQueryParameter(
+                    "label_window_start",
+                    "TIMESTAMP",
+                    label_window_start_utc.to_pydatetime() if label_window_start_utc is not None else None,
+                ),
+                bigquery.ScalarQueryParameter(
+                    "label_window_end",
+                    "TIMESTAMP",
+                    label_window_end_utc.to_pydatetime() if label_window_end_utc is not None else None,
+                ),
+                bigquery.ScalarQueryParameter("zoneId", "STRING", cfg.zone_id),
+                bigquery.ScalarQueryParameter("pred_ts", "TIMESTAMP", pred_timestamp_utc.to_pydatetime()),
+            ]
+        ),
+    )
+    job.result()  # wait; raises on failure
+

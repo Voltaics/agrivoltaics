@@ -23,7 +23,6 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
   final _longitudeController = TextEditingController();
   
   String _selectedTimezone = 'America/New_York';
-  bool _isActive = true;
   bool _isLoading = false;
 
   // Common US timezones
@@ -87,7 +86,6 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
         location: (latitude != null && longitude != null)
             ? GeoPoint(latitude, longitude)
             : null,
-        isActive: _isActive,
       );
 
       if (mounted) {
@@ -224,16 +222,7 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                SwitchListTile(
-                  title: const Text('Active'),
-                  subtitle: const Text('Site is currently active and collecting data'),
-                  value: _isActive,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isActive = value;
-                    });
-                  },
-                ),
+
               ],
             ),
           ),
