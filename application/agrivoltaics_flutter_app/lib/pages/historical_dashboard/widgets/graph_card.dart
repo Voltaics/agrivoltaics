@@ -106,10 +106,10 @@ class GraphCardWidget extends StatelessWidget {
       return DateFormat('MM/dd');
     }
 
-    // Check if range is less than 48 hours
+    // Check if range is less than 192 hours
     final duration = end.difference(start);
-    if (duration.inHours < 48) {
-      return DateFormat('HH:mm');
+    if (duration.inHours < 192) {
+      return DateFormat('MM/dd\nHH:mm');
     }
 
     return DateFormat('MM/dd');
