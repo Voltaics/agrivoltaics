@@ -35,6 +35,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
 
   final Set<String> _selectedZoneIds = <String>{};
   final Set<String> _selectedReadings = <String>{};
+  String _selectedAggregation = 'avg';
 
   Future<HistoricalResponse>? _futureResponse;
   String? _errorMessage;
@@ -263,6 +264,12 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
                               });
                             },
                             availableReadings: _availableReadings(zones),
+                            selectedAggregation: _selectedAggregation,
+                            onAggregationChanged: (agg) {
+                              setState(() {
+                                _selectedAggregation = agg;
+                              });
+                            },
                           ),
                           const SizedBox(height: 16),
                           ResultsSectionWidget(
@@ -394,6 +401,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
         start: start,
         end: end,
         timezone: selectedSite.timezone,
+        aggregation: _selectedAggregation,
       );
     });
   }
@@ -406,6 +414,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
     required DateTime start,
     required DateTime end,
     required String timezone,
+    required String aggregation,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     final idToken = user != null ? await user.getIdToken() : null;
@@ -418,6 +427,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       start: start,
       end: end,
       timezone: timezone,
+      aggregation: aggregation,
       idToken: idToken,
     );
   }
