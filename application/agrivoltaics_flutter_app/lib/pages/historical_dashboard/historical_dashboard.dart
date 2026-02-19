@@ -28,6 +28,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
   late final HistoricalSeriesService _seriesService;
 
   String? _lastSiteId;
+  String? _lastOrgId;
   models.Site? _selectedSite;
   String? _lastSyncedSiteId;
 
@@ -106,6 +107,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
     final selectedOrg = appState.selectedOrganization;
     final selectedSite = _selectedSite;
 
+    _refreshOnOrgChange(selectedOrg?.id);
     _refreshOnSiteChange(selectedSite?.id);
 
     final screenWidth = MediaQuery.of(context).size.width;
@@ -464,6 +466,35 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       aggregation: aggregation,
       idToken: idToken,
     );
+  }
+
+  void _refreshOnOrgChange(String? orgId) {
+    if (_lastOrgId == orgId) {
+      return;
+    }
+
+    _lastOrgId = orgId;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      setState(() {
+        // Clear all org-scoped state so stale site/zone references
+        // from the previous org can never reach Firestore or the chart.
+        _selectedSite = null;
+        _lastSiteId = null;
+        _lastSyncedSiteId = null;
+        _selectedZoneIds.clear();
+        _selectedReadings.clear();
+        _futureResponse = null;
+        _errorMessage = null;
+        // Invalidate cached streams so they rebuild under the new org.
+        _siteStream = null;
+        _siteStreamOrgId = null;
+        _zoneStream = null;
+        _zoneStreamSiteId = null;
+      });
+    });
   }
 
   void _refreshOnSiteChange(String? siteId) {
