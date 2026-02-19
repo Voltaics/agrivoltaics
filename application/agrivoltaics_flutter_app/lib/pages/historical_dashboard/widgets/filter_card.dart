@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 typedef OnApplyFilters = void Function();
 typedef OnZoneSelected = void Function(String zoneId, bool selected);
 typedef OnReadingSelected = void Function(String reading, bool selected);
+typedef OnAggregationChanged = void Function(String aggregation);
 
 class FilterCardWidget extends StatelessWidget {
   final List<Zone> zones;
@@ -14,6 +15,8 @@ class FilterCardWidget extends StatelessWidget {
   final OnZoneSelected onZoneSelected;
   final OnReadingSelected onReadingSelected;
   final Set<String> availableReadings;
+  final String selectedAggregation;
+  final OnAggregationChanged onAggregationChanged;
 
   const FilterCardWidget({
     super.key,
@@ -24,6 +27,8 @@ class FilterCardWidget extends StatelessWidget {
     required this.onZoneSelected,
     required this.onReadingSelected,
     required this.availableReadings,
+    required this.selectedAggregation,
+    required this.onAggregationChanged,
   });
 
   @override
@@ -98,6 +103,37 @@ class FilterCardWidget extends StatelessWidget {
                   },
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Aggregation',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'avg', label: Text('Avg')),
+                ButtonSegment(value: 'min', label: Text('Min')),
+                ButtonSegment(value: 'max', label: Text('Max')),
+              ],
+              selected: {selectedAggregation},
+              onSelectionChanged: (selection) {
+                onAggregationChanged(selection.first);
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, size: 14, color: Colors.grey[600]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Press Apply after making any changes to update the graphs.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
