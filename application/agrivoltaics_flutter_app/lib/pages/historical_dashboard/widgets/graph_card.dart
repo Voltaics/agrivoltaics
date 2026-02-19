@@ -67,6 +67,15 @@ class GraphCardWidget extends StatelessWidget {
                     dateFormat: axisConfig.dateFormat,
                     intervalType: axisConfig.intervalType,
                     interval: axisConfig.axisInterval,
+                    axisLabelFormatter: (AxisLabelRenderDetails details) {
+                      final dt = DateTime.fromMillisecondsSinceEpoch(
+                        details.value.toInt(),
+                      );
+                      return ChartAxisLabel(
+                        axisConfig.labelDateFormat.format(dt),
+                        details.textStyle,
+                      );
+                    },
                   ),
                   primaryYAxis: NumericAxis(
                     majorGridLines: const MajorGridLines(width: 0.5),
@@ -102,7 +111,10 @@ class GraphCardWidget extends StatelessWidget {
     );
   }
 
-  ({DateTimeIntervalType intervalType, double axisInterval, DateFormat dateFormat}) _getAxisConfig(
+  // Each threshold guarantees at most 8 tick labels regardless of screen size.
+  // dateFormat: full 'MM/dd HH:mm' for hour intervals — used by trackball point.x.
+  // labelDateFormat: compact format used exclusively for axis tick labels.
+  ({DateTimeIntervalType intervalType, double axisInterval, DateFormat dateFormat, DateFormat labelDateFormat}) _getAxisConfig(
     PickerDateRange dateRange,
     String interval,
   ) {
@@ -111,52 +123,78 @@ class GraphCardWidget extends StatelessWidget {
     final duration = (start != null && end != null)
         ? end.difference(start)
         : const Duration(days: 7);
+    final h = duration.inHours;
+    final hourTooltipFmt = DateFormat('MM/dd HH:mm');
 
-    switch (interval) {
-      case 'HOUR':
-        if (duration.inHours <= 24) {
-          return (
-            intervalType: DateTimeIntervalType.hours,
-            axisInterval: 1.0,
-            dateFormat: DateFormat('HH:mm'),
-          );
-        } else if (duration.inHours <= 48) {
-          return (
-            intervalType: DateTimeIntervalType.hours,
-            axisInterval: 6.0,
-            dateFormat: DateFormat('MM/dd\nHH:mm'),
-          );
-        } else {
-          return (
-            intervalType: DateTimeIntervalType.hours,
-            axisInterval: 12.0,
-            dateFormat: DateFormat('MM/dd\nHH:mm'),
-          );
-        }
-      case 'DAY':
-        return (
-          intervalType: DateTimeIntervalType.days,
-          axisInterval: 1.0,
-          dateFormat: DateFormat('MM/dd'),
-        );
-      case 'WEEK':
-        return (
-          intervalType: DateTimeIntervalType.days,
-          axisInterval: 7.0,
-          dateFormat: DateFormat('MM/dd'),
-        );
-      case 'MONTH':
-        return (
-          intervalType: DateTimeIntervalType.months,
-          axisInterval: 1.0,
-          dateFormat: DateFormat('MM/yy'),
-        );
-      default:
-        return (
-          intervalType: DateTimeIntervalType.auto,
-          axisInterval: 1.0,
-          dateFormat: DateFormat('MM/dd'),
-        );
+    if (h <= 8) {
+      return (
+        intervalType: DateTimeIntervalType.hours,
+        axisInterval: 1.0,
+        dateFormat: hourTooltipFmt,
+        labelDateFormat: DateFormat('HH:mm'),
+      );
     }
+    if (h <= 16) {
+      return (
+        intervalType: DateTimeIntervalType.hours,
+        axisInterval: 2.0,
+        dateFormat: hourTooltipFmt,
+        labelDateFormat: DateFormat('HH:mm'),
+      );
+    }
+    if (h <= 24) {
+      return (
+        intervalType: DateTimeIntervalType.hours,
+        axisInterval: 3.0,
+        dateFormat: hourTooltipFmt,
+        labelDateFormat: DateFormat('HH:mm'),
+      );
+    }
+    if (h <= 48) {
+      return (
+        intervalType: DateTimeIntervalType.hours,
+        axisInterval: 6.0,
+        dateFormat: hourTooltipFmt,
+        labelDateFormat: DateFormat('MM/dd\nHH:mm'),
+      );
+    }
+    if (h <= 96) {
+      return (
+        intervalType: DateTimeIntervalType.hours,
+        axisInterval: 12.0,
+        dateFormat: hourTooltipFmt,
+        labelDateFormat: DateFormat('MM/dd\nHH:mm'),
+      );
+    }
+    if (h <= 192) {
+      return (
+        intervalType: DateTimeIntervalType.days,
+        axisInterval: 1.0,
+        dateFormat: hourTooltipFmt,
+        labelDateFormat: DateFormat('MM/dd'),
+      );
+    }
+    if (h <= 384) {
+      return (
+        intervalType: DateTimeIntervalType.days,
+        axisInterval: 2.0,
+        dateFormat: DateFormat('MM/dd'),
+        labelDateFormat: DateFormat('MM/dd'),
+      );
+    }
+    if (h <= 1344) {
+      return (
+        intervalType: DateTimeIntervalType.days,
+        axisInterval: 7.0,
+        dateFormat: DateFormat('MM/dd'),
+        labelDateFormat: DateFormat('MM/dd'),
+      );
+    }
+    return (
+      intervalType: DateTimeIntervalType.months,
+      axisInterval: 1.0,
+      dateFormat: DateFormat('MM/yy'),
+      labelDateFormat: DateFormat('MM/yy'),
+    );
   }
 }

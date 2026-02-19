@@ -54,10 +54,12 @@ void showDateRangePickerDialog(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // Normalize the date range based on business rules
                   final start = tempRange.startDate;
-                  final end = tempRange.endDate;
-                  
+                  // endDate is null when the user tapped only one day in the
+                  // range picker (first tap sets start, second tap sets end).
+                  // Treat a null end as a same-day selection.
+                  final end = tempRange.endDate ?? tempRange.startDate;
+
                   if (start != null && end != null) {
                     final now = DateTime.now();
                     final today = DateTime(now.year, now.month, now.day);

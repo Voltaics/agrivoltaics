@@ -11,9 +11,11 @@ import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
 import '../../app_state.dart';
 import 'dialogs/date_range_picker_dialog.dart';
-import 'widgets/filter_card.dart';
-import 'widgets/results_section.dart';
+import 'widgets/no_org_placeholder.dart';
+import 'widgets/no_site_placeholder.dart';
+import 'widgets/page_header.dart';
 import 'widgets/site_selector.dart';
+import 'widgets/zone_section.dart';
 
 class HistoricalDashboardPage extends StatefulWidget {
   const HistoricalDashboardPage({super.key});
@@ -28,13 +30,40 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
   late final HistoricalSeriesService _seriesService;
 
   String? _lastSiteId;
+  String? _lastOrgId;
   models.Site? _selectedSite;
-  String? _lastSyncedSiteId;
 
   late PickerDateRange _dateRange;
+  final ScrollController _scrollController = ScrollController();
+
+  // Cached zone stream — only recreated when the site changes so that
+  // filter setState calls don't tear down and recreate the Firestore listener.
+  Stream<List<Zone>>? _zoneStream;
+  String? _zoneStreamSiteId;
+
+  Stream<List<Zone>> _getZoneStream(String orgId, String siteId) {
+    if (_zoneStream == null || _zoneStreamSiteId != siteId) {
+      _zoneStream = _zoneService.getZones(orgId, siteId);
+      _zoneStreamSiteId = siteId;
+    }
+    return _zoneStream!;
+  }
+
+  // Cached site stream — only recreated when the org changes.
+  Stream<List<models.Site>>? _siteStream;
+  String? _siteStreamOrgId;
+
+  Stream<List<models.Site>> _getSiteStream(String orgId) {
+    if (_siteStream == null || _siteStreamOrgId != orgId) {
+      _siteStream = _siteService.getSites(orgId);
+      _siteStreamOrgId = orgId;
+    }
+    return _siteStream!;
+  }
 
   final Set<String> _selectedZoneIds = <String>{};
   final Set<String> _selectedReadings = <String>{};
+  String _selectedAggregation = 'avg';
 
   Future<HistoricalResponse>? _futureResponse;
   String? _errorMessage;
@@ -68,11 +97,18 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final selectedOrg = appState.selectedOrganization;
     final selectedSite = _selectedSite;
 
+    _refreshOnOrgChange(selectedOrg?.id);
     _refreshOnSiteChange(selectedSite?.id);
 
     final screenWidth = MediaQuery.of(context).size.width;
@@ -80,58 +116,12 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
     final isWideScreen = screenWidth >= 1280 || screenHeight < screenWidth;
 
     if (selectedOrg == null) {
-      return Column(
+      return const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Historical Trends',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Review sensor trends over time with custom filters.',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.location_off,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'No organization selected',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Select an organization from the menu to get started',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          SizedBox(height: 8),
+          HistoricalDashboardHeader(),
+          NoOrgPlaceholderWidget(),
         ],
       );
     }
@@ -140,31 +130,16 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                'Historical Trends',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Review sensor trends over time with custom filters.',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-        ),
+        const HistoricalDashboardHeader(),
         Expanded(
           child: SingleChildScrollView(
+            controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 StreamBuilder<List<models.Site>>(
-                  stream: _siteService.getSites(selectedOrg.id),
+                  stream: _getSiteStream(selectedOrg.id),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -186,7 +161,6 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
                       onSiteChanged: (site) {
                         setState(() {
                           _selectedSite = site;
-                          _lastSyncedSiteId = null;
                           _selectedZoneIds.clear();
                           _selectedReadings.clear();
                         });
@@ -196,10 +170,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
                           context,
                           initialRange: _dateRange,
                           onApplied: (range) {
-                            setState(() {
-                              _dateRange = range;
-                            });
-                            _applyFilters();
+                            _applyFilters(newDateRange: range);
                           },
                         );
                       },
@@ -208,106 +179,47 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
                   },
                 ),
                 const SizedBox(height: 16),
-                if (selectedSite != null) ...[
-                  StreamBuilder<List<Zone>>(
-                    stream: _zoneService.getZones(selectedOrg.id, selectedSite.id),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      if (snapshot.hasError) {
-                        return Center(
-                          child: Text('Error loading zones: ${snapshot.error}'),
-                        );
-                      }
-
-                      final zones = snapshot.data ?? [];
-                      
-                      // Only sync selections when site changes
-                      if (_lastSyncedSiteId != selectedSite.id) {
-                        _lastSyncedSiteId = selectedSite.id;
-                        _syncSelections(zones);
-                        // Auto-query after syncing zones for new site
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) {
-                            _applyFilters();
-                          }
-                        });
-                      }
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          FilterCardWidget(
-                            zones: zones,
-                            selectedZoneIds: _selectedZoneIds,
-                            selectedReadings: _selectedReadings,
-                            onApplyFilters: _applyFilters,
-                            onZoneSelected: (zoneId, selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedZoneIds.add(zoneId);
-                                } else {
-                                  _selectedZoneIds.remove(zoneId);
-                                }
-                              });
-                            },
-                            onReadingSelected: (reading, selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedReadings.add(reading);
-                                } else {
-                                  _selectedReadings.remove(reading);
-                                }
-                              });
-                            },
-                            availableReadings: _availableReadings(zones),
-                          ),
-                          const SizedBox(height: 16),
-                          ResultsSectionWidget(
-                            futureResponse: _futureResponse,
-                            errorMessage: _errorMessage,
-                            selectedZoneIds: _selectedZoneIds,
-                            selectedReadings: _selectedReadings,
-                            zoneLookup: {
-                              for (final zone in zones) zone.id: zone.name,
-                            },
-                            isWideScreen: isWideScreen,
-                            dateRange: _dateRange,
-                          ),
-                        ],
-                      );
+                if (selectedSite != null)
+                  ZoneSectionWidget(
+                    orgId: selectedOrg.id,
+                    selectedSite: selectedSite,
+                    zoneStream: _getZoneStream(selectedOrg.id, selectedSite.id),
+                    selectedZoneIds: _selectedZoneIds,
+                    selectedReadings: _selectedReadings,
+                    selectedAggregation: _selectedAggregation,
+                    onApplyFilters: _applyFilters,
+                    onZoneSelected: (zoneId, selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedZoneIds.add(zoneId);
+                        } else {
+                          _selectedZoneIds.remove(zoneId);
+                        }
+                      });
                     },
-                  ),
-                ] else ...[
-                  Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.business,
-                              size: 48,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Select a site to view data',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                    onReadingSelected: (reading, selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedReadings.add(reading);
+                        } else {
+                          _selectedReadings.remove(reading);
+                        }
+                      });
+                    },
+                    onAggregationChanged: (agg) {
+                      setState(() {
+                        _selectedAggregation = agg;
+                      });
+                    },
+                    onZonesLoaded: _syncSelections,
+                    availableReadings: _availableReadings,
+                    futureResponse: _futureResponse,
+                    errorMessage: _errorMessage,
+                    isWideScreen: isWideScreen,
+                    dateRange: _dateRange,
+                  )
+                else
+                  const NoSitePlaceholderWidget(),
               ],
             ),
           ),
@@ -353,7 +265,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
     return readings;
   }
 
-  Future<void> _applyFilters() async {
+  void _applyFilters({PickerDateRange? newDateRange}) {
     final appState = context.read<AppState>();
     final selectedOrg = appState.selectedOrganization;
     final selectedSite = _selectedSite;
@@ -369,13 +281,14 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       return;
     }
 
-    // Use date range or fallback to 7 days ago (normalized)
+    // Use the incoming range if provided, otherwise fall back to current state.
+    final effectiveRange = newDateRange ?? _dateRange;
     final DateTime start;
     final DateTime end;
     
-    if (_dateRange.startDate != null && _dateRange.endDate != null) {
-      start = _dateRange.startDate!;
-      end = _dateRange.endDate!;
+    if (effectiveRange.startDate != null && effectiveRange.endDate != null) {
+      start = effectiveRange.startDate!;
+      end = effectiveRange.endDate!;
     } else {
       // Fallback: 7 days ago at 00:00:00 to now
       final now = DateTime.now();
@@ -384,7 +297,10 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       end = now;
     }
 
+    // Single setState: _dateRange and _futureResponse always update together
+    // so there is never a frame where axis config and data are mismatched.
     setState(() {
+      if (newDateRange != null) _dateRange = newDateRange;
       _errorMessage = null;
       _futureResponse = _fetchHistoricalSeries(
         organizationId: selectedOrg.id,
@@ -394,6 +310,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
         start: start,
         end: end,
         timezone: selectedSite.timezone,
+        aggregation: _selectedAggregation,
       );
     });
   }
@@ -406,6 +323,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
     required DateTime start,
     required DateTime end,
     required String timezone,
+    required String aggregation,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     final idToken = user != null ? await user.getIdToken() : null;
@@ -418,8 +336,37 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       start: start,
       end: end,
       timezone: timezone,
+      aggregation: aggregation,
       idToken: idToken,
     );
+  }
+
+  void _refreshOnOrgChange(String? orgId) {
+    if (_lastOrgId == orgId) {
+      return;
+    }
+
+    _lastOrgId = orgId;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      setState(() {
+        // Clear all org-scoped state so stale site/zone references
+        // from the previous org can never reach Firestore or the chart.
+        _selectedSite = null;
+        _lastSiteId = null;
+        _selectedZoneIds.clear();
+        _selectedReadings.clear();
+        _futureResponse = null;
+        _errorMessage = null;
+        // Invalidate cached streams so they rebuild under the new org.
+        _siteStream = null;
+        _siteStreamOrgId = null;
+        _zoneStream = null;
+        _zoneStreamSiteId = null;
+      });
+    });
   }
 
   void _refreshOnSiteChange(String? siteId) {
