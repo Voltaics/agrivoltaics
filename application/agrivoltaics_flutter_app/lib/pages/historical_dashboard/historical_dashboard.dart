@@ -32,6 +32,32 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
   String? _lastSyncedSiteId;
 
   late PickerDateRange _dateRange;
+  final ScrollController _scrollController = ScrollController();
+
+  // Cached zone stream — only recreated when the site changes so that
+  // filter setState calls don't tear down and recreate the Firestore listener.
+  Stream<List<Zone>>? _zoneStream;
+  String? _zoneStreamSiteId;
+
+  Stream<List<Zone>> _getZoneStream(String orgId, String siteId) {
+    if (_zoneStream == null || _zoneStreamSiteId != siteId) {
+      _zoneStream = _zoneService.getZones(orgId, siteId);
+      _zoneStreamSiteId = siteId;
+    }
+    return _zoneStream!;
+  }
+
+  // Cached site stream — only recreated when the org changes.
+  Stream<List<models.Site>>? _siteStream;
+  String? _siteStreamOrgId;
+
+  Stream<List<models.Site>> _getSiteStream(String orgId) {
+    if (_siteStream == null || _siteStreamOrgId != orgId) {
+      _siteStream = _siteService.getSites(orgId);
+      _siteStreamOrgId = orgId;
+    }
+    return _siteStream!;
+  }
 
   final Set<String> _selectedZoneIds = <String>{};
   final Set<String> _selectedReadings = <String>{};
@@ -66,6 +92,12 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -160,12 +192,13 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
         ),
         Expanded(
           child: SingleChildScrollView(
+            controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 StreamBuilder<List<models.Site>>(
-                  stream: _siteService.getSites(selectedOrg.id),
+                  stream: _getSiteStream(selectedOrg.id),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -197,10 +230,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
                           context,
                           initialRange: _dateRange,
                           onApplied: (range) {
-                            setState(() {
-                              _dateRange = range;
-                            });
-                            _applyFilters();
+                            _applyFilters(newDateRange: range);
                           },
                         );
                       },
@@ -211,7 +241,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
                 const SizedBox(height: 16),
                 if (selectedSite != null) ...[
                   StreamBuilder<List<Zone>>(
-                    stream: _zoneService.getZones(selectedOrg.id, selectedSite.id),
+                    stream: _getZoneStream(selectedOrg.id, selectedSite.id),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
@@ -360,7 +390,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
     return readings;
   }
 
-  Future<void> _applyFilters() async {
+  void _applyFilters({PickerDateRange? newDateRange}) {
     final appState = context.read<AppState>();
     final selectedOrg = appState.selectedOrganization;
     final selectedSite = _selectedSite;
@@ -376,13 +406,14 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       return;
     }
 
-    // Use date range or fallback to 7 days ago (normalized)
+    // Use the incoming range if provided, otherwise fall back to current state.
+    final effectiveRange = newDateRange ?? _dateRange;
     final DateTime start;
     final DateTime end;
     
-    if (_dateRange.startDate != null && _dateRange.endDate != null) {
-      start = _dateRange.startDate!;
-      end = _dateRange.endDate!;
+    if (effectiveRange.startDate != null && effectiveRange.endDate != null) {
+      start = effectiveRange.startDate!;
+      end = effectiveRange.endDate!;
     } else {
       // Fallback: 7 days ago at 00:00:00 to now
       final now = DateTime.now();
@@ -391,7 +422,10 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       end = now;
     }
 
+    // Single setState: _dateRange and _futureResponse always update together
+    // so there is never a frame where axis config and data are mismatched.
     setState(() {
+      if (newDateRange != null) _dateRange = newDateRange;
       _errorMessage = null;
       _futureResponse = _fetchHistoricalSeries(
         organizationId: selectedOrg.id,

@@ -121,6 +121,20 @@ class FilterCardWidget extends StatelessWidget {
                 onAggregationChanged(selection.first);
               },
             ),
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, size: 14, color: Colors.grey[600]),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Press Apply after making any changes to update the graphs.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
