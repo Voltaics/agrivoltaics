@@ -224,8 +224,9 @@ def main():
 
     insert_prediction_row(bq, cfg, pred_row)
 
-    # Save state AFTER training + new prediction
-    save_state(cfg, {"model": model.state_dict(), "opt": opt.state_dict(), "version": cfg.model_version})
+    # Save state AFTER training + new prediction, if training occurred.
+    if trained_count > 0:
+        save_state(cfg, {"model": model.state_dict(), "opt": opt.state_dict(), "version": cfg.model_version})
 
     print(json.dumps({
         "zoneId": cfg.zone_id,
