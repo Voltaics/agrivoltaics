@@ -99,8 +99,11 @@ def main():
     # Load persisted state (weights/optimizer)
     state = load_state(cfg)
     if state:
-        model.load_state_dict(state["model"])
-        opt.load_state_dict(state["opt"])
+        try:
+            model.load_state_dict(state["model"])
+            opt.load_state_dict(state["opt"])
+        except Exception as e:
+            print(f"WARNING: could not load persisted model/optimizer state (starting fresh): {e}")
 
     model.train()
 

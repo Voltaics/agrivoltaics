@@ -1,5 +1,7 @@
 from typing import Optional, Dict, Any
 import pandas as pd
+import numpy as np
+from datetime import datetime
 from google.cloud import bigquery
 from config import Config
 
@@ -16,11 +18,12 @@ def fetch_readings(bq: bigquery.Client, cfg: Config) -> pd.DataFrame:
       MAX(IF(field = "temperature", value, NULL)) AS temperature,
       MAX(IF(field = "humidity", value, NULL)) AS humidity,
       MAX(IF(field = "soilMoisture", value, NULL)) AS soilMoisture,
-      MAX(IF(field = "soilTemperature", value, NULL)) AS soilTemperature
+      MAX(IF(field = "soilTemperature", value, NULL)) AS soilTemperature,
+      MAX(IF(field = "light", value, NULL)) AS light
     FROM {bq_table(cfg.project_id, cfg.dataset, cfg.readings_table)}
     WHERE
       timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {cfg.lookback_hours} HOUR)
-      AND field IN ("temperature", "humidity", "soilMoisture", "soilTemperature")
+      AND field IN ("temperature", "humidity", "soilMoisture", "soilTemperature", "light")
       AND zoneId = @zoneId
     GROUP BY timestamp
     ORDER BY timestamp
@@ -127,10 +130,21 @@ def candles_on_during_window(candle_df: pd.DataFrame, start: pd.Timestamp, end: 
         return True
     return False
 
+def _jsonify_row(row: dict) -> dict:
+    out = {}
+    for k, v in row.items():
+        if isinstance(v, datetime):
+            out[k] = v.isoformat()
+        elif isinstance(v, (np.floating, np.integer)):
+            out[k] = v.item()
+        else:
+            out[k] = v
+    return out
 
 def insert_prediction_row(bq: bigquery.Client, cfg: Config, row: dict) -> None:
     table_id = f"{cfg.project_id}.{cfg.dataset}.{cfg.predictions_table}" if "." not in cfg.predictions_table else f"{cfg.project_id}.{cfg.predictions_table}"
-    errors = bq.insert_rows_json(table_id, [row])
+    json_row = _jsonify_row(row)
+    errors = bq.insert_rows_json(table_id, [json_row])
     if errors:
         raise RuntimeError(f"BigQuery insert errors: {errors}")
 
@@ -142,7 +156,9 @@ def has_processed_ingest(bq: bigquery.Client, cfg: Config) -> bool:
     query = f"""
     SELECT 1
     FROM {bq_table(cfg.project_id, cfg.dataset, cfg.predictions_table)}
-    WHERE zoneId = @zoneId AND ingest_id = @ingest_id
+    WHERE zoneId = @zoneId
+    AND ingest_id = @ingest_id
+    AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 30 DAY)
     LIMIT 1
     """
     job = bq.query(
