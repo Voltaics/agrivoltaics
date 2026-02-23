@@ -258,7 +258,6 @@ Create manually or via Firestore trigger when sensors are registered:
   sensorModel: "DHT22",
   sensorName: "Weather Sensor",
   fields: ["temperature", "humidity"],
-  isActive: true,
   registeredAt: Timestamp,
   lastDataReceived: Timestamp
 }
@@ -272,8 +271,6 @@ Create manually or via Firestore trigger when sensors are registered:
   model: "DHT22",
   arduinoDeviceId: "ARDUINO_001",
   sensorPin: "D4",
-  status: "active",
-  isOnline: true,
   lastReading: Timestamp,
   fields: {
     temperature: {

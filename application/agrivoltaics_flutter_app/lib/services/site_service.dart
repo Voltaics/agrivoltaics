@@ -37,7 +37,6 @@ class SiteService {
     GeoPoint? location,
     String? address,
     String? timezone,
-    bool isActive = true,
     bool siteChecked = true,
   }) async {
     final userId = _auth.currentUser!.uid;
@@ -50,7 +49,6 @@ class SiteService {
       location: location,
       address: address ?? '',
       timezone: timezone ?? 'America/New_York',
-      isActive: isActive,
       lastDataReceived: null,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -95,11 +93,6 @@ class SiteService {
     
     // Delete the site document
     await siteRef.delete();
-  }
-
-  // Toggle site active status
-  Future<void> toggleSiteActive(String orgId, String siteId, bool isActive) async {
-    await updateSite(orgId, siteId, {'isActive': isActive});
   }
 
   // Toggle site checked (visibility)

@@ -54,7 +54,6 @@ class ReadingCard extends StatelessWidget {
           field.currentValue,
           field.unit,
           formattersService,
-          isOnline: sensor.isOnline,
         );
       },
     );
@@ -68,7 +67,6 @@ class ReadingCard extends StatelessWidget {
     FormattersService formattersService, {
     bool isLoading = false,
     String? error,
-    bool isOnline = false,
   }) {
     return Card(
       elevation: 1,
@@ -111,10 +109,10 @@ class ReadingCard extends StatelessWidget {
                 children: [
                   Text(
                     value.toStringAsFixed(1),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: isOnline ? Colors.black : Colors.grey[600],
+                      color: Colors.black,
                     ),
                   ),
                   if (unit != null && unit.isNotEmpty) ...[

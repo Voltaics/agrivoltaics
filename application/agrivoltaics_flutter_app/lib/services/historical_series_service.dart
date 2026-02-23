@@ -48,6 +48,8 @@ class HistoricalSeriesService {
     required DateTime start,
     required DateTime end,
     String? interval,
+    String? aggregation,
+    String? timezone,
     String? idToken,
   }) async {
     final uri = Uri.parse(endpointUrl);
@@ -70,6 +72,14 @@ class HistoricalSeriesService {
 
     if (interval != null && interval.isNotEmpty) {
       body['interval'] = interval;
+    }
+
+    if (aggregation != null && aggregation.isNotEmpty) {
+      body['aggregation'] = aggregation;
+    }
+
+    if (timezone != null && timezone.isNotEmpty) {
+      body['timezone'] = timezone;
     }
 
     final response = await http.post(

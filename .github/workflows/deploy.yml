@@ -30,23 +30,28 @@ jobs:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
           service_account: service-324259319471@gcp-sa-cloudbuild.iam.gserviceaccount.com
 
-      - name: Push image to Google Cloud Container Registry
-        id: push-image
-        uses: RafikFarhad/push-to-gcr-github-action@v5-beta
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
         with:
-          # gcloud_service_key: ${{ secrets.GCLOUD_SERVICE_KEY }} # can be base64 encoded or plain text || not needed if you use google-github-actions/auth
-          registry: gcr.io
-          project_id: vinovoltaics-webapp
-          image_name: vinovoltaics-webapp-image
-          image_tag: latest
-          dockerfile: ./application/agrivoltaics_flutter_app/Dockerfile
+          driver: docker
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker gcr.io --quiet
+
+      - name: Build and push image to Google Container Registry
+        id: push-image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: gcr.io/vinovoltaics-webapp/vinovoltaics-webapp-image:latest
+          file: ./application/agrivoltaics_flutter_app/Dockerfile
           context: ./application/agrivoltaics_flutter_app
-          build_args: >
-            INFLUXDB_URL=${{ vars.INFLUXDB_URL }},
-            INFLUXDB_TOKEN=${{ secrets.INFLUXDB_TOKEN }},
-            INFLUXDB_ORG=${{ vars.INFLUXDB_ORG }},
-            INFLUXDB_BUCKET=${{ vars.INFLUXDB_BUCKET }},
-            INFLUXDB_DEBUG=${{ vars.INFLUXDB_DEBUG }},
+          build-args: |
+            INFLUXDB_URL=${{ vars.INFLUXDB_URL }}
+            INFLUXDB_TOKEN=${{ secrets.INFLUXDB_TOKEN }}
+            INFLUXDB_ORG=${{ vars.INFLUXDB_ORG }}
+            INFLUXDB_BUCKET=${{ vars.INFLUXDB_BUCKET }}
+            INFLUXDB_DEBUG=${{ vars.INFLUXDB_DEBUG }}
             AUTHORIZED_EMAILS=${{ vars.AUTHORIZED_EMAILS }}
 
   app-deploy-gcp-cloud-run:
@@ -96,20 +101,26 @@ jobs:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
           service_account: service-324259319471@gcp-sa-cloudbuild.iam.gserviceaccount.com
 
-      - name: Push image to Google Cloud Container Registry
-        id: push-image
-        uses: RafikFarhad/push-to-gcr-github-action@v5-beta
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
         with:
-          registry: gcr.io
-          project_id: vinovoltaics-webapp
-          image_name: vinovoltaics-alert-microservice-image
-          image_tag: latest
-          dockerfile: ./application/microservices/py-weather-microservice/Dockerfile
+          driver: docker
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker gcr.io --quiet
+
+      - name: Build and push image to Google Container Registry
+        id: push-image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: gcr.io/vinovoltaics-webapp/vinovoltaics-alert-microservice-image:latest
+          file: ./application/microservices/py-weather-microservice/Dockerfile
           context: ./application/microservices/py-weather-microservice
-          build_args: >
-            MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},
-            LATITUDE=${{ vars.SITE_LATITUDE }},
-            LONGITUDE=${{ vars.SITE_LONGITUDE }},
+          build-args: |
+            MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
+            LATITUDE=${{ vars.SITE_LATITUDE }}
+            LONGITUDE=${{ vars.SITE_LONGITUDE }}
             EXECUTION_INTERVAL=${{ vars.MICROSERVICE_EXECUTION_INTERVAL }}
 
   microservice-deploy-gcp-cloud-run:
@@ -160,18 +171,24 @@ jobs:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
           service_account: service-324259319471@gcp-sa-cloudbuild.iam.gserviceaccount.com
 
-      - name: Push image to Google Cloud Container Registry
-        id: push-image
-        uses: RafikFarhad/push-to-gcr-github-action@v5-beta
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
         with:
-          registry: gcr.io
-          project_id: vinovoltaics-webapp
-          image_name: vinovoltaics-notification-api-image
-          image_tag: latest
-          dockerfile: ./application/microservices/py-weather-api/Dockerfile
+          driver: docker
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker gcr.io --quiet
+
+      - name: Build and push image to Google Container Registry
+        id: push-image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: gcr.io/vinovoltaics-webapp/vinovoltaics-notification-api-image:latest
+          file: ./application/microservices/py-weather-api/Dockerfile
           context: ./application/microservices/py-weather-api
-          build_args: >
-            MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }},
+          build-args: |
+            MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
 
   notification-api-deploy-gcp-cloud-run:
     needs: notification-api-build-and-push-to-gcr
