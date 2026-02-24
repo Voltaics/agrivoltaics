@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../app_state.dart';
@@ -39,9 +40,9 @@ class SiteZoneBreadcrumb extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: AppColors.dividerOnDark),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withAlpha((0.05 * 255).toInt()),
@@ -70,7 +71,7 @@ class SiteZoneBreadcrumb extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_drop_down,
-              color: Colors.grey[600],
+              color: AppColors.textMuted,
             ),
           ],
         ),
@@ -89,7 +90,7 @@ class SiteZoneBreadcrumb extends StatelessWidget {
   void _showSiteZoneSelector(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -263,7 +264,7 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
             Icons.business,
             color: isSelected
                 ? Theme.of(context).colorScheme.primary
-                : Colors.grey,
+                : AppColors.textMuted,
           ),
           title: Text(
             widget.site.name,
@@ -271,7 +272,7 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               color: isSelected
                   ? Theme.of(context).colorScheme.primary
-                  : Colors.black,
+                  : AppColors.textOnLight,
             ),
           ),
           subtitle: widget.site.address.isNotEmpty
@@ -282,7 +283,7 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
             children: [
               // Edit button
               IconButton(
-                icon: const Icon(Icons.edit, size: 20, color: Colors.grey),
+                icon: const Icon(Icons.edit, size: 20, color: AppColors.textMuted),
                 onPressed: () {
                   showDialog(
                     context: context,
@@ -299,7 +300,7 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
                 IconButton(
                   icon: Icon(
                     _isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.grey,
+                    color: AppColors.textMuted,
                   ),
                   onPressed: () {
                     setState(() => _isExpanded = !_isExpanded);
@@ -357,7 +358,7 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
                         Text(
                           zones.isEmpty ? 'No zones yet' : 'Zones',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: AppColors.textMuted,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -391,7 +392,7 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
                       size: 20,
                       color: isZoneSelected
                           ? Theme.of(context).colorScheme.primary
-                          : Colors.grey[400],
+                          : AppColors.textMuted,
                     ),
                     title: Text(
                       zone.name,
@@ -401,11 +402,11 @@ class _SiteExpansionTileState extends State<SiteExpansionTile> {
                             isZoneSelected ? FontWeight.w600 : FontWeight.normal,
                         color: isZoneSelected
                             ? Theme.of(context).colorScheme.primary
-                            : Colors.black87,
+                              : AppColors.textOnLight,
                       ),
                     ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.edit, size: 18, color: Colors.grey),
+                      icon: const Icon(Icons.edit, size: 18, color: AppColors.textMuted),
                       onPressed: () {
                         showDialog(
                           context: context,

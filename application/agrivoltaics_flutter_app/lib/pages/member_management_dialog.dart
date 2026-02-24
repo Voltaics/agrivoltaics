@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/organization.dart';
@@ -36,7 +37,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter an email address'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -47,7 +48,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a valid email address'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -76,7 +77,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Added $email as $_selectedRole'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
@@ -89,7 +90,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error adding member: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -108,14 +109,14 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                color: Color(0xFF2D53DA),
+                color: AppColors.primary,
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(4),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.people, color: Colors.white),
+                  const Icon(Icons.people, color: AppColors.textPrimary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -124,7 +125,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                         const Text(
                           'Manage Members',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -133,7 +134,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                         Text(
                           widget.organization.name,
                           style: TextStyle(
-                            color: Colors.white.withAlpha((0.9 * 255).toInt()),
+                            color: AppColors.textPrimary.withAlpha((0.9 * 255).toInt()),
                             fontSize: 14,
                           ),
                         ),
@@ -141,7 +142,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: AppColors.textPrimary),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -163,7 +164,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                         padding: const EdgeInsets.all(20),
                         child: Text(
                           'Error loading members: ${snapshot.error}',
-                          style: const TextStyle(color: Colors.red),
+                          style: const TextStyle(color: AppColors.error),
                         ),
                       ),
                     );
@@ -199,9 +200,9 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: AppColors.scaffoldBackground,
                 border: Border(
-                  top: BorderSide(color: Colors.grey[300]!),
+                  top: BorderSide(color: AppColors.scaffoldBackground),
                 ),
               ),
               child: Column(
@@ -266,14 +267,14 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
+                              ),
+                            )
                             : const Icon(Icons.add),
                         label: Text(_isAddingMember ? 'Adding...' : 'Add'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2D53DA),
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.textPrimary,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
                             vertical: 18,
@@ -316,7 +317,7 @@ class _MemberListItemState extends State<MemberListItem> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.warning, color: Colors.orange),
+            const Icon(Icons.warning, color: AppColors.warning),
             SizedBox(width: 12),
             Text('Remove Member?'),
           ],
@@ -337,12 +338,12 @@ class _MemberListItemState extends State<MemberListItem> {
                 ),
                 if (userEmail.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(userEmail, style: TextStyle(color: Colors.grey[600])),
+                  Text(userEmail, style: TextStyle(color: AppColors.textMuted)),
                 ],
                 const SizedBox(height: 12),
                 const Text(
                   'They will lose access to this organization and all its data.',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(color: AppColors.error),
                 ),
               ],
             );
@@ -356,8 +357,8 @@ class _MemberListItemState extends State<MemberListItem> {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.textPrimary,
             ),
             child: const Text('Remove'),
           ),
@@ -382,7 +383,7 @@ class _MemberListItemState extends State<MemberListItem> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Member removed successfully'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
@@ -395,7 +396,7 @@ class _MemberListItemState extends State<MemberListItem> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -416,11 +417,11 @@ class _MemberListItemState extends State<MemberListItem> {
 
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: const Color(0xFF2D53DA),
+            backgroundColor: AppColors.primary,
             child: Text(
               displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -437,7 +438,7 @@ class _MemberListItemState extends State<MemberListItem> {
                   email,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: AppColors.textMuted,
                   ),
                 ),
               const SizedBox(height: 4),
@@ -463,7 +464,7 @@ class _MemberListItemState extends State<MemberListItem> {
               else if (!isCurrentUser) // Hide delete button for current user
                 IconButton(
                   icon: const Icon(Icons.delete, size: 20),
-                  color: Colors.red,
+                  color: AppColors.error,
                   onPressed: _removeMember,
                   tooltip: 'Remove member',
                 )
@@ -473,7 +474,7 @@ class _MemberListItemState extends State<MemberListItem> {
                   child: Icon(
                     Icons.person,
                     size: 20,
-                    color: Colors.grey[400],
+                    color: AppColors.textMuted,
                   ),
                 ),
             ],
@@ -487,19 +488,19 @@ class _MemberListItemState extends State<MemberListItem> {
     Color badgeColor;
     switch (role) {
       case 'owner':
-        badgeColor = Colors.purple;
+        badgeColor = AppColors.primaryLight;
         break;
       case 'admin':
-        badgeColor = Colors.blue;
+        badgeColor = AppColors.primary;
         break;
       case 'member':
-        badgeColor = Colors.green;
+        badgeColor = AppColors.success;
         break;
       case 'viewer':
-        badgeColor = Colors.grey;
+        badgeColor = AppColors.textMuted;
         break;
       default:
-        badgeColor = Colors.grey;
+        badgeColor = AppColors.textMuted;
     }
 
     return Container(
@@ -538,13 +539,13 @@ class _MemberListItemState extends State<MemberListItem> {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.blue.withAlpha((0.1 * 255).toInt()),
+              color: AppColors.info.withAlpha((0.1 * 255).toInt()),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               perm,
               style: const TextStyle(
-                color: Colors.blue,
+                color: AppColors.info,
                 fontSize: 9,
               ),
             ),

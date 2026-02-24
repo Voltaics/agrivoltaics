@@ -14,7 +14,7 @@ class Config:
 
     lookback_hours: int = 24 * 3  # 3 days
     interval_minutes: int = 15
-    horizon_minutes: int = 120  # 2 hours
+    horizon_minutes: int = 60 * 6  # 6 hours
 
     lr: float = 1e-3
     weight_decay: float = 1e-6

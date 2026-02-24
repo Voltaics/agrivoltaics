@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:agrivoltaics_flutter_app/app_state.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -123,7 +124,7 @@ class _NotificationsButtonState extends State<NotificationsButton> {
                     const Positioned(
                       child: Icon(
                         Icons.brightness_1,
-                        color: Colors.red,
+                        color: AppColors.error,
                         size: 9.0
                       )
                     )

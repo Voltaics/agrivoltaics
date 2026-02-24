@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../app_state.dart';
 import '../../../models/organization.dart';
@@ -72,7 +73,7 @@ class OrganizationList extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (isSelected)
-                    const Icon(Icons.check_circle, color: Color(0xFF2D53DA)),
+                    const Icon(Icons.check_circle, color: AppColors.primary),
                   IconButton(
                     icon: const Icon(Icons.edit, size: 20),
                     onPressed: () {

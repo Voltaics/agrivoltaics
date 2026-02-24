@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_state.dart';
@@ -72,7 +73,7 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Organization "${_nameController.text}" created successfully!'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
@@ -85,7 +86,7 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error creating organization: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -96,7 +97,7 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.business, color: Color(0xFF2D53DA)),
+          Icon(Icons.business, color: AppColors.primary),
           SizedBox(width: 12),
           Text('Create Organization'),
         ],
@@ -111,7 +112,7 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
               const Text(
                 'Create a new organization to manage your sites, sensors, and team members.',
                 style: TextStyle(
-                  color: Colors.black87,
+                  color: AppColors.textMuted,
                   fontSize: 14,
                 ),
               ),
@@ -155,7 +156,7 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
               Text(
                 'You will be set as the owner with full permissions.',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
                 ),
@@ -177,14 +178,14 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
                   ),
                 )
               : const Icon(Icons.add),
           label: Text(_isLoading ? 'Creating...' : 'Create'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2D53DA),
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textPrimary,
           ),
         ),
       ],

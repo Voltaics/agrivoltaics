@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_state.dart';
@@ -87,8 +88,8 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Organization updated successfully!'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 2),
         ),
       );
     } catch (e) {
@@ -101,7 +102,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error updating organization: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -113,7 +114,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.warning, color: Colors.red),
+            const Icon(Icons.warning, color: AppColors.warning),
             SizedBox(width: 12),
             Text('Delete Organization?'),
           ],
@@ -129,7 +130,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
             const SizedBox(height: 12),
             const Text(
               'This action cannot be undone. All sites, sensors, and data associated with this organization will be permanently deleted.',
-              style: TextStyle(color: Colors.red),
+              style: const TextStyle(color: AppColors.error),
             ),
           ],
         ),
@@ -141,8 +142,8 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.textPrimary,
             ),
             child: const Text('Delete'),
           ),
@@ -184,7 +185,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Organization deleted. Please select another organization.'),
-              backgroundColor: Colors.orange,
+              backgroundColor: AppColors.warning,
             ),
           );
         });
@@ -193,7 +194,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Organization deleted successfully'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.warning,
           ),
         );
       }
@@ -207,7 +208,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error deleting organization: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -231,7 +232,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.edit, color: Color(0xFF2D53DA)),
+          Icon(Icons.edit, color: AppColors.primary),
           SizedBox(width: 12),
           Text('Edit Organization'),
         ],
@@ -285,7 +286,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
                 icon: const Icon(Icons.people),
                 label: const Text('Manage Members'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF2D53DA),
+                  foregroundColor: AppColors.primary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -295,7 +296,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
                 icon: const Icon(Icons.delete),
                 label: const Text('Delete Organization'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
+                  foregroundColor: AppColors.error,
                 ),
               ),
             ],
@@ -315,14 +316,14 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
                   ),
                 )
               : const Icon(Icons.save),
           label: Text(_isLoading ? 'Saving...' : 'Save'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2D53DA),
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textPrimary,
           ),
         ),
       ],

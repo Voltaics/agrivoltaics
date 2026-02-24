@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../models/zone.dart';
 import '../services/zone_service.dart';
@@ -89,7 +90,7 @@ class _EditZoneDialogState extends State<EditZoneDialog> {
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: AppColors.error,
               ),
               child: const Text('Delete'),
             ),
@@ -174,7 +175,7 @@ class _EditZoneDialogState extends State<EditZoneDialog> {
         TextButton(
           onPressed: _isLoading ? null : _deleteZone,
           style: TextButton.styleFrom(
-            foregroundColor: Colors.red,
+            foregroundColor: AppColors.error,
           ),
           child: const Text('Delete'),
         ),

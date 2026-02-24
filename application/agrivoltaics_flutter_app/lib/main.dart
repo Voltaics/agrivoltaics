@@ -75,13 +75,13 @@ class App extends StatelessWidget {
           useMaterial3: true,
           colorScheme: const ColorScheme.light(
             primary:     AppColors.primary,
-            onPrimary:   Colors.white,
+            onPrimary:   AppColors.textPrimary,
             secondary:   AppColors.primary,
-            onSecondary: Colors.white,
+            onSecondary: AppColors.textPrimary,
             surface:     AppColors.surface,
-            onSurface:   Colors.black,
+            onSurface:   AppColors.textOnLight,
             error:       AppColors.error,
-            onError:     Colors.white,
+            onError:     AppColors.textPrimary,
           ),
           scaffoldBackgroundColor: AppColors.scaffoldBackground,
           cardTheme: CardThemeData(
@@ -95,22 +95,22 @@ class App extends StatelessWidget {
           ),
           appBarTheme: const AppBarTheme(
             backgroundColor: AppColors.surface,
-            foregroundColor: Colors.black,
+            foregroundColor: AppColors.textOnLight,
             elevation: 1,
           ),
           navigationRailTheme: const NavigationRailThemeData(
             backgroundColor: AppColors.surface,
             selectedIconTheme: IconThemeData(color: AppColors.primary),
-            selectedLabelTextStyle: TextStyle(color: Colors.white),
-            unselectedIconTheme: IconThemeData(color: Colors.white),
-            unselectedLabelTextStyle: TextStyle(color: Colors.white),
-            indicatorColor: Colors.white, // No oval
+            selectedLabelTextStyle: TextStyle(color: AppColors.textPrimary),
+            unselectedIconTheme: IconThemeData(color: AppColors.textPrimary),
+            unselectedLabelTextStyle: TextStyle(color: AppColors.textPrimary),
+            indicatorColor: AppColors.textPrimary, // No oval highlight
             labelType: NavigationRailLabelType.none,
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.textPrimary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

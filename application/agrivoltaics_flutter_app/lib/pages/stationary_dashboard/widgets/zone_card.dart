@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../models/zone.dart';
 import 'reading_card.dart';
@@ -43,8 +44,8 @@ class ZoneCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
                   'No readings configured for this zone',
-                  style: TextStyle(
-                    color: Colors.grey[600],
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
                     fontSize: 14,
                   ),
                 ),

@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:agrivoltaics_flutter_app/models/site.dart' as models;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -54,7 +55,7 @@ class SiteSelectorWidget extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Text(
                   'No sites available',
-                  style: TextStyle(color: Colors.grey),
+                  style: const TextStyle(color: AppColors.textMuted),
                 ),
               )
             else
@@ -87,7 +88,7 @@ class SiteSelectorWidget extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Colors.grey,
+                      color: AppColors.textMuted,
                     ),
                   ),
                   const SizedBox(height: 8),
