@@ -50,8 +50,6 @@ class Sensor {
   final String model;
   final GeoPoint? location;
   final Map<String, SensorField> fields; // e.g., {"temperature": {...}, "humidity": {...}}
-  final String status; // "active" | "inactive" | "maintenance" | "error"
-  final bool isOnline;
   final DateTime? lastReading;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -62,8 +60,6 @@ class Sensor {
     required this.model,
     this.location,
     required this.fields,
-    required this.status,
-    required this.isOnline,
     this.lastReading,
     required this.createdAt,
     required this.updatedAt,
@@ -89,8 +85,6 @@ class Sensor {
       model: data['model'] ?? '',
       location: data['location'] as GeoPoint?,
       fields: fieldsMap,
-      status: data['status'] ?? 'inactive',
-      isOnline: data['isOnline'] ?? false,
       lastReading: data['lastReading'] != null
           ? (data['lastReading'] as Timestamp).toDate()
           : null,
@@ -111,8 +105,6 @@ class Sensor {
       'model': model,
       'location': location,
       'fields': fieldsMap,
-      'status': status,
-      'isOnline': isOnline,
       'lastReading': lastReading != null ? Timestamp.fromDate(lastReading!) : null,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
@@ -124,8 +116,6 @@ class Sensor {
     String? model,
     GeoPoint? location,
     Map<String, SensorField>? fields,
-    String? status,
-    bool? isOnline,
     DateTime? lastReading,
     DateTime? updatedAt,
   }) {
@@ -135,8 +125,6 @@ class Sensor {
       model: model ?? this.model,
       location: location ?? this.location,
       fields: fields ?? this.fields,
-      status: status ?? this.status,
-      isOnline: isOnline ?? this.isOnline,
       lastReading: lastReading ?? this.lastReading,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

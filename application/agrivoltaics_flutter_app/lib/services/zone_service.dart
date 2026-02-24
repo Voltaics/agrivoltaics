@@ -35,6 +35,7 @@ class ZoneService {
     String? description,
     GeoPoint? location,
     bool zoneChecked = true,
+    Map<String, String>? readings,
   }) async {
     final zoneRef = _firestore
         .collection('organizations/$orgId/sites/$siteId/zones')
@@ -46,6 +47,7 @@ class ZoneService {
       description: description ?? '',
       location: location,
       zoneChecked: zoneChecked,
+      readings: readings,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -124,6 +126,7 @@ class ZoneService {
         description: '',
         location: null,
         zoneChecked: true,
+        readings: {},
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -134,5 +137,46 @@ class ZoneService {
     
     await batch.commit();
     return zoneIds;
+  }
+
+  // Set primary sensor for a reading type
+  Future<void> setPrimarySensor({
+    required String orgId,
+    required String siteId,
+    required String zoneId,
+    required String readingFieldName,
+    required String sensorId,
+  }) async {
+    await _firestore
+        .doc('organizations/$orgId/sites/$siteId/zones/$zoneId')
+        .update({
+      'readings.$readingFieldName': sensorId,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Remove primary sensor designation for a reading type
+  Future<void> removePrimarySensor({
+    required String orgId,
+    required String siteId,
+    required String zoneId,
+    required String readingFieldName,
+  }) async {
+    await _firestore
+        .doc('organizations/$orgId/sites/$siteId/zones/$zoneId')
+        .update({
+      'readings.$readingFieldName': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Update multiple reading assignments at once
+  Future<void> updateReadings({
+    required String orgId,
+    required String siteId,
+    required String zoneId,
+    required Map<String, String> readings,
+  }) async {
+    await updateZone(orgId, siteId, zoneId, {'readings': readings});
   }
 }

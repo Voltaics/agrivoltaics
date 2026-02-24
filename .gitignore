@@ -1,2 +1,25 @@
 
 application/agrivoltaics_flutter_app/.metadata
+application/model_training/convnext_base__teacher_best.pth
+application/model_training/efficientnet_b4__teacher_best.pth
+application/model_training/resnet50__teacher_best.pth
+application/model_training/resnet101__teacher_best.pth
+application/model_training/resnet152__teacher_best.pth
+application/model_training/Old_Weights/10-27-25_1/convnext_base__teacher_best.pth
+application/model_training/Old_Weights/10-27-25_1/efficientnet_b4__teacher_best.pth
+application/model_training/Old_Weights/10-27-25_1/resnet50__teacher_best.pth
+application/model_training/Old_Weights/10-27-25_1/resnet50_best.pth
+application/model_training/Old_Weights/10-27-25_1/student_resnet18_distilled.pth
+application/model_training/Old_Weights/10-27-25_1/swin_t__teacher_best.pth
+application/model_training/Old_Weights/10-27-25_1/vit_b_16__teacher_best.pth
+application/model_training/Old_Weights/10-27-25_1_96.20%_Student/disease_train.py
+application/model_training/Old_Weights/10-27-25_1_96.20%_Student/efficientnet_b4__teacher_best.pth
+application/model_training/Old_Weights/10-27-25_1_96.20%_Student/resnet50__teacher_best.pth
+application/model_training/Old_Weights/10-27-25_1_96.20%_Student/resnet101__teacher_best.pth
+application/model_training/Old_Weights/10-27-25_1_96.20%_Student/resnet152__teacher_best.pth
+application/model_training/Old_Weights/10-27-25_1_96.20%_Student/Screenshot 2025-10-27 031045.png
+application/model_training/Old_Weights/10-27-25_1_96.20%_Student/student_resnet18_distilled.pth
+application/pi_code/test_inference.py
+application/pi_code/__pycache__/align_images.cpython-312.pyc
+application/pi_code/__pycache__/process_images_new.cpython-312.pyc
+application/pi_code/__pycache__/run_inference.cpython-312.pyc

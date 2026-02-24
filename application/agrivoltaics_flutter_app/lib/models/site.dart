@@ -7,7 +7,6 @@ class Site {
   final GeoPoint? location;
   final String address;
   final String timezone;
-  final bool isActive;
   final DateTime? lastDataReceived;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -21,7 +20,6 @@ class Site {
     this.location,
     required this.address,
     required this.timezone,
-    required this.isActive,
     this.lastDataReceived,
     required this.createdAt,
     required this.updatedAt,
@@ -39,7 +37,6 @@ class Site {
       location: data['location'] as GeoPoint?,
       address: data['address'] ?? '',
       timezone: data['timezone'] ?? 'America/New_York',
-      isActive: data['isActive'] ?? true,
       lastDataReceived: (data['lastDataReceived'] as Timestamp?)?.toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -56,7 +53,6 @@ class Site {
       'location': location,
       'address': address,
       'timezone': timezone,
-      'isActive': isActive,
       'lastDataReceived': lastDataReceived != null 
           ? Timestamp.fromDate(lastDataReceived!) 
           : null,
@@ -74,7 +70,6 @@ class Site {
     GeoPoint? location,
     String? address,
     String? timezone,
-    bool? isActive,
     DateTime? lastDataReceived,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -88,7 +83,6 @@ class Site {
       location: location ?? this.location,
       address: address ?? this.address,
       timezone: timezone ?? this.timezone,
-      isActive: isActive ?? this.isActive,
       lastDataReceived: lastDataReceived ?? this.lastDataReceived,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

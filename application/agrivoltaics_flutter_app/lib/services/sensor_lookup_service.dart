@@ -53,7 +53,6 @@ class SensorLookupService {
     required String sensorModel,
     required String sensorName,
     required List<String> fields,
-    bool isActive = true,
   }) async {
     try {
       final now = DateTime.now();
@@ -75,7 +74,6 @@ class SensorLookupService {
         sensorModel: sensorModel,
         sensorName: sensorName,
         fields: fields,
-        isActive: isActive,
         registeredAt: existingDoc.exists 
             ? (existingDoc.data()!['registeredAt'] as Timestamp).toDate()
             : now,
@@ -116,21 +114,6 @@ class SensorLookupService {
       });
     } catch (e) {
       throw Exception('Failed to update last data received: $e');
-    }
-  }
-
-  /// Update sensor lookup active status
-  Future<void> updateActiveStatus(String sensorId, bool isActive) async {
-    try {
-      await _firestore
-          .collection('sensorLookup')
-          .doc(sensorId)
-          .update({
-        'isActive': isActive,
-        'updatedAt': Timestamp.fromDate(DateTime.now()),
-      });
-    } catch (e) {
-      throw Exception('Failed to update active status: $e');
     }
   }
 }

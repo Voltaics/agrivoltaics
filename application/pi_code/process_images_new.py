@@ -5,6 +5,37 @@ import numpy as np
 from sklearn.decomposition import PCA
 import argparse
 import json
+import tifffile as tiff
+
+def read_tif_grayscale_u8(path):
+    """
+    Robust TIFF reader for 16-bit/32-bit/float TIFFs.
+    Returns an 8-bit grayscale numpy array suitable for OpenCV resize/merge.
+    """
+    arr = tiff.imread(path)
+
+    # If multi-channel, reduce to single channel
+    if arr.ndim == 3:
+        # common cases: (H,W,C) or (C,H,W)
+        if arr.shape[0] in (3, 4, 5, 6, 7) and arr.shape[0] < arr.shape[-1]:
+            # (C,H,W) -> take first channel
+            arr = arr[0]
+        else:
+            # (H,W,C) -> average channels
+            arr = arr.mean(axis=2)
+
+    arr = arr.astype(np.float32)
+
+    # Robust normalization to 0..255 (avoid outliers)
+    lo = np.percentile(arr, 1)
+    hi = np.percentile(arr, 99)
+    if hi <= lo:
+        hi = lo + 1.0
+
+    arr = np.clip(arr, lo, hi)
+    arr = (arr - lo) / (hi - lo)  # 0..1
+    arr = (arr * 255.0).astype(np.uint8)
+    return arr
 
 def compute_ndvi(nir, red):
     #Compute NDVI = (NIR - Red) / (NIR + Red)
@@ -49,7 +80,7 @@ def create_side_by_side_collage(image_paths, target_size=(400, 400), padding=10)
     Places 5 grayscale images in a grid layout: 3 on top, 2 on bottom.
     Resizes them to target_size first, then concatenates.
     """
-    images = [cv2.resize(cv2.imread(path, cv2.IMREAD_GRAYSCALE), target_size) for path in image_paths]
+    images = [cv2.resize(read_tif_grayscale_u8(path), target_size) for path in image_paths]
    
     #Top row (3 images)
     top_row = cv2.hconcat(images[:3])
@@ -91,17 +122,18 @@ def create_combined_visualization(input_folder, output_folder):
 
     #Load and resize bands individually
     target_size = (400, 400)
-    blue  = cv2.resize(cv2.imread(capture_files[0], cv2.IMREAD_GRAYSCALE), target_size)
-    green = cv2.resize(cv2.imread(capture_files[1], cv2.IMREAD_GRAYSCALE), target_size)
-    red   = cv2.resize(cv2.imread(capture_files[2], cv2.IMREAD_GRAYSCALE), target_size)
-    nir   = cv2.resize(cv2.imread(capture_files[3], cv2.IMREAD_GRAYSCALE), target_size)
-    rede  = cv2.resize(cv2.imread(capture_files[4], cv2.IMREAD_GRAYSCALE), target_size)
+    blue  = cv2.resize(read_tif_grayscale_u8(capture_files[0]), target_size)
+    green = cv2.resize(read_tif_grayscale_u8(capture_files[1]), target_size)
+    red   = cv2.resize(read_tif_grayscale_u8(capture_files[2]), target_size)
+    nir   = cv2.resize(read_tif_grayscale_u8(capture_files[3]), target_size)
+    rede  = cv2.resize(read_tif_grayscale_u8(capture_files[4]), target_size)
+
 
     #False color composite: (B=Green, G=Red, R=NIR)
     false_color = create_false_color(green, red, nir)
     false_path = os.path.join(output_folder, "false_color.jpg")
     #cv2.imwrite(false_path, false_color) don't need this image anymore
-    print(f"Saved false color image to: {false_path}")
+    #print(f"Saved false color image to: {false_path}")
 
     ndvi_image = compute_ndvi(nir, red)
     ndvi_path = os.path.join(output_folder, "ndvi.jpg")

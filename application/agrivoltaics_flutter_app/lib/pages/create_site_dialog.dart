@@ -6,9 +6,9 @@ class CreateSiteDialog extends StatefulWidget {
   final String organizationId;
 
   const CreateSiteDialog({
-    Key? key,
+    super.key,
     required this.organizationId,
-  }) : super(key: key);
+  });
 
   @override
   State<CreateSiteDialog> createState() => _CreateSiteDialogState();
@@ -23,7 +23,6 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
   final _longitudeController = TextEditingController();
   
   String _selectedTimezone = 'America/New_York';
-  bool _isActive = true;
   bool _isLoading = false;
 
   // Common US timezones
@@ -87,7 +86,6 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
         location: (latitude != null && longitude != null)
             ? GeoPoint(latitude, longitude)
             : null,
-        isActive: _isActive,
       );
 
       if (mounted) {
@@ -171,7 +169,7 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _selectedTimezone,
+                  initialValue: _selectedTimezone,
                   decoration: const InputDecoration(
                     labelText: 'Timezone',
                     border: OutlineInputBorder(),
@@ -224,16 +222,7 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                SwitchListTile(
-                  title: const Text('Active'),
-                  subtitle: const Text('Site is currently active and collecting data'),
-                  value: _isActive,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isActive = value;
-                    });
-                  },
-                ),
+
               ],
             ),
           ),
