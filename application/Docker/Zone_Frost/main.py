@@ -21,27 +21,34 @@ from bq_io import (
 )
 from state import load_state, save_state
 
+# minimum fraction of real bins required to train
+COVERAGE_THRESHOLD = 0.70
+
+# reject if a streak of missing bins exceeds this limit
+# 16 bins * 15 minutes = 4 hours of missing data
+MAX_GAP_BINS = 16
 
 def required_steps(lookback_hours: int, interval_minutes: int) -> int:
+    # Must be integer (your config is compatible: 72h & 15m => 288)
     return int((lookback_hours * 60) / interval_minutes)
 
+def _gap_skip_reason(prefix: str, meta: dict) -> str:
+    return (
+        f"{prefix}:"
+        f"max_gap_{meta['max_gap_bins']}_bins"
+        f"({meta['max_gap_minutes']}min)_exceeds_{MAX_GAP_BINS}_bins"
+        f"_needed_{meta['needed_points']}"
+        f"_real_{meta['real_points']}"
+        f"({meta['coverage_pct']:.1f}%)"
+    )
 
-def has_enough_history(grid_df: pd.DataFrame, cfg: Config) -> tuple[bool, str | None]:
-    need = required_steps(cfg.lookback_hours, cfg.interval_minutes)
-    if len(grid_df) < need:
-        return False, f"need_{need}_bins_have_{len(grid_df)}"
-
-    tail = grid_df.tail(need)
-
-    # Require at least some real temp values (not all NaN)
-    if tail["temperature"].isna().all():
-        return False, "temperature_all_nan"
-
-    need_span = pd.Timedelta(hours=cfg.lookback_hours)
-    if (grid_df["timestamp"].max() - grid_df["timestamp"].min()) < need_span * 0.95:
-        return False, "insufficient_timespan"
-
-    return True, None
+def _coverage_skip_reason(prefix: str, meta: dict) -> str:
+    # Example: "insufficient_real_points_for_training:real_250_of_288(86.8%)"
+    return (
+        f"{prefix}:"
+        f"real_{meta['real_points']}_of_{meta['needed_points']}"
+        f"({meta['coverage_pct']:.1f}%)"
+    )
 
 
 def main():
@@ -59,17 +66,23 @@ def main():
     readings = fetch_readings(bq, cfg)
     candles = fetch_candle_events(bq, cfg, hours=6)
 
-    # Use most recent reading as "now"
+    # Use most recent reading as "now" for generating the new prediction
     now = pd.Timestamp(readings["timestamp"].max()).tz_convert("UTC")
 
-    # Resample to fixed grid for feature building + history checks
-    grid = resample_to_grid(readings, cfg.interval_minutes)
+    n_steps = required_steps(cfg.lookback_hours, cfg.interval_minutes)
 
-    ok, why_not = has_enough_history(grid, cfg)
-    if not ok:
-        # Not enough history to make a meaningful prediction; log a row and exit
+    # Build FIXED-LENGTH grid for the new prediction, anchored to now (floored to bin)
+    grid, meta = resample_to_grid(
+        readings,
+        cfg.interval_minutes,
+        end_utc=now,
+        required_steps=n_steps,
+    )
+
+    # Rule A: coverage threshold
+    if meta["coverage"] < COVERAGE_THRESHOLD:
         pred_row = {
-            "timestamp": now.to_pydatetime(),
+            "timestamp": pd.to_datetime(meta["end_utc"]).to_pydatetime(),
             "zoneId": cfg.zone_id,
             "probability": -1.0,
             "probability_percent": -1.0,
@@ -79,18 +92,36 @@ def main():
             "label_frost_observed": None,
             "label_window_start": None,
             "label_window_end": None,
-            "skipped_reason": f"insufficient_history:{why_not}",
+            "skipped_reason": _coverage_skip_reason("insufficient_real_points", meta),
             "ingest_id": cfg.ingest_id,
             "triggered_at": datetime.now(timezone.utc),
         }
         insert_prediction_row(bq, cfg, pred_row)
         return
 
-    n_steps = int(cfg.lookback_hours * 60 / cfg.interval_minutes)
+    # Rule B: max-gap threshold
+    if meta["max_gap_bins"] > MAX_GAP_BINS:
+        pred_row = {
+            "timestamp": pd.to_datetime(meta["end_utc"]).to_pydatetime(),
+            "zoneId": cfg.zone_id,
+            "probability": -1.0,
+            "probability_percent": -1.0,
+            "model_version": cfg.model_version,
+            "features_hash": None,
+            "trained_on_label": False,
+            "label_frost_observed": None,
+            "label_window_start": None,
+            "label_window_end": None,
+            "skipped_reason": _gap_skip_reason("gap_too_large_for_prediction", meta),
+            "ingest_id": cfg.ingest_id,
+            "triggered_at": datetime.now(timezone.utc),
+        }
+        insert_prediction_row(bq, cfg, pred_row)
+        return
 
-    # Build "current" feature vector (this is for the NEW prediction we will insert at the end)
-    candle_now = latest_candles_on(candles, now)
-    x_np, features_hash = build_features(grid.tail(n_steps), candle_now)
+    # Build "current" feature vector (grid is already exactly n_steps long)
+    candle_now = latest_candles_on(candles, pd.to_datetime(meta["end_utc"], utc=True))
+    x_np, features_hash = build_features(grid, candle_now)
 
     # Model + optimizer
     model = FrostMLP(input_dim=x_np.shape[0])
@@ -118,7 +149,7 @@ def main():
         label_start = pred_time
         label_end = pred_time + pd.Timedelta(minutes=cfg.horizon_minutes)
 
-        # If candles were active in the label window -> mark as resolved (FALSE) w/ reason
+        # If candles were active in the label window -> resolve but DO NOT train
         if candles_on_during_window(candles, label_start, label_end):
             update_prediction_training_status(
                 bq=bq,
@@ -151,18 +182,25 @@ def main():
             skipped_count += 1
             continue
 
-        # Rebuild features "as of" label_start
-        hist = readings[readings["timestamp"] <= label_start].copy()
-        hist_grid = resample_to_grid(hist, cfg.interval_minutes)
+        
+        # Anchor training and prediction to ingest timestamp
+        hist = readings[readings["timestamp"] <= pred_time].copy()
 
-        ok_hist, why_not_hist = has_enough_history(hist_grid, cfg)
-        if not ok_hist:
+        hist_grid, hist_meta = resample_to_grid(
+            hist,
+            cfg.interval_minutes,
+            end_utc=pred_time,
+            required_steps=n_steps,
+        )
+
+        # Rule A: coverage check for training window
+        if hist_meta["coverage"] < COVERAGE_THRESHOLD:
             update_prediction_training_status(
                 bq=bq,
                 cfg=cfg,
                 pred_timestamp_utc=pred_time,
                 trained_on_label=False,
-                skipped_reason=f"insufficient_history_for_training:{why_not_hist}",
+                skipped_reason=_coverage_skip_reason("insufficient_real_points_for_training", hist_meta),
                 label_frost_observed=int(label_val),
                 label_window_start_utc=label_start,
                 label_window_end_utc=label_end,
@@ -170,10 +208,24 @@ def main():
             skipped_count += 1
             continue
 
-        candle_at_pred_time = latest_candles_on(candles, label_start)
-        x_prev_np, _ = build_features(hist_grid.tail(n_steps), candle_at_pred_time)
+        # Rule B: max-gap check for training window
+        if hist_meta["max_gap_bins"] > MAX_GAP_BINS:
+            update_prediction_training_status(
+                bq=bq,
+                cfg=cfg,
+                pred_timestamp_utc=pred_time,
+                trained_on_label=False,
+                skipped_reason=_gap_skip_reason("gap_too_large_for_training", hist_meta),
+                label_frost_observed=int(label_val),
+                label_window_start_utc=label_start,
+                label_window_end_utc=label_end,
+            )
+            skipped_count += 1
+            continue
 
-        # Ensure float32 tensors (avoids silent float64 usage)
+        candle_at_pred_time = latest_candles_on(candles, pred_time)
+        x_prev_np, _ = build_features(hist_grid, candle_at_pred_time)
+
         x_prev = torch.from_numpy(x_prev_np.astype(np.float32)).unsqueeze(0)
         y = torch.tensor([[float(label_val)]], dtype=torch.float32)
 
@@ -183,7 +235,6 @@ def main():
         loss.backward()
         opt.step()
 
-        # Mark this prediction row as trained successfully
         update_prediction_training_status(
             bq=bq,
             cfg=cfg,
@@ -196,7 +247,7 @@ def main():
         )
         trained_count += 1
 
-    # Make prediction
+    # Make prediction for the "current" window
     model.eval()
     with torch.no_grad():
         x = torch.from_numpy(x_np.astype(np.float32)).unsqueeze(0)
@@ -204,9 +255,9 @@ def main():
 
     prob_pct = float(prob * 100.0)
 
-    # Insert a new prediction row that is always unresolved initially
+    # Insert a new prediction row that is unresolved initially
     pred_row = {
-        "timestamp": now.to_pydatetime(),
+        "timestamp": pd.to_datetime(meta["end_utc"], utc=True).to_pydatetime(),
         "zoneId": cfg.zone_id,
         "probability": float(prob),
         "probability_percent": prob_pct,
@@ -217,7 +268,6 @@ def main():
         "label_window_start": None,
         "label_window_end": None,
         "skipped_reason": None,
-
         "ingest_id": cfg.ingest_id,
         "triggered_at": datetime.now(timezone.utc),
     }
@@ -230,7 +280,7 @@ def main():
 
     print(json.dumps({
         "zoneId": cfg.zone_id,
-        "timestamp": now.isoformat(),
+        "timestamp": pd.to_datetime(meta["end_utc"], utc=True).isoformat(),
         "probability_percent": prob_pct,
         "backlog_trained": trained_count,
         "backlog_skipped": skipped_count,

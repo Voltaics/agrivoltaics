@@ -12,15 +12,108 @@ DERIVED_COLS = ["frost_index"]
 # Columns that participate in delta feature creation + robust scaling
 SENSOR_COLS = RAW_SENSOR_COLS + DERIVED_COLS
 
+def _max_consecutive_nans(series: pd.Series) -> int:
+    """
+    Returns the maximum run length of consecutive NaNs in a Series.
+    """
+    if series is None or series.empty:
+        return 0
+    is_nan = series.isna().to_numpy(dtype=bool)
+    max_run = 0
+    run = 0
+    for v in is_nan:
+        if v:
+            run += 1
+            if run > max_run:
+                max_run = run
+        else:
+            run = 0
+    return int(max_run)
 
-def resample_to_grid(df: pd.DataFrame, minutes: int) -> pd.DataFrame:
+def resample_to_grid(
+    df: pd.DataFrame,
+    minutes: int,
+    *,
+    end_utc: pd.Timestamp,
+    required_steps: int,
+) -> tuple[pd.DataFrame, dict]:
+    """
+    Resample readings to an anchored, fixed-length time grid.
+
+    - Aggregates irregular readings into {minutes}-minute bins via mean.
+    - Reindexes to an explicit DatetimeIndex ending at end_utc (floored to bin).
+    - Computes "real" coverage BEFORE interpolation (based on non-NaN temperature bins).
+    - Interpolates within the fixed window to fill gaps.
+
+    Returns:
+      grid_df: DataFrame with columns [timestamp] + RAW_SENSOR_COLS, length == required_steps
+      meta: {
+        "needed_points": int,
+        "real_points": int,
+        "coverage": float,
+        "coverage_pct": float,
+        "end_utc": str,
+        "start_utc": str,
+      }
+    """
+    end_utc = pd.to_datetime(end_utc, utc=True).floor(f"{minutes}min")
+
+    # Build explicit index of EXACT size (required_steps)
+    idx = pd.date_range(end=end_utc, periods=required_steps, freq=f"{minutes}min", tz="UTC")
+    start_utc = idx[0]
+
+    if df is None or df.empty:
+        empty = pd.DataFrame(index=idx, columns=RAW_SENSOR_COLS, dtype=np.float32)
+        meta = {
+            "needed_points": int(required_steps),
+            "real_points": 0,
+            "coverage": 0.0,
+            "coverage_pct": 0.0,
+            "end_utc": end_utc.isoformat(),
+            "start_utc": start_utc.isoformat(),
+        }
+        return empty.reset_index().rename(columns={"index": "timestamp"}), meta
+
+    df = df.copy()
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     df = df.set_index("timestamp").sort_index()
-    for c in RAW_SENSOR_COLS:
-        df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    grid = df.resample(f"{minutes}min").mean()
-    grid = grid.interpolate(limit_direction="both")
-    return grid.reset_index()
+    for c in RAW_SENSOR_COLS:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+        else:
+            df[c] = np.nan
+
+    # 1) Aggregate into N-minute bins
+    binned = df[RAW_SENSOR_COLS].resample(f"{minutes}min").mean()
+
+    # 2) Force the anchored window (exact length)
+    binned = binned.reindex(idx)
+
+    # 3) Coverage + max-gap BEFORE interpolation (based on non-NaN temperature bins)
+    temp = binned.get("temperature")
+    real_points = int(temp.notna().sum()) if temp is not None else 0
+    coverage = float(real_points) / float(required_steps) if required_steps > 0 else 0.0
+
+    # Longest consecutive missing run (NaN bins) for temperature BEFORE interpolation
+    max_gap_bins = _max_consecutive_nans(temp) if temp is not None else int(required_steps)
+    max_gap_minutes = int(max_gap_bins * minutes)
+
+    # 4) Interpolate inside the window (time-based is best for timestamp index)
+    binned = binned.interpolate(method="time", limit_direction="both")
+
+    meta = {
+        "needed_points": int(required_steps),
+        "real_points": int(real_points),
+        "coverage": float(coverage),
+        "coverage_pct": float(coverage * 100.0),
+        "max_gap_bins": int(max_gap_bins),
+        "max_gap_minutes": int(max_gap_minutes),
+        "end_utc": end_utc.isoformat(),
+        "start_utc": start_utc.isoformat(),
+    }
+
+    return binned.reset_index().rename(columns={"index": "timestamp"}), meta
 
 
 def _add_time_cyclic_features(grid_df: pd.DataFrame) -> pd.DataFrame:
@@ -56,6 +149,7 @@ def _add_delta_features(grid_df: pd.DataFrame) -> pd.DataFrame:
     for c in SENSOR_COLS:
         grid_df[f"d_{c}"] = grid_df[c].diff().fillna(0.0).astype(np.float32)
     return grid_df
+
 
 def _dewpoint_c_from_temp_f_and_rh(temp_f: pd.Series, rh_pct: pd.Series) -> pd.Series:
     """
@@ -163,6 +257,7 @@ def _add_light_daily_cyclic_features(grid_df: pd.DataFrame, eps: float = 1e-6) -
 
     return df
 
+
 def _robust_scale(mat: np.ndarray, eps: float = 1e-6) -> np.ndarray:
     """
     Robust scaling per column using median and IQR:
@@ -201,15 +296,6 @@ def build_features(
     df = _add_light_daily_cyclic_features(df)
 
     df = _add_delta_features(df)
-
-    feature_cols = (
-    SENSOR_COLS
-    + [f"d_{c}" for c in SENSOR_COLS]
-    + ["tod_sin", "tod_cos", "doy_sin", "doy_cos", "light_sin", "light_cos"]
-    )
-
-    # Build matrix (T, F)
-    mat = df[feature_cols].to_numpy(dtype=np.float32)
 
     # Robust scale everything except sin/cos (they are already [-1,1])
     # We’ll scale in two blocks so we don't distort cyclic features.

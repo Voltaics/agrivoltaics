@@ -24,7 +24,7 @@ def load_state(cfg: Config) -> dict | None:
         return None
 
     data = blob.download_as_bytes()
-    return torch.load(io.BytesIO(data), map_location="cpu")
+    return torch.load(io.BytesIO(data), map_location="cpu", weights_only=True)
 
 
 def save_state(cfg: Config, state: dict) -> None:
