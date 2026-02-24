@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:agrivoltaics_flutter_app/models/site.dart';
 import 'package:agrivoltaics_flutter_app/services/site_service.dart';
@@ -124,7 +125,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Site updated successfully'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -133,7 +134,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error updating site: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -164,7 +165,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
             ),
             child: const Text('Delete'),
           ),
@@ -220,7 +221,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Site deleted successfully'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.warning,
           ),
         );
       }
@@ -229,7 +230,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting site: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -250,7 +251,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
           const Text('Edit Site'),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
+            icon: const Icon(Icons.delete, color: AppColors.error),
             onPressed: _isLoading ? null : _confirmDelete,
             tooltip: 'Delete site',
           ),
@@ -370,7 +371,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         TextButton(
           onPressed: _isLoading ? null : _confirmDelete,
           style: TextButton.styleFrom(
-            foregroundColor: Colors.red,
+            foregroundColor: AppColors.error,
           ),
           child: const Text('Delete'),
         ),
@@ -382,15 +383,15 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         ElevatedButton(
           onPressed: _isLoading ? null : _updateSite,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
+            backgroundColor: AppColors.primary,
           ),
           child: _isLoading
               ? const SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
                   ),
                 )
               : const Text('Update Site'),

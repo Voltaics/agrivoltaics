@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -46,7 +47,7 @@ class HomePage extends State<HomeState> {
   void _showOrganizationMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -72,12 +73,12 @@ class HomePage extends State<HomeState> {
               width: 220,
               decoration: const BoxDecoration(
                 // You can replace this gradient with a single color if you prefer
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF2D53DA), // start (primary color)
-                    Color(0xFF1B2A99), // end (darker variant)
+                    AppColors.sidebarStart,
+                    AppColors.sidebarEnd,
                   ],
                 ),
               ),
@@ -88,12 +89,12 @@ class HomePage extends State<HomeState> {
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.eco, color: Colors.white, size: 24),
+                      Icon(Icons.eco, color: AppColors.textPrimary, size: 24),
                       SizedBox(width: 8),
                       Text(
                         "Vinovoltaics",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -101,14 +102,14 @@ class HomePage extends State<HomeState> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Divider(color: Colors.white38),
+                  const Divider(color: AppColors.dividerOnDark),
                   const SizedBox(height: 8),
                   
                   // Organization Selector
                   const OrganizationSelector(),
                   
                   const SizedBox(height: 8),
-                  const Divider(color: Colors.white38),
+                  const Divider(color: AppColors.dividerOnDark),
 
                   // Sites Panel
                   const SizedBox(
@@ -116,7 +117,7 @@ class HomePage extends State<HomeState> {
                     child: SitesPanel(),
                   ),
 
-                  const Divider(color: Colors.white38),
+                  const Divider(color: AppColors.dividerOnDark),
 
                   // Zones Panel
                   const SizedBox(
@@ -124,7 +125,7 @@ class HomePage extends State<HomeState> {
                     child: ZonesPanel(),
                   ),
 
-                  const Divider(color: Colors.white38),
+                  const Divider(color: AppColors.dividerOnDark),
                   const SizedBox(height: 8),
 
                   // Navigation items
@@ -159,7 +160,7 @@ class HomePage extends State<HomeState> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: IconButton(
-                      icon: Icon(MdiIcons.logout, color: Colors.white),
+                      icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
                       onPressed: () {
                         showDialog(
                           context: context,
@@ -194,7 +195,7 @@ class HomePage extends State<HomeState> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             child: Row(
                               children: [
-                                const Icon(Icons.eco, color: Colors.white, size: 24),
+                                const Icon(Icons.eco, color: AppColors.textPrimary, size: 24),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: InkWell(
@@ -208,7 +209,7 @@ class HomePage extends State<HomeState> {
                                           children: [
                                             CircleAvatar(
                                               radius: 16,
-                                              backgroundColor: Colors.white.withAlpha((0.2 * 255).toInt()),
+                                              backgroundColor: AppColors.textPrimary.withAlpha((0.2 * 255).toInt()),
                                               backgroundImage: currentOrg?.logoUrl != null
                                                   ? NetworkImage(currentOrg!.logoUrl!)
                                                   : null,
@@ -218,7 +219,7 @@ class HomePage extends State<HomeState> {
                                                           ? currentOrg!.name[0].toUpperCase()
                                                           : '?',
                                                       style: const TextStyle(
-                                                        color: Colors.white,
+                                                        color: AppColors.textPrimary,
                                                         fontWeight: FontWeight.bold,
                                                         fontSize: 14,
                                                       ),
@@ -230,7 +231,7 @@ class HomePage extends State<HomeState> {
                                               child: Text(
                                                 currentOrg?.name ?? 'No Organization',
                                                 style: const TextStyle(
-                                                  color: Colors.white,
+                                                  color: AppColors.textPrimary,
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w600,
                                                 ),
@@ -239,7 +240,7 @@ class HomePage extends State<HomeState> {
                                             ),
                                             Icon(
                                               Icons.keyboard_arrow_down,
-                                              color: Colors.white.withAlpha((0.8 * 255).toInt()),
+                                              color: AppColors.textPrimary.withAlpha((0.8 * 255).toInt()),
                                               size: 24,
                                             ),
                                           ],
@@ -250,7 +251,7 @@ class HomePage extends State<HomeState> {
                                 ),
                                 // Logout button for mobile
                                 IconButton(
-                                  icon: Icon(MdiIcons.logout, color: Colors.white),
+                                  icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
                                   onPressed: () {
                                     showDialog(
                                       context: context,
@@ -280,7 +281,7 @@ class HomePage extends State<HomeState> {
           ? BottomNavigationBar(
               currentIndex: _selectedIndex,
               selectedItemColor: Theme.of(context).colorScheme.primary,
-              unselectedItemColor: Colors.grey,
+              unselectedItemColor: AppColors.textMuted,
               onTap: _selectPage,
               items: const [
                 BottomNavigationBarItem(

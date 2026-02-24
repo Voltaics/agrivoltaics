@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 
 /// Displayed when no organization is selected on the Historical Dashboard.
@@ -16,7 +17,7 @@ class NoOrgPlaceholderWidget extends StatelessWidget {
               Icon(
                 Icons.location_off,
                 size: 64,
-                color: Colors.grey[400],
+                color: AppColors.textMuted,
               ),
               const SizedBox(height: 24),
               const Text(
@@ -30,7 +31,7 @@ class NoOrgPlaceholderWidget extends StatelessWidget {
               const Text(
                 'Select an organization from the menu to get started',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: const TextStyle(color: AppColors.textMuted),
               ),
             ],
           ),

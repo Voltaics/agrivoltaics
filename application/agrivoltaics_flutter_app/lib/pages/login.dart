@@ -136,7 +136,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           child: const Icon(
                             Icons.eco,
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             size: 42,
                           ),
                         ),
@@ -146,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
                         const Text(
                           'Vinovoltaics',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             fontSize: 40,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2,
@@ -179,7 +179,7 @@ class _LoginPageState extends State<LoginPage> {
                             _FeatureChip(
                               icon: Icons.agriculture,
                               label: 'Farm Data',
-                              iconColor: Colors.amber,
+                              iconColor: AppColors.amber,
                             ),
                             SizedBox(width: 12),
                             _FeatureChip(
@@ -198,7 +198,7 @@ class _LoginPageState extends State<LoginPage> {
                 Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(36),
                     ),
@@ -221,7 +221,7 @@ class _LoginPageState extends State<LoginPage> {
                         'Sign in to monitor your farms and track insights.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF6B7280),
+                          color: AppColors.textMuted,
                         ),
                       ),
                       const SizedBox(height: 28),
@@ -232,21 +232,21 @@ class _LoginPageState extends State<LoginPage> {
                           padding: const EdgeInsets.all(14),
                           margin: const EdgeInsets.only(bottom: 20),
                           decoration: BoxDecoration(
-                            color: Colors.red.shade50,
+                            color: AppColors.errorLight,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red.shade200),
+                            border: Border.all(color: AppColors.errorBorder),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Icon(Icons.error_outline,
-                                  color: Colors.red.shade700, size: 20),
+                                  color: AppColors.errorDark, size: 20),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   _errorMessage!,
-                                  style: TextStyle(
-                                    color: Colors.red.shade800,
+                                  style: const TextStyle(
+                                    color: AppColors.errorDark,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -298,7 +298,7 @@ class _DecorativeCircle extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: borderColor ?? Colors.white.withValues(alpha: opacity),
+          color: borderColor ?? AppColors.textPrimary.withValues(alpha: opacity),
           width: 1.2,
         ),
       ),
@@ -322,10 +322,10 @@ class _FeatureChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: AppColors.textPrimary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
+          color: AppColors.textPrimary.withValues(alpha: 0.12),
           width: 1,
         ),
       ),
@@ -337,7 +337,7 @@ class _FeatureChip extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontSize: 11,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.2,

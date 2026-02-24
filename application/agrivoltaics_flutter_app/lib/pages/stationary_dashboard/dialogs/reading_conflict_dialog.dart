@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../services/sensor_service.dart';
 
@@ -78,9 +79,9 @@ class _ReadingConflictDialogState extends State<ReadingConflictDialog> {
               const SizedBox(height: 8),
               Text(
                 'The following readings already exist in this zone. Choose which sensor should be the primary source:',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[700],
+                  color: AppColors.textMuted,
                 ),
               ),
               const SizedBox(height: 16),
@@ -157,12 +158,12 @@ class _ReadingConflictDialogState extends State<ReadingConflictDialog> {
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[300],
+                        backgroundColor: AppColors.scaffoldBackground,
                       ),
                       onPressed: () => Navigator.pop(context),
                       child: const Text(
                         'Cancel',
-                        style: TextStyle(color: Colors.black),
+                        style: TextStyle(color: AppColors.textOnLight),
                       ),
                     ),
                   ),

@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:agrivoltaics_flutter_app/pages/mobile_dashboard/mobile_sensor_devices.dart';
 import 'package:agrivoltaics_flutter_app/pages/mobile_dashboard/capture_detail.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -222,12 +223,12 @@ class MobileDashboard extends StatelessWidget {
                                       ? 'Disease Detected'
                                       : 'No Disease Detected',
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppColors.textPrimary,
                                     fontSize: 14,
                                   ),
                                 ),
                                 backgroundColor:
-                                    isDisease ? Colors.red : Colors.green,
+                                    isDisease ? AppColors.error : AppColors.success,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                   side: BorderSide.none,
@@ -297,7 +298,7 @@ class MobileDashboard extends StatelessWidget {
             child: Container(
               width: 419,
               padding: const EdgeInsets.all(12),
-              color: Colors.grey[100],
+              color: AppColors.scaffoldBackground,
               child: const PiControlPanel(
                 // piOnline: true, // TODO: replace with actual ping logic
                 // onStartCapture: () {
@@ -318,7 +319,7 @@ class MobileDashboard extends StatelessWidget {
             child: Container(
               width: 419,
               padding: const EdgeInsets.all(12),
-              color: Colors.grey[100],
+              color: AppColors.scaffoldBackground,
               child: const PiControlPanel(
                 // piOnline: true, // TODO: replace with actual ping logic
                 // onStartCapture: () {
@@ -434,12 +435,12 @@ class MobileDashboard extends StatelessWidget {
                                       ? 'Disease Detected'
                                       : 'No Disease Detected',
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppColors.textPrimary,
                                     fontSize: 14,
                                   ),
                                 ),
                                 backgroundColor:
-                                    isDisease ? Colors.red : Colors.green,
+                                    isDisease ? AppColors.error : AppColors.success,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                   side: BorderSide.none,
@@ -511,3 +512,4 @@ class MobileDashboard extends StatelessWidget {
     return const Placeholder();
   }
 }
+
