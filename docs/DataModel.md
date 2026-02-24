@@ -80,6 +80,44 @@ organizations/{orgId}/members/{userId}
 }
 ```
 
+#### **Subcollection: organizations/{orgId}/trainingImages**
+Images uploaded for ML model training, stored in Firebase Storage with metadata in Firestore.
+
+```javascript
+organizations/{orgId}/trainingImages/{imageId}
+{
+  // Storage
+  storagePath: string,            // Firebase Storage path: "organizations/{orgId}/training-images/{imageId}"
+  downloadUrl: string,            // Cached public download URL
+  fileName: string,               // Original file name
+
+  // Classification
+  labels: [string],               // User-defined labels, e.g. ["healthy", "powdery_mildew"]
+
+  // References (optional)
+  siteId: string,                 // nullable — site where image was captured
+  zoneId: string,                 // nullable — zone where image was captured
+
+  // Uploader
+  organizationId: string,
+  uploadedBy: string,             // userId
+  uploadedAt: timestamp,
+
+  // Metadata
+  notes: string,                  // nullable — free-text notes
+}
+```
+
+**Firebase Storage path convention:**
+```
+organizations/{orgId}/training-images/{imageId}
+```
+
+**Filtering:** Images can be filtered by one or more labels using AND logic (image must have all selected labels) or OR logic (image must have any selected label).
+
+---
+
+
 #### **Subcollection: organizations/{orgId}/sites**
 Physical vineyard/farm locations.
 

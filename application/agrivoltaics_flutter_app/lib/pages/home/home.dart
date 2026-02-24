@@ -8,6 +8,7 @@ import 'zones_panel.dart';
 import '../stationary_dashboard/stationary_dashboard.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
 import '../historical_dashboard/historical_dashboard.dart';
+import '../training_images/training_images_page.dart';
 import 'widgets/organization_menu_sheet.dart';
 import 'widgets/organization_selector.dart';
 import 'widgets/sign_out_dialog.dart';
@@ -36,6 +37,7 @@ class HomePage extends State<HomeState> {
     StationaryDashboardPage(),  // Stationary Sensors
     HistoricalDashboardPage(),        // Historical Trends
     MobileDashboardPage(),            // Mobile Sensors
+    TrainingImagesPage(),             // Training Images
   ];
 
   void _selectPage(int index) {
@@ -150,6 +152,11 @@ class HomePage extends State<HomeState> {
                         NavigationRailDestination(
                           icon: Icon(MdiIcons.quadcopter),
                           label: const Text('Mobile Sensors', style: TextStyle(fontSize: 14),),
+                          padding: const EdgeInsets.only(bottom: 16),
+                        ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.photo_library_outlined),
+                          label: const Text('Training Images', style: TextStyle(fontSize: 14),),
                           padding: const EdgeInsets.only(bottom: 16),
                         ),
                       ],
@@ -295,6 +302,10 @@ class HomePage extends State<HomeState> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.camera_alt),
                   label: 'Mobile',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.photo_library_outlined),
+                  label: 'Training',
                 ),
               ],
             )
