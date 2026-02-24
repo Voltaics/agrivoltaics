@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 
 /// Service for standardizing and simplifying dialog operations across the application.
@@ -20,11 +21,11 @@ class DialogHelper {
     required String message,
     String confirmButtonText = 'Confirm',
     String cancelButtonText = 'Cancel',
-    Color confirmButtonColor = const Color(0xFF2196F3),
-    Color cancelButtonColor = Colors.grey,
+    Color confirmButtonColor = AppColors.info,
+    Color cancelButtonColor = AppColors.textMuted,
     bool dangerous = false,
   }) {
-    final confirmColor = dangerous ? Colors.red : confirmButtonColor;
+    final confirmColor = dangerous ? AppColors.error : confirmButtonColor;
 
     return showDialog<bool?>(
       context: context,
@@ -60,7 +61,7 @@ class DialogHelper {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.red),
+            const Icon(Icons.error_outline, color: AppColors.error),
             const SizedBox(width: 12),
             Text(title),
           ],
@@ -88,7 +89,7 @@ class DialogHelper {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.check_circle_outline, color: Colors.green),
+            const Icon(Icons.check_circle_outline, color: AppColors.success),
             const SizedBox(width: 12),
             Text(title),
           ],
@@ -116,7 +117,7 @@ class DialogHelper {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.info_outline, color: Colors.blue),
+            const Icon(Icons.info_outline, color: AppColors.info),
             const SizedBox(width: 12),
             Text(title),
           ],
@@ -144,7 +145,7 @@ class DialogHelper {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.warning, color: Colors.orange),
+            const Icon(Icons.warning, color: AppColors.warning),
             const SizedBox(width: 12),
             Text(title),
           ],
@@ -327,7 +328,7 @@ class DialogHelper {
       context,
       message: message,
       durationSeconds: durationSeconds,
-      backgroundColor: Colors.green,
+      backgroundColor: AppColors.success,
     );
   }
 
@@ -341,7 +342,7 @@ class DialogHelper {
       context,
       message: message,
       durationSeconds: durationSeconds,
-      backgroundColor: Colors.red,
+      backgroundColor: AppColors.error,
     );
   }
 
@@ -355,7 +356,7 @@ class DialogHelper {
       context,
       message: message,
       durationSeconds: durationSeconds,
-      backgroundColor: Colors.orange,
+      backgroundColor: AppColors.warning,
     );
   }
 

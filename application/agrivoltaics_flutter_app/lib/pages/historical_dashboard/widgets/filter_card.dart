@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:agrivoltaics_flutter_app/models/zone.dart';
 import 'package:agrivoltaics_flutter_app/services/readings_service.dart';
 import 'package:flutter/material.dart';
@@ -125,12 +126,12 @@ class FilterCardWidget extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline, size: 14, color: Colors.grey[600]),
+                Icon(Icons.info_outline, size: 14, color: AppColors.textMuted),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'Press Apply after making any changes to update the graphs.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                 ),
               ],

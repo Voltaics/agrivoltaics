@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../app_state.dart';
 import 'organization_menu_sheet.dart';
@@ -14,7 +15,7 @@ class OrganizationSelector extends StatelessWidget {
   void _showOrganizationMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -33,10 +34,10 @@ class OrganizationSelector extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 12),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withAlpha((0.1 * 255).toInt()),
+          color: AppColors.textPrimary.withAlpha((0.1 * 255).toInt()),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Colors.white.withAlpha((0.3 * 255).toInt()),
+            color: AppColors.textPrimary.withAlpha((0.3 * 255).toInt()),
             width: 1,
           ),
         ),
@@ -44,7 +45,7 @@ class OrganizationSelector extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.white.withAlpha((0.2 * 255).toInt()),
+              backgroundColor: AppColors.textPrimary.withAlpha((0.2 * 255).toInt()),
               backgroundImage: currentOrg?.logoUrl != null
                   ? NetworkImage(currentOrg!.logoUrl!)
                   : null,
@@ -54,7 +55,7 @@ class OrganizationSelector extends StatelessWidget {
                           ? currentOrg!.name[0].toUpperCase()
                           : '?',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     )
@@ -68,7 +69,7 @@ class OrganizationSelector extends StatelessWidget {
                   Text(
                     currentOrg?.name ?? 'No Organization',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
@@ -78,7 +79,7 @@ class OrganizationSelector extends StatelessWidget {
                   Text(
                     'Switch organization',
                     style: TextStyle(
-                      color: Colors.white.withAlpha((0.7 * 255).toInt()),
+                      color: AppColors.textPrimary.withAlpha((0.7 * 255).toInt()),
                       fontSize: 13,
                     ),
                   ),
@@ -87,7 +88,7 @@ class OrganizationSelector extends StatelessWidget {
             ),
             Icon(
               Icons.keyboard_arrow_down,
-              color: Colors.white.withAlpha((0.7 * 255).toInt()),
+              color: AppColors.textPrimary.withAlpha((0.7 * 255).toInt()),
               size: 20,
             ),
           ],

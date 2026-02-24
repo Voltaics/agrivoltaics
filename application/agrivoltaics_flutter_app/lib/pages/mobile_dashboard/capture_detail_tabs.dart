@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class CaptureDetailDualEqualView extends StatefulWidget {
@@ -68,7 +69,7 @@ class _CaptureDetailDualEqualViewState extends State<CaptureDetailDualEqualView>
               color: isSelected ? primaryColor.withAlpha((0.1 * 255).toInt()) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? primaryColor : Colors.grey.shade300,
+                color: isSelected ? primaryColor : AppColors.scaffoldBackground,
                 width: 1,
               ),
             ),
@@ -78,7 +79,7 @@ class _CaptureDetailDualEqualViewState extends State<CaptureDetailDualEqualView>
                 Text(
                   tabs[index],
                   style: TextStyle(
-                    color: isSelected ? primaryColor : Colors.grey,
+                    color: isSelected ? primaryColor : AppColors.textMuted,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),

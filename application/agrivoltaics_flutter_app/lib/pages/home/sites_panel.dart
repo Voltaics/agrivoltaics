@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../app_state.dart' hide Site;
@@ -35,9 +36,9 @@ class SitesPanel extends StatelessWidget {
   Widget _buildVerticalList(BuildContext context, AppState appState, selectedOrg) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         border: Border(
-          bottom: BorderSide(color: Colors.grey[300]!),
+          bottom: BorderSide(color: AppColors.scaffoldBackground),
         ),
       ),
       child: Column(
@@ -88,7 +89,7 @@ class SitesPanel extends StatelessWidget {
                       padding: const EdgeInsets.all(16.0),
                       child: Text(
                         'Error loading sites: ${snapshot.error}',
-                        style: const TextStyle(color: Colors.red),
+                        style: const TextStyle(color: AppColors.error),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -107,7 +108,7 @@ class SitesPanel extends StatelessWidget {
                           Icon(
                             Icons.location_off,
                             size: 48,
-                            color: Colors.grey[400],
+                            color: AppColors.textMuted,
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -115,7 +116,7 @@ class SitesPanel extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.grey[600],
+                              color: AppColors.textMuted,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -125,7 +126,7 @@ class SitesPanel extends StatelessWidget {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[500],
+                              color: AppColors.textMuted,
                             ),
                           ),
                         ],
@@ -161,17 +162,17 @@ class SitesPanel extends StatelessWidget {
                     return ListTile(
                       dense: true,
                       selected: isSelected,
-                      selectedTileColor: const Color(0xFF2D53DA).withAlpha((0.1 * 255).toInt()),
+                      selectedTileColor: AppColors.primary.withAlpha((0.1 * 255).toInt()),
                       leading: Icon(
                         Icons.location_on,
-                        color: isSelected ? const Color(0xFF2D53DA) : Colors.grey,
+                        color: isSelected ? AppColors.primary : AppColors.textMuted,
                         size: 20,
                       ),
                       title: Text(
                         site.name,
                         style: TextStyle(
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? const Color(0xFF2D53DA) : Colors.black87,
+                          color: isSelected ? AppColors.primary : AppColors.textOnLight,
                         ),
                       ),
                       subtitle: site.address.isNotEmpty
@@ -179,7 +180,7 @@ class SitesPanel extends StatelessWidget {
                               site.address,
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey[600],
+                                color: AppColors.textMuted,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -224,9 +225,9 @@ class SitesPanel extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         border: Border(
-          bottom: BorderSide(color: Colors.grey[300]!),
+          bottom: BorderSide(color: AppColors.scaffoldBackground),
         ),
       ),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
@@ -247,7 +248,7 @@ class SitesPanel extends StatelessWidget {
             return const Center(
               child: Text(
                 'Error loading sites',
-                style: TextStyle(color: Colors.red, fontSize: 12),
+                style: TextStyle(color: AppColors.error, fontSize: 12),
               ),
             );
           }
@@ -279,7 +280,7 @@ class SitesPanel extends StatelessWidget {
                     ? Center(
                         child: Text(
                           'No sites - tap + to create',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                         ),
                       )
                     : SingleChildScrollView(
@@ -309,8 +310,8 @@ class SitesPanel extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? const Color(0xFF2D53DA)
-                                  : Colors.grey[200],
+                                  ? AppColors.primary
+                                  : AppColors.scaffoldBackground,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
@@ -319,7 +320,7 @@ class SitesPanel extends StatelessWidget {
                                 Icon(
                                   Icons.location_on,
                                   size: 16,
-                                  color: isSelected ? Colors.white : Colors.grey[700],
+                                  color: isSelected ? AppColors.textPrimary : AppColors.textMuted,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -329,7 +330,7 @@ class SitesPanel extends StatelessWidget {
                                     fontWeight: isSelected
                                         ? FontWeight.bold
                                         : FontWeight.normal,
-                                    color: isSelected ? Colors.white : Colors.black87,
+                                    color: isSelected ? AppColors.textPrimary : AppColors.textOnLight,
                                   ),
                                 ),
 

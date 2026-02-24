@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -96,9 +97,9 @@ class _PiControlPanelState extends State<PiControlPanel> {
                 Chip(
                   label: Text(
                     piOnline ? "Online" : "Offline",
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: AppColors.textPrimary),
                   ),
-                  backgroundColor: piOnline ? Colors.green : Colors.red,
+                  backgroundColor: piOnline ? AppColors.success : AppColors.error,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                     side: BorderSide.none,

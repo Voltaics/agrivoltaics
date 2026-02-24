@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/zone.dart';
@@ -150,15 +151,15 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: AppColors.scaffoldBackground,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     'No readings added yet. Add at least one reading to continue.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
-                      color: Colors.grey[600],
+                      color: AppColors.textMuted,
                     ),
                   ),
                 )
@@ -173,8 +174,8 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              border: Border.all(color: Colors.grey[300]!),
+                              color: AppColors.surface,
+                              border: Border.all(color: AppColors.scaffoldBackground),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
@@ -216,12 +217,12 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[300],
+                        backgroundColor: AppColors.scaffoldBackground,
                       ),
                       onPressed: _isLoading ? null : () => Navigator.pop(context),
                       child: const Text(
                         'Cancel',
-                        style: TextStyle(color: Colors.black),
+                        style: TextStyle(color: AppColors.textOnLight),
                       ),
                     ),
                   ),
@@ -266,7 +267,7 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
             if (isRequired)
               const Text(
                 ' *',
-                style: TextStyle(color: Colors.red),
+                style: const TextStyle(color: AppColors.error),
               ),
           ],
         ),
@@ -428,12 +429,12 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[300],
+                              backgroundColor: AppColors.scaffoldBackground,
                             ),
                             onPressed: () => Navigator.pop(innerContext),
                             child: const Text(
                               'Cancel',
-                              style: TextStyle(color: Colors.black),
+                              style: TextStyle(color: AppColors.textOnLight),
                             ),
                           ),
                         ),
@@ -526,7 +527,7 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                               searchText.isEmpty
                                   ? 'No items'
                                   : 'No results for "$searchText"',
-                              style: TextStyle(color: Colors.grey[600]),
+                              style: const TextStyle(color: AppColors.textMuted),
                             ),
                           )
                         : ListView.builder(

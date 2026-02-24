@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../models/zone.dart';
 import '../../../models/sensor.dart';
@@ -132,7 +133,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? Colors.black : Colors.grey[600],
+                  color: isSelected ? AppColors.textOnLight : AppColors.textMuted,
                 ),
               ),
             ),
@@ -177,7 +178,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                   Icon(
                     Icons.sensors_off,
                     size: 48,
-                    color: Colors.grey[400],
+                    color: AppColors.textMuted,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -185,7 +186,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.grey[600],
+                      color: AppColors.textMuted,
                     ),
                   ),
                 ],
@@ -265,7 +266,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
               'Model: ${sensor.model}',
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[600],
+                color: AppColors.textMuted,
               ),
             ),
             
@@ -281,7 +282,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: Colors.grey[700],
+                      color: AppColors.textMuted,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -301,7 +302,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                             field.unit,
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey[600],
+                              color: AppColors.textMuted,
                             ),
                           ),
                         ],
@@ -315,7 +316,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                 'No readings available',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey[500],
+                  color: AppColors.textMuted,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -337,7 +338,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
               Icon(
                 Icons.library_books,
                 size: 48,
-                color: Colors.grey[400],
+                color: AppColors.textMuted,
               ),
               const SizedBox(height: 16),
               Text(
@@ -345,7 +346,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                 ),
               ),
             ],
@@ -424,7 +425,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                             '${sensorsWithReading.length} sensor${sensorsWithReading.length != 1 ? 's' : ''}',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[600],
+                              color: AppColors.textMuted,
                             ),
                           ),
                         ],
@@ -439,7 +440,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                               'No sensors available',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.grey[500],
+                                color: AppColors.textMuted,
                                 fontStyle: FontStyle.italic,
                               ),
                             )
@@ -505,7 +506,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text('Error updating reading: $e'),
-                                          backgroundColor: Colors.red,
+                                          backgroundColor: AppColors.error,
                                         ),
                                       );
                                     }
