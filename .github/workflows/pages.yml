@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - huy
+      - erindler
   workflow_dispatch:
 
 permissions:
