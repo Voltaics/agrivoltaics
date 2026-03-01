@@ -1,4 +1,6 @@
 import json
+from arrow import now
+from arrow import now
 import numpy as np
 import pandas as pd
 import torch
@@ -22,11 +24,11 @@ from bq_io import (
 from state import load_state, save_state
 
 # minimum fraction of real bins required to train
-COVERAGE_THRESHOLD = 0.70
+COVERAGE_THRESHOLD = 0.75
 
 # reject if a streak of missing bins exceeds this limit
-# 16 bins * 15 minutes = 4 hours of missing data
-MAX_GAP_BINS = 16
+# 8 bins * 15 minutes = 2 hours of missing data
+MAX_GAP_BINS = 8
 
 def required_steps(lookback_hours: int, interval_minutes: int) -> int:
     # Must be integer (your config is compatible: 72h & 15m => 288)
@@ -63,15 +65,41 @@ def main():
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
 
-    readings = fetch_readings(bq, cfg)
-    candles = fetch_candle_events(bq, cfg, hours=6)
+    # 1) Use wall-clock just to discover backlog + decide how far back to query
+    wall_now = pd.Timestamp.utcnow().tz_localize("UTC")
+    backlog = fetch_untrained_matured_predictions(bq, cfg, wall_now, limit=50)
 
-    # Use most recent reading as "now" for generating the new prediction
-    now = pd.Timestamp(readings["timestamp"].max()).tz_convert("UTC")
+    # 2) Compute earliest start needed to cover feature windows for backlog
+    if not backlog.empty:
+        earliest_pred = pd.to_datetime(backlog["timestamp"].min(), utc=True)
+        start_utc = (
+            earliest_pred
+            - pd.Timedelta(hours=cfg.lookback_hours)
+            - pd.Timedelta(minutes=cfg.interval_minutes)
+        )
+    else:
+        start_utc = (
+            wall_now
+            - pd.Timedelta(hours=cfg.lookback_hours)
+            - pd.Timedelta(minutes=cfg.interval_minutes)
+        )
+
+    # 3) Fetch readings over the correct span (end at wall-clock now for safety)
+    readings = fetch_readings(bq, cfg, start_utc=start_utc, end_utc=wall_now)
+
+    # 4) Define model "now" as latest sensor timestamp (this is what you predict forward from)
+    now = pd.to_datetime(readings["timestamp"].max(), utc=True)
+
+    # 5) Re-fetch backlog using sensor-time now (maturity should be based on this clock)
+    backlog = fetch_untrained_matured_predictions(bq, cfg, now, limit=50)
+
+    # 6) Fetch candles across the same span (start_utc..now), plus buffer
+    hours = int(np.ceil((now - start_utc).total_seconds() / 3600.0)) + 2
+    candles = fetch_candle_events(bq, cfg, hours=hours)
 
     n_steps = required_steps(cfg.lookback_hours, cfg.interval_minutes)
 
-    # Build FIXED-LENGTH grid for the new prediction, anchored to now (floored to bin)
+    # Build FIXED-LENGTH grid for the new prediction, anchored to sensor-time now
     grid, meta = resample_to_grid(
         readings,
         cfg.interval_minutes,

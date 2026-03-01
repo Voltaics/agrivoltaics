@@ -11,7 +11,19 @@ def bq_table(project: str, dataset: str, table: str) -> str:
         return f"`{project}.{table}`"
     return f"`{project}.{dataset}.{table}`"
 
-def fetch_readings(bq: bigquery.Client, cfg: Config) -> pd.DataFrame:
+
+def fetch_readings(
+    bq: bigquery.Client,
+    cfg: Config,
+    *,
+    start_utc: pd.Timestamp | None = None,
+    end_utc: pd.Timestamp | None = None,
+) -> pd.DataFrame:
+    if end_utc is None:
+        end_utc = pd.Timestamp.utcnow().tz_localize("UTC")
+    if start_utc is None:
+        start_utc = end_utc - pd.Timedelta(hours=cfg.lookback_hours)
+
     query = f"""
     SELECT
       timestamp,
@@ -22,7 +34,7 @@ def fetch_readings(bq: bigquery.Client, cfg: Config) -> pd.DataFrame:
       MAX(IF(field = "light", value, NULL)) AS light
     FROM {bq_table(cfg.project_id, cfg.dataset, cfg.readings_table)}
     WHERE
-      timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {cfg.lookback_hours} HOUR)
+      timestamp BETWEEN @start AND @end
       AND field IN ("temperature", "humidity", "soilMoisture", "soilTemperature", "light")
       AND zoneId = @zoneId
     GROUP BY timestamp
@@ -31,12 +43,16 @@ def fetch_readings(bq: bigquery.Client, cfg: Config) -> pd.DataFrame:
     job = bq.query(
         query,
         job_config=bigquery.QueryJobConfig(
-            query_parameters=[bigquery.ScalarQueryParameter("zoneId", "STRING", cfg.zone_id)]
+            query_parameters=[
+                bigquery.ScalarQueryParameter("zoneId", "STRING", cfg.zone_id),
+                bigquery.ScalarQueryParameter("start", "TIMESTAMP", start_utc.to_pydatetime()),
+                bigquery.ScalarQueryParameter("end", "TIMESTAMP", end_utc.to_pydatetime()),
+            ]
         ),
     )
     df = job.to_dataframe()
     if df.empty:
-        raise RuntimeError("No sensor data returned for this zone in the lookback window.")
+        raise RuntimeError("No sensor data returned for this zone in the requested window.")
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     return df
 
