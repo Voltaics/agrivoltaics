@@ -20,7 +20,7 @@ def fetch_readings(
     end_utc: pd.Timestamp | None = None,
 ) -> pd.DataFrame:
     if end_utc is None:
-        end_utc = pd.Timestamp.utcnow().tz_localize("UTC")
+        end_utc = pd.Timestamp.now(tz="UTC")
     if start_utc is None:
         start_utc = end_utc - pd.Timedelta(hours=cfg.lookback_hours)
 

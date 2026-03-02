@@ -1,6 +1,4 @@
 import json
-from arrow import now
-from arrow import now
 import numpy as np
 import pandas as pd
 import torch
@@ -66,7 +64,7 @@ def main():
     np.random.seed(cfg.seed)
 
     # 1) Use wall-clock just to discover backlog + decide how far back to query
-    wall_now = pd.Timestamp.utcnow().tz_localize("UTC")
+    wall_now = pd.Timestamp.now(tz="UTC")
     backlog = fetch_untrained_matured_predictions(bq, cfg, wall_now, limit=50)
 
     # 2) Compute earliest start needed to cover feature windows for backlog
@@ -173,7 +171,7 @@ def main():
     skipped_count = 0
 
     for _, prev_pred in backlog.iterrows():
-        pred_time = pd.Timestamp(prev_pred["timestamp"]).tz_convert("UTC")
+        pred_time = pd.to_datetime(prev_pred["timestamp"], utc=True)
         label_start = pred_time
         label_end = pred_time + pd.Timedelta(minutes=cfg.horizon_minutes)
 
