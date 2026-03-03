@@ -1,49 +1,50 @@
 name: Deployment
 
-on: 
+on:
   push:
     branches:
-    - "deploy"
+      - "deploy"
+
+env:
+  GCP_PROJECT_ID: agrivoltaics-flutter-firebase
+  AR_REGION: us-east4
+  AR_REPO: app-images
+
+  AR_HOST: us-east4-docker.pkg.dev
+  AR_BASE: us-east4-docker.pkg.dev/agrivoltaics-flutter-firebase/app-images
+
+  RUN_REGION: us-east4
+  SCHEDULER_LOCATION: us-central1
 
 jobs:
   #
   # Flutter web application
-  # 
-  app-build-and-push-to-gcr:
+  #
+  app-build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:    
+      contents: "read"
+      id-token: "write"
+    steps:
       - name: Checkout repository
-        id: checkout
         uses: actions/checkout@v3
-        
+
       - name: Authenticate to Google Cloud
-        id: auth
-        # uses: google-github-actions/auth@v0
-        # with:
-        #   workload_identity_provider: projects/123123123/locations/global/workloadIdentityPools/the-workload-pool/providers/the-provider
-        #   service_account: service-324259319471@gcp-sa-cloudbuild.iam.gserviceaccount.com
-        uses: 'google-github-actions/auth@v1'
+        uses: google-github-actions/auth@v1
         with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-          service_account: service-324259319471@gcp-sa-cloudbuild.iam.gserviceaccount.com
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker gcr.io --quiet
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.AR_HOST }} --quiet
 
-      - name: Build and push image to Google Container Registry
-        id: push-image
+      - name: Build and push image to Artifact Registry
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: gcr.io/vinovoltaics-webapp/vinovoltaics-webapp-image:latest
+          tags: ${{ env.AR_BASE }}/vinovoltaics-webapp-image:latest
           file: ./application/agrivoltaics_flutter_app/Dockerfile
           context: ./application/agrivoltaics_flutter_app
           build-args: |
@@ -54,67 +55,57 @@ jobs:
             INFLUXDB_DEBUG=${{ vars.INFLUXDB_DEBUG }}
             AUTHORIZED_EMAILS=${{ vars.AUTHORIZED_EMAILS }}
 
-  app-deploy-gcp-cloud-run:
-    needs: app-build-and-push-to-gcr
+  app-deploy-cloud-run:
+    needs: app-build-and-push
     runs-on: ubuntu-latest
-
     permissions:
-      contents: 'read'
-      id-token: 'write'
-
+      contents: "read"
+      id-token: "write"
     steps:
-    - name: Checkout repository
-      id: checkout
-      uses: 'actions/checkout@v3'
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Authenticate with Google Cloud
-      id: auth
-      uses: 'google-github-actions/auth@v1'
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
 
-    - name: Deploy Cloud Run Service
-      id: deploy
-      uses: 'google-github-actions/deploy-cloudrun@v1'
-      with:
-        service: 'vinovoltaics-webapp'
-        image: 'gcr.io/vinovoltaics-webapp/vinovoltaics-webapp-image'
-        region: us-east5
+      - name: Deploy Cloud Run Service (Flutter project)
+        uses: google-github-actions/deploy-cloudrun@v1
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          service: vinovoltaics-webapp
+          image: ${{ env.AR_BASE }}/vinovoltaics-webapp-image:latest
+          region: ${{ env.RUN_REGION }}
 
   #
-  # Weather condition microservice
+  # Weather condition microservice (Cloud Run Job)
   #
-  microservice-build-and-push-to-gcr:
+  microservice-build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:    
+      contents: "read"
+      id-token: "write"
+    steps:
       - name: Checkout repository
-        id: checkout
         uses: actions/checkout@v3
-        
+
       - name: Authenticate to Google Cloud
-        id: auth
-        uses: 'google-github-actions/auth@v1'
+        uses: google-github-actions/auth@v1
         with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-          service_account: service-324259319471@gcp-sa-cloudbuild.iam.gserviceaccount.com
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker gcr.io --quiet
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.AR_HOST }} --quiet
 
-      - name: Build and push image to Google Container Registry
-        id: push-image
+      - name: Build and push microservice image to Artifact Registry
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: gcr.io/vinovoltaics-webapp/vinovoltaics-alert-microservice-image:latest
+          tags: ${{ env.AR_BASE }}/vinovoltaics-alert-microservice-image:latest
           file: ./application/microservices/py-weather-microservice/Dockerfile
           context: ./application/microservices/py-weather-microservice
           build-args: |
@@ -123,96 +114,84 @@ jobs:
             LONGITUDE=${{ vars.SITE_LONGITUDE }}
             EXECUTION_INTERVAL=${{ vars.MICROSERVICE_EXECUTION_INTERVAL }}
 
-  microservice-deploy-gcp-cloud-run:
-    needs: microservice-build-and-push-to-gcr
+  microservice-deploy-cloud-run-job:
+    needs: microservice-build-and-push
     runs-on: ubuntu-latest
-
     permissions:
-      contents: 'read'
-      id-token: 'write'
-
+      contents: "read"
+      id-token: "write"
     steps:
-    - name: Checkout repository
-      id: checkout
-      uses: 'actions/checkout@v3'
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Authenticate with Google Cloud
-      id: auth
-      uses: 'google-github-actions/auth@v1'
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
 
-    - name: Deploy Cloud Run Job
-      id: deploy
-      # uses: 'google-github-actions/deploy-cloudrun@v1'
-      uses: 'spencercorwin/deploy-cloudrun@enable-jobs' # fork from independent contributor to enable jobs
-      with:
-        job: 'vinovoltaics-alert-microservice'
-        image: 'gcr.io/vinovoltaics-webapp/vinovoltaics-alert-microservice-image'
-        region: us-central1
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      # ✅ Avoid the forked action; update the existing job’s image in the NEW project/region
+      - name: Deploy Cloud Run Job (update image)
+        run: |
+          gcloud run jobs update vinovoltaics-alert-microservice \
+            --project="${{ env.GCP_PROJECT_ID }}" \
+            --region="${{ env.RUN_REGION }}" \
+            --image="${{ env.AR_BASE }}/vinovoltaics-alert-microservice-image:latest"
 
   #
   # Notification API
   #
-  notification-api-build-and-push-to-gcr:
+  notification-api-build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:    
+      contents: "read"
+      id-token: "write"
+    steps:
       - name: Checkout repository
-        id: checkout
         uses: actions/checkout@v3
-        
+
       - name: Authenticate to Google Cloud
-        id: auth
-        uses: 'google-github-actions/auth@v1'
+        uses: google-github-actions/auth@v1
         with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-          service_account: service-324259319471@gcp-sa-cloudbuild.iam.gserviceaccount.com
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker gcr.io --quiet
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.AR_HOST }} --quiet
 
-      - name: Build and push image to Google Container Registry
-        id: push-image
+      - name: Build and push notification api image to Artifact Registry
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: gcr.io/vinovoltaics-webapp/vinovoltaics-notification-api-image:latest
+          tags: ${{ env.AR_BASE }}/vinovoltaics-notification-api-image:latest
           file: ./application/microservices/py-weather-api/Dockerfile
           context: ./application/microservices/py-weather-api
           build-args: |
             MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}
 
-  notification-api-deploy-gcp-cloud-run:
-    needs: notification-api-build-and-push-to-gcr
+  notification-api-deploy-cloud-run:
+    needs: notification-api-build-and-push
     runs-on: ubuntu-latest
-
     permissions:
-      contents: 'read'
-      id-token: 'write'
-
+      contents: "read"
+      id-token: "write"
     steps:
-    - name: Checkout repository
-      id: checkout
-      uses: 'actions/checkout@v3'
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Authenticate with Google Cloud
-      id: auth
-      uses: 'google-github-actions/auth@v1'
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
 
-    - name: Deploy Cloud Run Service
-      id: deploy
-      uses: 'google-github-actions/deploy-cloudrun@v1'
-      with:
-        service: 'vinovoltaics-notification-api'
-        image: 'gcr.io/vinovoltaics-webapp/vinovoltaics-notification-api-image'
-        region: us-east5
+      - name: Deploy Cloud Run Service (Flutter project)
+        uses: google-github-actions/deploy-cloudrun@v1
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          service: vinovoltaics-notification-api
+          image: ${{ env.AR_BASE }}/vinovoltaics-notification-api-image:latest
+          region: ${{ env.RUN_REGION }}
