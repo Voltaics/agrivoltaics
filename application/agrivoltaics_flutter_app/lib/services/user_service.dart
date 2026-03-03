@@ -94,6 +94,17 @@ class UserService {
     return doc.exists;
   }
 
+  // Save or clear FCM token for the current user
+  Future<void> saveFcmToken(String? token) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+
+    await _firestore.doc('users/$userId').update({
+      'fcmToken': token,
+      'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   // Get multiple users by IDs
   Future<List<AppUser>> getUsers(List<String> userIds) async {
     if (userIds.isEmpty) return [];
