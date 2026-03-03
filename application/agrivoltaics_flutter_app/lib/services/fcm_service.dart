@@ -56,6 +56,16 @@ class FcmService {
     await _saveCurrentToken();
   }
 
+  /// Check whether the user has granted notification permission without
+  /// needing to fetch a token (safe to call before the VAPID key is set).
+  Future<bool> checkPermissionStatus() async {
+    final settings = await _messaging.getNotificationSettings();
+    _permissionGranted =
+        settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
+    return _permissionGranted;
+  }
+
   /// Returns the current FCM token, or null if unavailable.
   Future<String?> getToken() async {
     try {
@@ -83,14 +93,15 @@ class FcmService {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
 
-    await _firestore.doc('users/$uid').update({
-      'fcmToken': token,
-      'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-    });
+    // Store as an array so a user can have tokens on multiple devices.
+    // arrayUnion is idempotent — safe to call on every launch.
+    await _firestore.doc('users/$uid').set({
+      'fcmTokens': FieldValue.arrayUnion([token]),
+    }, SetOptions(merge: true));
   }
 
   /// VAPID key for web push (replace with the actual key from Firebase console
   /// Project Settings → Cloud Messaging → Web configuration).
   static const String _vapidKey =
-      'REPLACE_WITH_YOUR_VAPID_KEY';
+      '593883469296';
 }

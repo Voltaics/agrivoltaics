@@ -33,13 +33,15 @@ extension AlertOperatorExtension on AlertOperator {
 
 /// An alert rule stored under organizations/{orgId}/alertRules/{ruleId}.
 ///
-/// A rule watches a specific sensor reading field across the whole organization
-/// and sends FCM push notifications to [notifyUserIds] when the condition
+/// A rule watches a specific sensor reading field and sends FCM push
+/// notifications to [notifyUserIds] when the condition
 /// ([fieldAlias] [operator] [threshold]) is met.
 ///
-/// Optional [activeTimeStart] / [activeTimeEnd] restrict the window during
-/// which the rule is evaluated (24-hour HH:mm format, e.g. "22:00").
-/// If both are null the rule is active at all times.
+/// Optional [activeRangeStart] / [activeRangeEnd] restrict the rule to a
+/// seasonal date window in "MM/dd" format (e.g. "11/01" → "03/15" for
+/// frost season). Handles year wrap-around. Both null = always active.
+///
+/// [cooldownMinutes] prevents repeated alerts within the given window.
 class AlertRule {
   final String id;
   final String name;
@@ -49,11 +51,17 @@ class AlertRule {
   final bool enabled;
   final List<String> notifyUserIds;
 
-  /// 24-hour time string "HH:mm" (e.g. "22:00"). Null = no restriction.
-  final String? activeTimeStart;
+  /// Seasonal start date "MM/dd" (e.g. "11/01"). Null = no restriction.
+  final String? activeRangeStart;
 
-  /// 24-hour time string "HH:mm" (e.g. "06:00"). Null = no restriction.
-  final String? activeTimeEnd;
+  /// Seasonal end date "MM/dd" (e.g. "03/15"). Null = no restriction.
+  final String? activeRangeEnd;
+
+  /// Minimum minutes between repeated alerts for this rule. 0 = no cooldown.
+  final int cooldownMinutes;
+
+  /// When this rule last fired (set by the backend). Used for cooldown checks.
+  final DateTime? lastFiredAt;
 
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -67,8 +75,10 @@ class AlertRule {
     required this.threshold,
     required this.enabled,
     required this.notifyUserIds,
-    this.activeTimeStart,
-    this.activeTimeEnd,
+    this.activeRangeStart,
+    this.activeRangeEnd,
+    this.cooldownMinutes = 60,
+    this.lastFiredAt,
     required this.createdAt,
     required this.updatedAt,
     required this.createdBy,
@@ -84,8 +94,10 @@ class AlertRule {
       threshold: (data['threshold'] as num?)?.toDouble() ?? 0.0,
       enabled: data['enabled'] ?? true,
       notifyUserIds: List<String>.from(data['notifyUserIds'] ?? []),
-      activeTimeStart: data['activeTimeStart'] as String?,
-      activeTimeEnd: data['activeTimeEnd'] as String?,
+      activeRangeStart: data['activeRangeStart'] as String?,
+      activeRangeEnd: data['activeRangeEnd'] as String?,
+      cooldownMinutes: (data['cooldownMinutes'] as num?)?.toInt() ?? 60,
+      lastFiredAt: (data['lastFiredAt'] as Timestamp?)?.toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       createdBy: data['createdBy'] ?? '',
@@ -100,8 +112,9 @@ class AlertRule {
       'threshold': threshold,
       'enabled': enabled,
       'notifyUserIds': notifyUserIds,
-      'activeTimeStart': activeTimeStart,
-      'activeTimeEnd': activeTimeEnd,
+      'activeRangeStart': activeRangeStart,
+      'activeRangeEnd': activeRangeEnd,
+      'cooldownMinutes': cooldownMinutes,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'createdBy': createdBy,
@@ -115,8 +128,9 @@ class AlertRule {
     double? threshold,
     bool? enabled,
     List<String>? notifyUserIds,
-    Object? activeTimeStart = _sentinel,
-    Object? activeTimeEnd = _sentinel,
+    int? cooldownMinutes,
+    Object? activeRangeStart = _sentinel,
+    Object? activeRangeEnd = _sentinel,
   }) {
     return AlertRule(
       id: id,
@@ -126,11 +140,14 @@ class AlertRule {
       threshold: threshold ?? this.threshold,
       enabled: enabled ?? this.enabled,
       notifyUserIds: notifyUserIds ?? this.notifyUserIds,
-      activeTimeStart: activeTimeStart == _sentinel
-          ? this.activeTimeStart
-          : activeTimeStart as String?,
-      activeTimeEnd:
-          activeTimeEnd == _sentinel ? this.activeTimeEnd : activeTimeEnd as String?,
+      cooldownMinutes: cooldownMinutes ?? this.cooldownMinutes,
+      activeRangeStart: activeRangeStart == _sentinel
+          ? this.activeRangeStart
+          : activeRangeStart as String?,
+      activeRangeEnd: activeRangeEnd == _sentinel
+          ? this.activeRangeEnd
+          : activeRangeEnd as String?,
+      lastFiredAt: lastFiredAt,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
       createdBy: createdBy,

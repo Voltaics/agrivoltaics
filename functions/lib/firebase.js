@@ -11,6 +11,7 @@ const bigquery = new BigQuery();
 
 const DATASET_ID = 'sensor_data';
 const TABLE_ID = 'readings';
+const ALERTS_TABLE_ID = 'alerts';
 
 module.exports = {
   admin,
@@ -19,4 +20,5 @@ module.exports = {
   bigquery,
   DATASET_ID,
   TABLE_ID,
+  ALERTS_TABLE_ID,
 };

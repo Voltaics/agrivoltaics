@@ -1,4 +1,8 @@
+﻿import 'dart:convert';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import '../../app_colors.dart';
@@ -34,10 +38,11 @@ class _AlertsPageState extends State<AlertsPage> {
   }
 
   Future<void> _checkFcmStatus() async {
-    final token = await _fcmService.getToken();
+    // Use getNotificationSettings() so this works regardless of VAPID key.
+    final granted = await _fcmService.checkPermissionStatus();
     if (mounted) {
       setState(() {
-        _fcmGranted = token != null;
+        _fcmGranted = granted;
         _fcmChecked = true;
       });
     }
@@ -69,13 +74,13 @@ class _AlertsPageState extends State<AlertsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Header bar ──────────────────────────────────────────────────────
+        // â”€â”€ Header bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _buildHeader(context, org?.id),
 
-        // ── FCM registration banner ─────────────────────────────────────────
+        // â”€â”€ FCM registration banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (_fcmChecked && !_fcmGranted) _buildFcmBanner(),
 
-        // ── Alert rules list ────────────────────────────────────────────────
+        // â”€â”€ Alert rules list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Expanded(
           child: org == null
               ? _buildNoOrgState()
@@ -228,7 +233,7 @@ class _AlertsPageState extends State<AlertsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Title row ──────────────────────────────────────────────────
+            // â”€â”€ Title row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Row(
               children: [
                 Expanded(
@@ -265,7 +270,7 @@ class _AlertsPageState extends State<AlertsPage> {
             ),
             const SizedBox(height: 8),
 
-            // ── Condition summary ──────────────────────────────────────────
+            // â”€â”€ Condition summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Wrap(
               spacing: 8,
               runSpacing: 4,
@@ -274,11 +279,11 @@ class _AlertsPageState extends State<AlertsPage> {
                   Icons.sensors,
                   '$fieldName ${rule.operator.label} ${rule.threshold}',
                 ),
-                if (rule.activeTimeStart != null &&
-                    rule.activeTimeEnd != null)
+                if (rule.activeRangeStart != null &&
+                    rule.activeRangeEnd != null)
                   _chip(
                     Icons.schedule,
-                    '${rule.activeTimeStart} – ${rule.activeTimeEnd}',
+                    '${rule.activeRangeStart} â€“ ${rule.activeRangeEnd}',
                   ),
                 _chip(
                   Icons.people_outline,
@@ -289,10 +294,17 @@ class _AlertsPageState extends State<AlertsPage> {
             ),
             const SizedBox(height: 8),
 
-            // ── Actions ────────────────────────────────────────────────────
+            // â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                TextButton.icon(
+                  onPressed: () => _sendTestAlert(context, orgId, rule),
+                  icon: const Icon(Icons.send_outlined,
+                      size: 16, color: AppColors.primary),
+                  label: const Text('Test'),
+                ),
+                const SizedBox(width: 4),
                 TextButton.icon(
                   onPressed: () =>
                       _openEditDialog(context, orgId, rule),
@@ -340,6 +352,66 @@ class _AlertsPageState extends State<AlertsPage> {
       context: context,
       builder: (_) => CreateAlertRuleDialog(orgId: orgId, existingRule: rule),
     );
+  }
+
+  static const _testAlertUrl =
+      'https://us-central1-agrivoltaics-flutter-firebase.cloudfunctions.net/sendTestAlert';
+
+  Future<void> _sendTestAlert(
+      BuildContext context, String orgId, AlertRule rule) async {
+    final messenger = ScaffoldMessenger.of(context);
+    String? token;
+    try {
+      token = await FirebaseAuth.instance.currentUser?.getIdToken();
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('Auth error: $e'),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+    if (token == null) {
+      messenger.showSnackBar(const SnackBar(
+        content: Text('Not signed in.'),
+        backgroundColor: AppColors.error,
+      ));
+      return;
+    }
+    messenger.showSnackBar(const SnackBar(
+      content: Text('Sending test alert…'),
+      duration: Duration(seconds: 2),
+    ));
+    try {
+      final resp = await http.post(
+        Uri.parse(_testAlertUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: '{"orgId":"$orgId","ruleId":"${rule.id}"}',
+      );
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
+        final notified = data['notified'] as int? ?? 0;
+        final msg = notified > 0
+            ? 'Test alert sent — notified $notified member${notified == 1 ? '' : 's'}'
+            : 'Sent, but found 0 org members — check Firestore members subcollection';
+        messenger.showSnackBar(SnackBar(
+          content: Text(msg),
+          backgroundColor: notified > 0 ? AppColors.primary : AppColors.warning,
+        ));
+      } else {
+        messenger.showSnackBar(SnackBar(
+          content: Text('Error ${resp.statusCode}: ${resp.body}'),
+          backgroundColor: AppColors.error,
+        ));
+      }
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('Failed: $e'),
+        backgroundColor: AppColors.error,
+      ));
+    }
   }
 
   Future<void> _confirmDelete(

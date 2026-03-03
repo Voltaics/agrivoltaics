@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+import 'notifications.dart';
 import 'sites_panel.dart';
 import 'zones_panel.dart';
 import '../stationary_dashboard/stationary_dashboard.dart';
@@ -207,6 +208,9 @@ class HomePage extends State<HomeState> {
                     ),
                   ),
 
+                  // Notifications button
+                  const NotificationsButton(),
+
                   // Sign Out button at the bottom
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
@@ -300,6 +304,8 @@ class HomePage extends State<HomeState> {
                                     ),
                                   ),
                                 ),
+                                // Notifications button for mobile
+                                const NotificationsButton(),
                                 // Logout button for mobile
                                 IconButton(
                                   icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
@@ -464,24 +470,16 @@ class HomePage extends State<HomeState> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || !mounted) return;
 
-    // Check the stored token in Firestore
-    final userDoc = await FirebaseFirestore.instance.doc('users/$uid').get();
-    if (!mounted) return;
-
-    if (!userDoc.exists) return;
+    final userDoc =
+        await FirebaseFirestore.instance.doc('users/$uid').get();
+    if (!mounted || !userDoc.exists) return;
 
     final data = userDoc.data() as Map<String, dynamic>?;
-    final storedToken = data?['fcmToken'] as String?;
-
-    // Only show the banner when a token was previously stored but is now null
-    // (i.e., it was invalidated).  Users who never registered get a prompt
-    // on the Alerts page instead.
-    if (storedToken == null) {
-      // Check if a fcmTokenUpdatedAt field exists – it means the user once had a token
-      final hadToken = data?.containsKey('fcmTokenUpdatedAt') ?? false;
-      if (mounted) setState(() => _fcmTokenInvalid = hadToken);
-    } else {
-      if (mounted) setState(() => _fcmTokenInvalid = false);
-    }
+    final tokens = data?['fcmTokens'];
+    // Show banner only if the field exists (user previously registered)
+    // but the array is now empty (tokens were pruned by the backend).
+    final wasRegistered = data?.containsKey('fcmTokens') ?? false;
+    final hasTokens = tokens is List && (tokens as List).isNotEmpty;
+    if (mounted) setState(() => _fcmTokenInvalid = wasRegistered && !hasTokens);
   }
 }

@@ -33,8 +33,9 @@ class AlertService {
     required double threshold,
     bool enabled = true,
     List<String> notifyUserIds = const [],
-    String? activeTimeStart,
-    String? activeTimeEnd,
+    String? activeRangeStart,
+    String? activeRangeEnd,
+    int cooldownMinutes = 60,
   }) async {
     final userId = _auth.currentUser!.uid;
     final ref = _rulesRef(orgId).doc();
@@ -47,8 +48,9 @@ class AlertService {
       threshold: threshold,
       enabled: enabled,
       notifyUserIds: notifyUserIds,
-      activeTimeStart: activeTimeStart,
-      activeTimeEnd: activeTimeEnd,
+      activeRangeStart: activeRangeStart,
+      activeRangeEnd: activeRangeEnd,
+      cooldownMinutes: cooldownMinutes,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       createdBy: userId,

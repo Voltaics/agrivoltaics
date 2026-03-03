@@ -33,8 +33,9 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
 
   late final TextEditingController _nameCtrl;
   late final TextEditingController _thresholdCtrl;
-  late final TextEditingController _timeStartCtrl;
-  late final TextEditingController _timeEndCtrl;
+  late final TextEditingController _dateStartCtrl;
+  late final TextEditingController _dateEndCtrl;
+  late final TextEditingController _cooldownCtrl;
 
   late AlertOperator _operator;
   late String? _fieldAlias;
@@ -56,13 +57,15 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
     _nameCtrl = TextEditingController(text: rule?.name ?? '');
     _thresholdCtrl =
         TextEditingController(text: rule?.threshold.toString() ?? '');
-    _timeStartCtrl = TextEditingController(text: rule?.activeTimeStart ?? '');
-    _timeEndCtrl = TextEditingController(text: rule?.activeTimeEnd ?? '');
+    _dateStartCtrl = TextEditingController(text: rule?.activeRangeStart ?? '');
+    _dateEndCtrl = TextEditingController(text: rule?.activeRangeEnd ?? '');
+    _cooldownCtrl = TextEditingController(
+        text: rule?.cooldownMinutes.toString() ?? '60');
     _operator = rule?.operator ?? AlertOperator.gt;
     _fieldAlias = rule?.fieldAlias.isNotEmpty == true ? rule!.fieldAlias : null;
     _enabled = rule?.enabled ?? true;
     _useTimeWindow =
-        rule?.activeTimeStart != null && rule?.activeTimeEnd != null;
+        rule?.activeRangeStart != null && rule?.activeRangeEnd != null;
     if (rule != null) _selectedUserIds.addAll(rule.notifyUserIds);
     _loadMembers();
   }
@@ -71,8 +74,9 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
   void dispose() {
     _nameCtrl.dispose();
     _thresholdCtrl.dispose();
-    _timeStartCtrl.dispose();
-    _timeEndCtrl.dispose();
+    _dateStartCtrl.dispose();
+    _dateEndCtrl.dispose();
+    _cooldownCtrl.dispose();
     super.dispose();
   }
 
@@ -115,13 +119,15 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
     setState(() => _saving = true);
     try {
       final String? timeStart =
-          _useTimeWindow && _timeStartCtrl.text.isNotEmpty
-              ? _timeStartCtrl.text.trim()
+          _useTimeWindow && _dateStartCtrl.text.isNotEmpty
+              ? _dateStartCtrl.text.trim()
               : null;
       final String? timeEnd =
-          _useTimeWindow && _timeEndCtrl.text.isNotEmpty
-              ? _timeEndCtrl.text.trim()
+          _useTimeWindow && _dateEndCtrl.text.isNotEmpty
+              ? _dateEndCtrl.text.trim()
               : null;
+      final int cooldown =
+          int.tryParse(_cooldownCtrl.text.trim()) ?? 60;
       final threshold = double.parse(_thresholdCtrl.text.trim());
 
       if (_isEdit) {
@@ -135,8 +141,9 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
             'threshold': threshold,
             'enabled': _enabled,
             'notifyUserIds': _selectedUserIds.toList(),
-            'activeTimeStart': timeStart,
-            'activeTimeEnd': timeEnd,
+            'activeRangeStart': timeStart,
+            'activeRangeEnd': timeEnd,
+            'cooldownMinutes': cooldown,
           },
         );
       } else {
@@ -148,8 +155,9 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
           threshold: threshold,
           enabled: _enabled,
           notifyUserIds: _selectedUserIds.toList(),
-          activeTimeStart: timeStart,
-          activeTimeEnd: timeEnd,
+          activeRangeStart: timeStart,
+          activeRangeEnd: timeEnd,
+          cooldownMinutes: cooldown,
         );
       }
 
@@ -172,19 +180,40 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
     final readings = _readingsService.getAllReadings();
     final fieldOptions = readings.entries.toList();
 
-    return AlertDialog(
-      title: Row(
-        children: [
-          const Icon(Icons.notifications_active, color: AppColors.primary),
-          const SizedBox(width: 12),
-          Text(_isEdit ? 'Edit Alert Rule' : 'New Alert Rule'),
-        ],
-      ),
-      content: SizedBox(
-        width: 480,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: SizedBox(
+        width: 520,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Title ───────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+              child: Row(
+                children: [
+                  const Icon(Icons.notifications_active,
+                      color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _isEdit ? 'Edit Alert Rule' : 'New Alert Rule',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            // ── Content ─────────────────────────────────────────────────────
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -218,6 +247,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                       flex: 3,
                       child: DropdownButtonFormField<String>(
                         value: _fieldAlias,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Field',
                           border: OutlineInputBorder(),
@@ -284,15 +314,15 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                 ),
                 const SizedBox(height: 16),
 
-                // ── Active time window ────────────────────────────────────────
+                // ── Active season window ──────────────────────────────────────
                 SwitchListTile(
                   value: _useTimeWindow,
                   onChanged: _saving
                       ? null
                       : (v) => setState(() => _useTimeWindow = v),
-                  title: const Text('Active only during time window'),
+                  title: const Text('Active only during season window'),
                   subtitle: const Text(
-                      'Restrict the alert to specific hours (e.g. night time)',
+                      'Restrict the alert to a seasonal date range (e.g. Nov 01 – Mar 31)',
                       style: TextStyle(fontSize: 12)),
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -302,15 +332,15 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                     children: [
                       Expanded(
                         child: TextFormField(
-                          controller: _timeStartCtrl,
+                          controller: _dateStartCtrl,
                           decoration: const InputDecoration(
-                            labelText: 'Start (HH:mm)',
-                            hintText: '22:00',
+                            labelText: 'Start (MM/dd)',
+                            hintText: '11/01',
                             border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.schedule),
+                            prefixIcon: Icon(Icons.calendar_today),
                           ),
                           validator: _useTimeWindow
-                              ? (v) => _validateTime(v)
+                              ? (v) => _validateDate(v)
                               : null,
                           enabled: !_saving,
                         ),
@@ -318,15 +348,15 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextFormField(
-                          controller: _timeEndCtrl,
+                          controller: _dateEndCtrl,
                           decoration: const InputDecoration(
-                            labelText: 'End (HH:mm)',
-                            hintText: '06:00',
+                            labelText: 'End (MM/dd)',
+                            hintText: '03/31',
                             border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.schedule),
+                            prefixIcon: Icon(Icons.calendar_today),
                           ),
                           validator: _useTimeWindow
-                              ? (v) => _validateTime(v)
+                              ? (v) => _validateDate(v)
                               : null,
                           enabled: !_saving,
                         ),
@@ -334,6 +364,28 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                     ],
                   ),
                 ],
+                const SizedBox(height: 16),
+
+                // ── Cooldown ──────────────────────────────────────────────────
+                TextFormField(
+                  controller: _cooldownCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Cooldown (minutes)',
+                    hintText: '60',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.timer),
+                    helperText:
+                        'Minimum minutes between repeated alerts for this rule',
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Required';
+                    final n = int.tryParse(v.trim());
+                    if (n == null || n < 0) return 'Must be a positive integer';
+                    return null;
+                  },
+                  enabled: !_saving,
+                ),
                 const SizedBox(height: 16),
 
                 // ── Who to notify ─────────────────────────────────────────────
@@ -386,41 +438,55 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton.icon(
-          onPressed: _saving ? null : _save,
-          icon: _saving
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.textPrimary)),
-                )
-              : const Icon(Icons.save),
-          label: Text(_saving ? 'Saving...' : (_isEdit ? 'Save' : 'Create')),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.textPrimary,
+    ),
+    const Divider(height: 1),
+    Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 16, 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          TextButton(
+            onPressed: _saving ? null : () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
           ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: _saving ? null : _save,
+            icon: _saving
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.textPrimary)),
+                  )
+                : const Icon(Icons.save),
+            label: Text(_saving ? 'Saving...' : (_isEdit ? 'Save' : 'Create')),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    ),
+  ],
         ),
-      ],
+      ),
     );
   }
 
-  String? _validateTime(String? value) {
+  String? _validateDate(String? value) {
     if (value == null || value.trim().isEmpty) return 'Required';
-    final parts = value.trim().split(':');
-    if (parts.length != 2) return 'Use HH:mm format';
-    final h = int.tryParse(parts[0]);
-    final m = int.tryParse(parts[1]);
-    if (h == null || m == null || h < 0 || h > 23 || m < 0 || m > 59) {
-      return 'Invalid time';
+    final parts = value.trim().split('/');
+    if (parts.length != 2) return 'Use MM/dd format';
+    final month = int.tryParse(parts[0]);
+    final day = int.tryParse(parts[1]);
+    if (month == null || day == null ||
+        month < 1 || month > 12 ||
+        day < 1 || day > 31) {
+      return 'Invalid date';
     }
     return null;
   }
