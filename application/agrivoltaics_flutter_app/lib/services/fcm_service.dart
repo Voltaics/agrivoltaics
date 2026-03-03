@@ -103,5 +103,5 @@ class FcmService {
   /// VAPID key for web push (replace with the actual key from Firebase console
   /// Project Settings → Cloud Messaging → Web configuration).
   static const String _vapidKey =
-      '593883469296';
+      'BJC9Xd0dX9_wZZDwBKnxw1SvU7TzOI73LRp2bXsvz-231lowd-Gzaa_6oojJ04juy7MCJUi65ziEbz1CuPDj788';
 }
