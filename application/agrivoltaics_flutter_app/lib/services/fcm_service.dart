@@ -1,3 +1,5 @@
+import 'dart:html' as html;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -46,6 +48,16 @@ class FcmService {
       _messaging.onTokenRefresh.listen((newToken) async {
         await _persistToken(newToken);
       });
+
+      // On web, foreground messages are delivered to onMessage but do NOT
+      // automatically show an OS notification — show one manually.
+      if (kIsWeb) {
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          final title = message.notification?.title ?? 'Vinovoltaics Alert';
+          final body = message.notification?.body ?? '';
+          html.Notification(title, body: body, icon: '/icons/Icon-192.png');
+        });
+      }
     }
 
     return _permissionGranted;
@@ -86,6 +98,9 @@ class FcmService {
     final token = await getToken();
     if (token != null) {
       await _persistToken(token);
+      debugPrint('FCM token saved: ${token.substring(0, 20)}...');
+    } else {
+      debugPrint('FCM: getToken() returned null — check VAPID key and browser permissions');
     }
   }
 
