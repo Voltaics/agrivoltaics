@@ -50,12 +50,6 @@ class FilterCardWidget extends StatelessWidget {
                   'Filters',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: onApplyFilters,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Apply'),
-                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -135,6 +129,25 @@ class FilterCardWidget extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onApplyFilters,
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                label: const Text(
+                  'Apply',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.sidebarEnd,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
             ),
           ],
         ),

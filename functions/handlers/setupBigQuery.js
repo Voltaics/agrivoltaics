@@ -1,5 +1,5 @@
 const functions = require('firebase-functions');
-const {bigquery, DATASET_ID, TABLE_ID} = require('../lib/firebase');
+const {bigquery, DATASET_ID, TABLE_ID, ALERTS_TABLE_ID} = require('../lib/firebase');
 
 /**
  * HTTPS Cloud Function: Setup BigQuery
@@ -26,7 +26,10 @@ const setupBigQuery = functions.https.onRequest(async (req, res) => {
       console.log(`Dataset ${DATASET_ID} already exists`);
     }
 
-    const expectedSchema = [
+    const results = {};
+
+    // ── Readings table ────────────────────────────────────────────────────
+    const readingsSchema = [
       {name: 'timestamp', type: 'TIMESTAMP', mode: 'REQUIRED'},
       {name: 'organizationId', type: 'STRING', mode: 'REQUIRED'},
       {name: 'siteId', type: 'STRING', mode: 'REQUIRED'},
@@ -40,86 +43,77 @@ const setupBigQuery = functions.https.onRequest(async (req, res) => {
       {name: 'primarySensor', type: 'BOOLEAN', mode: 'NULLABLE'},
     ];
 
-    const table = dataset.table(TABLE_ID);
-    const [tableExists] = await table.exists();
+    const readingsTable = dataset.table(TABLE_ID);
+    const [readingsTableExists] = await readingsTable.exists();
 
-    if (!tableExists) {
-      const options = {
-        schema: expectedSchema,
-        timePartitioning: {
-          type: 'DAY',
-          field: 'timestamp',
-          expirationMs: null,
-        },
-        clustering: {
-          fields: ['sensorId', 'field'],
-        },
+    if (!readingsTableExists) {
+      await dataset.createTable(TABLE_ID, {
+        schema: readingsSchema,
+        timePartitioning: {type: 'DAY', field: 'timestamp', expirationMs: null},
+        clustering: {fields: ['sensorId', 'field']},
         description: 'Sensor readings with daily partitioning and clustering by sensor/field',
-      };
-
-      await dataset.createTable(TABLE_ID, options);
-      console.log(`Created table: ${TABLE_ID} with partitioning and clustering`);
-
-      return res.status(200).json({
-        success: true,
-        message: 'BigQuery setup completed',
-        dataset: DATASET_ID,
-        table: TABLE_ID,
-        partitioning: 'DAY on timestamp field',
-        clustering: 'sensorId, field',
       });
+      console.log(`Created table: ${TABLE_ID}`);
+      results[TABLE_ID] = 'created';
+    } else {
+      const [metadata] = await readingsTable.getMetadata();
+      const currentSchema = metadata.schema.fields;
+      const schemaMatches = readingsSchema.every((expected) => {
+        const current = currentSchema.find((f) => f.name === expected.name);
+        return current &&
+          current.type === expected.type &&
+          (current.mode || 'NULLABLE') === expected.mode;
+      }) && currentSchema.length === readingsSchema.length;
+
+      if (!schemaMatches) {
+        return res.status(400).json({
+          success: false,
+          message: `${TABLE_ID} exists but schema does not match`,
+          expected: readingsSchema,
+          current: currentSchema,
+        });
+      }
+      results[TABLE_ID] = 'exists';
     }
 
-    const [metadata] = await table.getMetadata();
-    const currentSchema = metadata.schema.fields;
+    // ── Alerts table ──────────────────────────────────────────────────────
+    const alertsSchema = [
+      {name: 'triggeredAt', type: 'TIMESTAMP', mode: 'REQUIRED'},
+      {name: 'organizationId', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'siteId', type: 'STRING', mode: 'NULLABLE'},
+      {name: 'zoneId', type: 'STRING', mode: 'NULLABLE'},
+      {name: 'sensorId', type: 'STRING', mode: 'NULLABLE'},
+      {name: 'ruleId', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'ruleName', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'fieldAlias', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'value', type: 'FLOAT', mode: 'REQUIRED'},
+      {name: 'threshold', type: 'FLOAT', mode: 'REQUIRED'},
+      {name: 'operator', type: 'STRING', mode: 'REQUIRED'},
+      {name: 'severity', type: 'STRING', mode: 'NULLABLE'},
+      {name: 'unit', type: 'STRING', mode: 'NULLABLE'},
+    ];
 
-    const schemaMatches = expectedSchema.every((expectedField) => {
-      const currentField = currentSchema.find((f) => f.name === expectedField.name);
-      if (!currentField) {
-        console.log(`Missing field: ${expectedField.name}`);
-        return false;
-      }
-      if (currentField.type !== expectedField.type) {
-        console.log(
-            `Type mismatch for ${expectedField.name}: expected ${expectedField.type}, got ${currentField.type}`,
-        );
-        return false;
-      }
-      const currentMode = currentField.mode || 'NULLABLE';
-      if (currentMode !== expectedField.mode) {
-        console.log(
-            `Mode mismatch for ${expectedField.name}: expected ${expectedField.mode}, got ${currentMode}`,
-        );
-        return false;
-      }
-      return true;
-    }) && currentSchema.length === expectedSchema.length;
+    const alertsTable = dataset.table(ALERTS_TABLE_ID);
+    const [alertsTableExists] = await alertsTable.exists();
 
-    if (schemaMatches) {
-      return res.status(200).json({
-        success: true,
-        message: 'BigQuery table already exists with correct schema',
-        dataset: DATASET_ID,
-        table: TABLE_ID,
-        schemaValid: true,
+    if (!alertsTableExists) {
+      await dataset.createTable(ALERTS_TABLE_ID, {
+        schema: alertsSchema,
+        timePartitioning: {type: 'DAY', field: 'triggeredAt'},
+        clustering: {fields: ['organizationId', 'ruleId']},
+        description: 'Alert rule trigger events with daily partitioning',
       });
+      console.log(`Created table: ${ALERTS_TABLE_ID}`);
+      results[ALERTS_TABLE_ID] = 'created';
+    } else {
+      console.log(`Table ${ALERTS_TABLE_ID} already exists`);
+      results[ALERTS_TABLE_ID] = 'exists';
     }
 
-    return res.status(400).json({
-      success: false,
-      message: 'BigQuery table exists but schema does not match',
-      dataset: DATASET_ID,
-      table: TABLE_ID,
-      schemaValid: false,
-      expectedSchema: expectedSchema,
-      currentSchema: currentSchema,
-    });
+    return res.status(200).json({success: true, dataset: DATASET_ID, tables: results});
   } catch (error) {
     console.error('BigQuery setup error:', error);
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    return res.status(500).json({success: false, error: error.message});
   }
 });
 

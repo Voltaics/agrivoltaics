@@ -1,17 +1,22 @@
 import 'package:agrivoltaics_flutter_app/app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
+import 'notifications.dart';
 import 'sites_panel.dart';
 import 'zones_panel.dart';
 import '../stationary_dashboard/stationary_dashboard.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
 import '../historical_dashboard/historical_dashboard.dart';
+import '../alerts/alerts_page.dart';
 import 'widgets/organization_menu_sheet.dart';
 import 'widgets/organization_selector.dart';
 import 'widgets/sign_out_dialog.dart';
 import '../../app_state.dart';
+import '../../services/fcm_service.dart';
 
 class HomeState extends StatefulWidget {
   const HomeState({
@@ -36,7 +41,12 @@ class HomePage extends State<HomeState> {
     StationaryDashboardPage(),  // Stationary Sensors
     HistoricalDashboardPage(),        // Historical Trends
     MobileDashboardPage(),            // Mobile Sensors
+    AlertsPage(),                     // Alert Rules
   ];
+
+  // FCM token status for in-app banner
+  bool _fcmTokenInvalid = false;
+  final FcmService _fcmService = FcmService();
 
   void _selectPage(int index) {
     setState(() {
@@ -64,7 +74,44 @@ class HomePage extends State<HomeState> {
      return Scaffold(
       // 1) No AppBar here—removed entirely
       // 2) Row that holds [ Nav Rail (left) | Main Content (right) ]
-      body: Row(
+      body: Column(
+        children: [
+          // FCM token invalidated banner
+          if (_fcmTokenInvalid)
+            Material(
+              color: AppColors.errorLight,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.notifications_off,
+                        color: AppColors.errorDark),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Your notification token has been invalidated. '
+                        'Please re-enable notifications to continue receiving alerts.',
+                        style: TextStyle(color: AppColors.errorDark),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _reRegisterFcm,
+                      child: const Text('Re-enable',
+                          style: TextStyle(color: AppColors.errorDark)),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close,
+                          size: 18, color: AppColors.errorDark),
+                      onPressed: () =>
+                          setState(() => _fcmTokenInvalid = false),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          Expanded(
+            child: Row(
         children: [
           // Only show side nav on wide screens
           if (isWideScreen)
@@ -73,7 +120,7 @@ class HomePage extends State<HomeState> {
               width: 220,
               decoration: const BoxDecoration(
                 // You can replace this gradient with a single color if you prefer
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
@@ -152,9 +199,17 @@ class HomePage extends State<HomeState> {
                           label: const Text('Mobile Sensors', style: TextStyle(fontSize: 14),),
                           padding: const EdgeInsets.only(bottom: 16),
                         ),
+                        NavigationRailDestination(
+                          icon: const Icon(Icons.notifications_active),
+                          label: const Text('Alerts', style: TextStyle(fontSize: 14)),
+                          padding: const EdgeInsets.only(bottom: 16),
+                        ),
                       ],
                     ),
                   ),
+
+                  // Notifications button
+                  const NotificationsButton(),
 
                   // Sign Out button at the bottom
                   Padding(
@@ -249,6 +304,8 @@ class HomePage extends State<HomeState> {
                                     ),
                                   ),
                                 ),
+                                // Notifications button for mobile
+                                const NotificationsButton(),
                                 // Logout button for mobile
                                 IconButton(
                                   icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
@@ -274,6 +331,9 @@ class HomePage extends State<HomeState> {
                 : _pages[_selectedIndex],
           ),
         ],
+            ),
+          ),
+        ],
       ),
 
       // Mobile bottom nav bar
@@ -295,6 +355,10 @@ class HomePage extends State<HomeState> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.camera_alt),
                   label: 'Mobile',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.notifications_active),
+                  label: 'Alerts',
                 ),
               ],
             )
@@ -386,6 +450,36 @@ class HomePage extends State<HomeState> {
       // await getSettings(FirebaseAuth.instance.currentUser?.email, appState);
       // appState.addSite();
       appState.finalizeState();
+
+      // Check whether the stored FCM token is still valid.
+      await _checkFcmTokenStatus();
     });
+  }
+
+  /// Re-prompts for notification permission and refreshes the FCM token.
+  Future<void> _reRegisterFcm() async {
+    final granted = await _fcmService.requestPermissionAndSaveToken();
+    if (mounted) {
+      setState(() => _fcmTokenInvalid = !granted);
+    }
+  }
+
+  /// Shows the banner only when the user previously registered for notifications
+  /// (had a stored FCM token) but the token is now missing or invalidated.
+  Future<void> _checkFcmTokenStatus() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || !mounted) return;
+
+    final userDoc =
+        await FirebaseFirestore.instance.doc('users/$uid').get();
+    if (!mounted || !userDoc.exists) return;
+
+    final data = userDoc.data() as Map<String, dynamic>?;
+    final tokens = data?['fcmTokens'];
+    // Show banner only if the field exists (user previously registered)
+    // but the array is now empty (tokens were pruned by the backend).
+    final wasRegistered = data?.containsKey('fcmTokens') ?? false;
+    final hasTokens = tokens is List && (tokens as List).isNotEmpty;
+    if (mounted) setState(() => _fcmTokenInvalid = wasRegistered && !hasTokens);
   }
 }

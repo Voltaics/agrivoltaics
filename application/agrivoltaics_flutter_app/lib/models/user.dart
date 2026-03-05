@@ -7,12 +7,17 @@ class AppUser {
   final DateTime createdAt;
   final DateTime lastLogin;
 
+  /// Firebase Cloud Messaging token for push notifications.
+  /// Null when the user has not granted notification permission on any device.
+  final String? fcmToken;
+
   AppUser({
     required this.uid,
     required this.email,
     required this.displayName,
     required this.createdAt,
     required this.lastLogin,
+    this.fcmToken,
   });
 
   // Convert from Firestore document
@@ -24,6 +29,7 @@ class AppUser {
       displayName: data['displayName'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       lastLogin: (data['lastLogin'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      fcmToken: data['fcmToken'] as String?,
     );
   }
 
@@ -44,6 +50,7 @@ class AppUser {
     String? displayName,
     DateTime? createdAt,
     DateTime? lastLogin,
+    String? fcmToken,
   }) {
     return AppUser(
       uid: uid ?? this.uid,
@@ -51,6 +58,7 @@ class AppUser {
       displayName: displayName ?? this.displayName,
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,
+      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 }
