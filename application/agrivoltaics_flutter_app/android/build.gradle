@@ -1,5 +1,6 @@
 buildscript {
-    ext.kotlin_version = '1.6.10'
+    // Use Kotlin 1.8.x to avoid strict JVM-target validation introduced in 1.9
+    ext.kotlin_version = '1.8.22'
     repositories {
         google()
         mavenCentral()
@@ -26,6 +27,72 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// Configure Gradle to use Java 8 as the JVM toolchain for Kotlin compilation
+allprojects {
+    pluginManager.withPlugin('org.jetbrains.kotlin.android') {
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions {
+                jvmTarget = '1.8'
+                freeCompilerArgs += ['-Xjvm-default=enable']
+            }
+        }
+    }
+    pluginManager.withPlugin('org.jetbrains.kotlin.jvm') {
+        tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions {
+                jvmTarget = '1.8'
+            }
+        }
+    }
+    // Also force all Java compilation to target 1.8
+    pluginManager.withPlugin('com.android.application') {
+        android {
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_1_8
+                targetCompatibility JavaVersion.VERSION_1_8
+            }
+        }
+    }
+    pluginManager.withPlugin('com.android.library') {
+        android {
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_1_8
+                targetCompatibility JavaVersion.VERSION_1_8
+            }
+        }
+    }
+}
+
+// Force Kotlin JVM toolchain to Java 8 for all Kotlin modules (plugins and app)
+subprojects {
+    plugins.withId('org.jetbrains.kotlin.jvm') {
+        try {
+            extensions.configure(org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension) { kotlinExt ->
+                kotlinExt.jvmToolchain(8)
+            }
+        } catch (ignored) {
+        }
+    }
+    plugins.withId('org.jetbrains.kotlin.android') {
+        try {
+            extensions.configure(org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension) { kotlinExt ->
+                kotlinExt.jvmToolchain(8)
+            }
+        } catch (ignored) {
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.layout.buildDirectory
+}
+
+// Ensure Kotlin compilation targets Java 1.8 across all modules to avoid
+// inconsistent JVM-target errors when the host JDK is newer (e.g. Java 21).
+subprojects {
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
 }
