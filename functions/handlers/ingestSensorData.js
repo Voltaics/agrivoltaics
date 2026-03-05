@@ -1,6 +1,7 @@
 const functions = require('firebase-functions');
 const {Timestamp} = require('firebase-admin/firestore');
 const {db, bigquery, DATASET_ID, TABLE_ID} = require('../lib/firebase');
+const {runAlertChecks} = require('../lib/alertHelpers');
 
 const {CloudTasksClient} = require('@google-cloud/tasks');
 const crypto = require('crypto');
@@ -230,6 +231,8 @@ async function enqueueFrostJobRun({zoneId, ingestId}) {
   const [resp] = await tasksClient.createTask({parent, task});
   return resp.name;
 }
+
+// ─── HTTPS Cloud Function: Ingest Sensor Data ────────────────────────────────
 
 /**
  * HTTPS Cloud Function: Ingest Sensor Data
@@ -524,6 +527,20 @@ const ingestSensorData = functions.https.onRequest(async (req, res) => {
           } catch (e) {
             console.error('Failed to enqueue frost job task:', e.message || e);
           }
+        }
+
+        // Run alert checks against freshly ingested readings.
+        // Errors here are non-fatal and must not affect the HTTP response.
+        try {
+          await runAlertChecks({
+            organizationId,
+            siteId,
+            zoneId,
+            bqRows: allBqRows,
+            now,
+          });
+        } catch (alertErr) {
+          console.error('Alert check error:', alertErr.message || alertErr);
         }
       } catch (bqError) {
         console.error('BigQuery insert error:', bqError.message);

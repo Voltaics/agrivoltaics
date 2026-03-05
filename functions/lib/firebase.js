@@ -6,15 +6,19 @@ if (admin.apps.length === 0) {
 }
 
 const db = admin.firestore();
+const messaging = admin.messaging();
 const bigquery = new BigQuery();
 
 const DATASET_ID = 'sensor_data';
 const TABLE_ID = 'readings';
+const ALERTS_TABLE_ID = 'alerts';
 
 module.exports = {
   admin,
   db,
+  messaging,
   bigquery,
   DATASET_ID,
   TABLE_ID,
+  ALERTS_TABLE_ID,
 };
