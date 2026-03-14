@@ -1,0 +1,206 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.6.1">
+  <diagram name="Page-1" id="kToXFiZiqP3dkAJH6dCL">
+    <mxGraphModel dx="2084" dy="1054" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-30" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="960" width="630" x="440" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="560" width="320" x="50" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="200" width="280" x="70" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-12" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Temperature/Humidity Sensor" vertex="1">
+          <mxGeometry height="60" width="120" x="90" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-9" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=18;fontStyle=1" value="Vineyard" vertex="1">
+          <mxGeometry height="30" width="60" x="180" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-13" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Light Sensor" vertex="1">
+          <mxGeometry height="60" width="120" x="90" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Arduino" vertex="1">
+          <mxGeometry height="60" width="60" x="270" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-14" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Temp/Humidity" vertex="1">
+          <mxGeometry height="30" width="60" x="230" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-15" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Light" vertex="1">
+          <mxGeometry height="30" width="60" x="210" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;fontStyle=1" value="Zone 1" vertex="1">
+          <mxGeometry height="30" width="60" x="180" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="200" width="280" x="70" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-18" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-19" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Temperature/Humidity Sensor" vertex="1">
+          <mxGeometry height="60" width="120" x="90" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-20" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Light Sensor" vertex="1">
+          <mxGeometry height="60" width="120" x="90" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Arduino" vertex="1">
+          <mxGeometry height="60" width="60" x="270" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-23" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Temp/Humidity" vertex="1">
+          <mxGeometry height="30" width="60" x="230" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-24" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Light" vertex="1">
+          <mxGeometry height="30" width="60" x="210" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-25" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;fontStyle=1" value="Zone 2" vertex="1">
+          <mxGeometry height="30" width="60" x="180" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-26" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="250" width="250" x="500" y="200" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-27" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=18;fontStyle=1" value="Firebase Cloud Functions" vertex="1">
+          <mxGeometry height="30" width="245" x="502.5" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-45" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-36">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="770" y="285" />
+              <mxPoint x="770" y="163" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-46" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-39">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="770" y="315" />
+              <mxPoint x="770" y="443" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-28" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Ingest Data" vertex="1">
+          <mxGeometry height="60" width="120" x="565" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-64" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" target="xP-QtZ1OQzA58n8vFGrh-39">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-29" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Get Historical Data" vertex="1">
+          <mxGeometry height="60" width="120" x="565" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-31" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=18;fontStyle=1" value="Google Cloud" vertex="1">
+          <mxGeometry height="30" width="245" x="587.5" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-32" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-33" connectable="0" parent="xP-QtZ1OQzA58n8vFGrh-32" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="/ingestSensorData" vertex="1">
+          <mxGeometry relative="1" x="-0.354" as="geometry">
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-34" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-35" connectable="0" parent="xP-QtZ1OQzA58n8vFGrh-34" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="/ingestSensorData" vertex="1">
+          <mxGeometry relative="1" x="-0.7133" as="geometry">
+            <mxPoint x="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-55" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-36" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-51">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-36" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="250" width="250" x="790" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-37" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;fontStyle=1" value="Firebase FireStore Database" vertex="1">
+          <mxGeometry height="30" width="247.5" x="792.5" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-39" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="250" width="250" x="791.25" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-41" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;fontStyle=1" value="BigQuery" vertex="1">
+          <mxGeometry height="30" width="247.5" x="791.25" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-42" parent="1" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/Functions.svg;" value="" vertex="1">
+          <mxGeometry height="23" width="25" x="660" y="307" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-43" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=default;" value="&lt;span style=&quot;font-family: &amp;quot;Segoe WPC&amp;quot;, &amp;quot;Segoe UI&amp;quot;, sans-serif; font-size: 13px; text-align: start;&quot;&gt;Firestore stores the app’s operational data: one-time configuration/metadata and the latest sensor readings as a fast “current snapshot” for real-time UI and quick queries.&lt;/span&gt;" vertex="1">
+          <mxGeometry height="170" width="170" x="830" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-44" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=default;" value="&lt;span style=&quot;font-family: &amp;quot;Segoe WPC&amp;quot;, &amp;quot;Segoe UI&amp;quot;, sans-serif; font-size: 13px; text-align: start;&quot;&gt;BigQuery stores the append-only historical time-series data so you can run long-term trend analysis, reporting, and large aggregations over time.&lt;/span&gt;" vertex="1">
+          <mxGeometry height="170" width="170" x="832.5" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-47" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Update Last Reading" vertex="1">
+          <mxGeometry height="30" width="60" x="710" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-50" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Append Reading to Table" vertex="1">
+          <mxGeometry height="30" width="150" x="770" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-51" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="250" width="250" x="630" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-52" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=14;fontStyle=1" value="Web App" vertex="1">
+          <mxGeometry height="30" width="247.5" x="630" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-53" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Stationary Sensors Page" vertex="1">
+          <mxGeometry height="60" width="120" x="695" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-61" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-54" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;startArrow=classic;startFill=1;" target="xP-QtZ1OQzA58n8vFGrh-29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-63" connectable="0" parent="xP-QtZ1OQzA58n8vFGrh-61" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="/getHistoricalData" vertex="1">
+          <mxGeometry relative="1" x="0.2629" y="2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-54" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Historical Data Page" vertex="1">
+          <mxGeometry height="60" width="120" x="693.75" y="830" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-58" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-36" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-53">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-59" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Get General Data" vertex="1">
+          <mxGeometry height="30" width="120" x="920" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-60" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Get Most Recent Sensor Readings" vertex="1">
+          <mxGeometry height="30" width="117" x="910" y="770" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-65" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Queries BigQuery based on request parameters" vertex="1">
+          <mxGeometry height="30" width="60" x="680" y="495" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-66" parent="1" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/Functions.svg;" value="" vertex="1">
+          <mxGeometry height="23" width="25" x="660" y="397" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-68" parent="1" style="image;html=1;image=img/lib/clip_art/computers/Database_128x128.png" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="1008.75" y="317" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-69" parent="1" style="image;html=1;image=img/lib/clip_art/computers/Database_128x128.png" value="" vertex="1">
+          <mxGeometry height="30" width="30" x="1010" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-70" parent="1" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;fillColor=#FF6A00;strokeColor=none;shape=mxgraph.alibaba_cloud.webplus_web_app_service;" value="" vertex="1">
+          <mxGeometry height="30.9" width="30.9" x="847" y="897" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-76" edge="1" parent="1" source="xP-QtZ1OQzA58n8vFGrh-71" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="xP-QtZ1OQzA58n8vFGrh-51">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-71" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Farmer" vertex="1">
+          <mxGeometry height="60" width="30" x="135" y="775" as="geometry" />
+        </mxCell>
+        <mxCell id="xP-QtZ1OQzA58n8vFGrh-77" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Views Web App. Can manage smart farm." vertex="1">
+          <mxGeometry height="65" width="100" x="230" y="740" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
