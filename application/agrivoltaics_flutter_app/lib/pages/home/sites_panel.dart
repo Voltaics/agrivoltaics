@@ -15,8 +15,10 @@ class SitesPanel extends StatelessWidget {
     final appState = context.watch<AppState>();
     final selectedOrg = appState.selectedOrganization;
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isWideScreen = screenWidth >= 1280 || screenHeight < screenWidth;
+    // Only true desktop (≥1280 px) gets the vertical sidebar list.
+    // Landscape-mobile screens are narrower than 1280 px and should
+    // use the compact horizontal-chip row just like portrait mobile.
+    final isDesktop = screenWidth >= 1280;
 
     if (selectedOrg == null) {
       return const Center(
@@ -25,7 +27,7 @@ class SitesPanel extends StatelessWidget {
     }
 
     // For wide screens, show vertical list
-    if (isWideScreen) {
+    if (isDesktop) {
       return _buildVerticalList(context, appState, selectedOrg);
     }
 

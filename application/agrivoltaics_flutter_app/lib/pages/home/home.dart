@@ -70,10 +70,13 @@ class HomePage extends State<HomeState> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final isWideScreen = MediaQuery.of(context).size.width >= 1280 || screenHeight < screenWidth;
-     return Scaffold(
-      // 1) No AppBar here—removed entirely
-      // 2) Row that holds [ Nav Rail (left) | Main Content (right) ]
+    // Distinguish true desktop from landscape-mobile so the overflowing
+    // 220-px sidebar is never shown on phones rotated to landscape.
+    final isDesktop = screenWidth >= 1280;
+    final isLandscapeMobile = !isDesktop && (screenHeight < screenWidth);
+    final isPortraitMobile = !isDesktop && !isLandscapeMobile;
+
+    return Scaffold(
       body: Column(
         children: [
           // FCM token invalidated banner
@@ -112,232 +115,362 @@ class HomePage extends State<HomeState> {
             ),
           Expanded(
             child: Row(
-        children: [
-          // Only show side nav on wide screens
-          if (isWideScreen)
-            // Container for the brand + navigation rail + sign-out
-            Container(
-              width: 220,
-              decoration: const BoxDecoration(
-                // You can replace this gradient with a single color if you prefer
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.sidebarStart,
-                    AppColors.sidebarEnd,
-                  ],
-                ),
-              ),
-              child: Column(
-                children: [
-                  // Logo/Title at the top
-                  const SizedBox(height: 24),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.eco, color: AppColors.textPrimary, size: 24),
-                      SizedBox(width: 8),
-                      Text(
-                        "Vinovoltaics",
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+              children: [
+                // ── Desktop: full 220-px branded sidebar ────────────────
+                if (isDesktop)
+                  Container(
+                    width: 220,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.sidebarStart,
+                          AppColors.sidebarEnd,
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Divider(color: AppColors.dividerOnDark),
-                  const SizedBox(height: 8),
-                  
-                  // Organization Selector
-                  const OrganizationSelector(),
-                  
-                  const SizedBox(height: 8),
-                  const Divider(color: AppColors.dividerOnDark),
-
-                  // Sites Panel
-                  const SizedBox(
-                    height: 250,
-                    child: SitesPanel(),
-                  ),
-
-                  const Divider(color: AppColors.dividerOnDark),
-
-                  // Zones Panel
-                  const SizedBox(
-                    height: 200,
-                    child: ZonesPanel(),
-                  ),
-
-                  const Divider(color: AppColors.dividerOnDark),
-                  const SizedBox(height: 8),
-
-                  // Navigation items
-                  Expanded(
-                    child: NavigationRail(
-                      extended: true,
-                      backgroundColor: Colors.transparent,
-                      selectedIndex: _selectedIndex,
-                      onDestinationSelected: _selectPage,
-                      labelType: NavigationRailLabelType.none,
-                      destinations: [
-                        NavigationRailDestination(
-                          icon: Icon(MdiIcons.radioTower),
-                          label: const Text('Stationary Sensors', style: TextStyle(fontSize: 14),),
-                          padding: const EdgeInsets.only(bottom: 16),
+                    ),
+                    child: Column(
+                      children: [
+                        // Logo/Title
+                        const SizedBox(height: 24),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.eco,
+                                color: AppColors.textPrimary, size: 24),
+                            SizedBox(width: 8),
+                            Text(
+                              "Vinovoltaics",
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        NavigationRailDestination(
-                          icon: Icon(MdiIcons.chartLine),
-                          label: const Text('Historical Trends', style: TextStyle(fontSize: 14),),
-                          padding: const EdgeInsets.only(bottom: 16),
+                        const SizedBox(height: 8),
+                        const Divider(color: AppColors.dividerOnDark),
+                        const SizedBox(height: 8),
+
+                        // Organization Selector
+                        const OrganizationSelector(),
+
+                        const SizedBox(height: 8),
+                        const Divider(color: AppColors.dividerOnDark),
+
+                        // Sites Panel
+                        const SizedBox(
+                          height: 250,
+                          child: SitesPanel(),
                         ),
-                        NavigationRailDestination(
-                          icon: Icon(MdiIcons.quadcopter),
-                          label: const Text('Mobile Sensors', style: TextStyle(fontSize: 14),),
-                          padding: const EdgeInsets.only(bottom: 16),
+
+                        const Divider(color: AppColors.dividerOnDark),
+
+                        // Zones Panel
+                        const SizedBox(
+                          height: 200,
+                          child: ZonesPanel(),
                         ),
-                        NavigationRailDestination(
-                          icon: const Icon(Icons.notifications_active),
-                          label: const Text('Alerts', style: TextStyle(fontSize: 14)),
+
+                        const Divider(color: AppColors.dividerOnDark),
+                        const SizedBox(height: 8),
+
+                        // Navigation items
+                        Expanded(
+                          child: NavigationRail(
+                            extended: true,
+                            backgroundColor: Colors.transparent,
+                            selectedIndex: _selectedIndex,
+                            onDestinationSelected: _selectPage,
+                            labelType: NavigationRailLabelType.none,
+                            destinations: [
+                              NavigationRailDestination(
+                                icon: Icon(MdiIcons.radioTower),
+                                label: const Text('Stationary Sensors',
+                                    style: TextStyle(fontSize: 14)),
+                                padding:
+                                    const EdgeInsets.only(bottom: 16),
+                              ),
+                              NavigationRailDestination(
+                                icon: Icon(MdiIcons.chartLine),
+                                label: const Text('Historical Trends',
+                                    style: TextStyle(fontSize: 14)),
+                                padding:
+                                    const EdgeInsets.only(bottom: 16),
+                              ),
+                              NavigationRailDestination(
+                                icon: Icon(MdiIcons.quadcopter),
+                                label: const Text('Mobile Sensors',
+                                    style: TextStyle(fontSize: 14)),
+                                padding:
+                                    const EdgeInsets.only(bottom: 16),
+                              ),
+                              NavigationRailDestination(
+                                icon:
+                                    const Icon(Icons.notifications_active),
+                                label: const Text('Alerts',
+                                    style: TextStyle(fontSize: 14)),
+                                padding:
+                                    const EdgeInsets.only(bottom: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Notifications button
+                        const NotificationsButton(),
+
+                        // Sign Out button at the bottom
+                        Padding(
                           padding: const EdgeInsets.only(bottom: 16),
+                          child: IconButton(
+                            icon: Icon(MdiIcons.logout,
+                                color: AppColors.textPrimary),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) =>
+                                    const SignOutDialog(),
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
                   ),
 
-                  // Notifications button
-                  const NotificationsButton(),
-
-                  // Sign Out button at the bottom
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: IconButton(
-                      icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) => const SignOutDialog(),
-                        );
-                      },
+                // ── Landscape-mobile: compact 72-px icon-only rail ───────
+                if (isLandscapeMobile)
+                  Container(
+                    width: 72,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.sidebarStart,
+                          AppColors.sidebarEnd,
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          // Main content area
-          Expanded(
-            child: !isWideScreen
-                ? Column(
-                    children: [
-                      // Mobile AppBar with Organization Selector
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha((0.1 * 255).toInt()),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: SafeArea(
-                          bottom: false,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.eco, color: AppColors.textPrimary, size: 24),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      _showOrganizationMenu(context);
-                                    },
-                                    child: Consumer<AppState>(
-                                      builder: (context, appState, child) {
-                                        final currentOrg = appState.selectedOrganization;
-                                        return Row(
-                                          children: [
-                                            CircleAvatar(
-                                              radius: 16,
-                                              backgroundColor: AppColors.textPrimary.withAlpha((0.2 * 255).toInt()),
-                                              backgroundImage: currentOrg?.logoUrl != null
-                                                  ? NetworkImage(currentOrg!.logoUrl!)
-                                                  : null,
-                                              child: currentOrg?.logoUrl == null
-                                                  ? Text(
-                                                      currentOrg?.name.isNotEmpty == true
-                                                          ? currentOrg!.name[0].toUpperCase()
-                                                          : '?',
-                                                      style: const TextStyle(
-                                                        color: AppColors.textPrimary,
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 14,
-                                                      ),
-                                                    )
-                                                  : null,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Text(
-                                                currentOrg?.name ?? 'No Organization',
-                                                style: const TextStyle(
-                                                  color: AppColors.textPrimary,
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            Icon(
-                                              Icons.keyboard_arrow_down,
-                                              color: AppColors.textPrimary.withAlpha((0.8 * 255).toInt()),
-                                              size: 24,
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    ),
-                                  ),
+                    child: SafeArea(
+                      right: false,
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 12),
+                          const Icon(Icons.eco,
+                              color: AppColors.textPrimary, size: 22),
+                          const SizedBox(height: 8),
+                          const Divider(color: AppColors.dividerOnDark),
+
+                          // Icon-only navigation rail
+                          Expanded(
+                            child: NavigationRail(
+                              extended: false,
+                              backgroundColor: Colors.transparent,
+                              selectedIndex: _selectedIndex,
+                              onDestinationSelected: _selectPage,
+                              labelType: NavigationRailLabelType.none,
+                              minWidth: 56,
+                              destinations: [
+                                NavigationRailDestination(
+                                  icon: Icon(MdiIcons.radioTower),
+                                  label: const Text('Stationary'),
+                                  padding: const EdgeInsets.only(bottom: 8),
                                 ),
-                                // Notifications button for mobile
-                                const NotificationsButton(),
-                                // Logout button for mobile
-                                IconButton(
-                                  icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) => const SignOutDialog(),
-                                    );
-                                  },
-                                  tooltip: 'Logout',
+                                NavigationRailDestination(
+                                  icon: Icon(MdiIcons.chartLine),
+                                  label: const Text('History'),
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                ),
+                                NavigationRailDestination(
+                                  icon: Icon(MdiIcons.quadcopter),
+                                  label: const Text('Mobile'),
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                ),
+                                NavigationRailDestination(
+                                  icon: const Icon(
+                                      Icons.notifications_active),
+                                  label: const Text('Alerts'),
+                                  padding: const EdgeInsets.only(bottom: 8),
                                 ),
                               ],
                             ),
                           ),
+
+                          // Notifications button
+                          const NotificationsButton(),
+
+                          // Sign Out
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: IconButton(
+                              icon: Icon(MdiIcons.logout,
+                                  color: AppColors.textPrimary),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) =>
+                                      const SignOutDialog(),
+                                );
+                              },
+                              tooltip: 'Logout',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // ── Main content area ────────────────────────────────────
+                Expanded(
+                  child: isDesktop
+                      // Desktop: page fills the remaining space directly
+                      ? _pages[_selectedIndex]
+                      // Mobile (portrait & landscape): show the top bar with
+                      // org-selector + notifications + logout above the page.
+                      : Column(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color:
+                                    Theme.of(context).colorScheme.primary,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black
+                                        .withAlpha((0.1 * 255).toInt()),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: SafeArea(
+                                bottom: false,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.eco,
+                                          color: AppColors.textPrimary,
+                                          size: 24),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: InkWell(
+                                          onTap: () =>
+                                              _showOrganizationMenu(
+                                                  context),
+                                          child: Consumer<AppState>(
+                                            builder:
+                                                (context, appState, child) {
+                                              final currentOrg = appState
+                                                  .selectedOrganization;
+                                              return Row(
+                                                children: [
+                                                  CircleAvatar(
+                                                    radius: 16,
+                                                    backgroundColor:
+                                                        AppColors.textPrimary
+                                                            .withAlpha((0.2 *
+                                                                    255)
+                                                                .toInt()),
+                                                    backgroundImage:
+                                                        currentOrg?.logoUrl !=
+                                                                null
+                                                            ? NetworkImage(
+                                                                currentOrg!
+                                                                    .logoUrl!)
+                                                            : null,
+                                                    child: currentOrg
+                                                                ?.logoUrl ==
+                                                            null
+                                                        ? Text(
+                                                            currentOrg?.name
+                                                                        .isNotEmpty ==
+                                                                    true
+                                                                ? currentOrg!
+                                                                    .name[0]
+                                                                    .toUpperCase()
+                                                                : '?',
+                                                            style:
+                                                                const TextStyle(
+                                                              color: AppColors
+                                                                  .textPrimary,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 14,
+                                                            ),
+                                                          )
+                                                        : null,
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Text(
+                                                      currentOrg?.name ??
+                                                          'No Organization',
+                                                      style: const TextStyle(
+                                                        color: AppColors
+                                                            .textPrimary,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                  Icon(
+                                                    Icons.keyboard_arrow_down,
+                                                    color: AppColors.textPrimary
+                                                        .withAlpha((0.8 * 255)
+                                                            .toInt()),
+                                                    size: 24,
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                      // Notifications button for mobile
+                                      const NotificationsButton(),
+                                      // Logout button for mobile
+                                      IconButton(
+                                        icon: Icon(MdiIcons.logout,
+                                            color: AppColors.textPrimary),
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) =>
+                                                const SignOutDialog(),
+                                          );
+                                        },
+                                        tooltip: 'Logout',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Page content
+                            Expanded(
+                              child: _pages[_selectedIndex],
+                            ),
+                          ],
                         ),
-                      ),
-                      // Page content
-                      Expanded(
-                        child: _pages[_selectedIndex],
-                      ),
-                    ],
-                  )
-                : _pages[_selectedIndex],
-          ),
-        ],
+                ),
+              ],
             ),
           ),
         ],
       ),
 
-      // Mobile bottom nav bar
-      bottomNavigationBar: !isWideScreen
+      // Bottom nav bar only for portrait mobile — landscape mobile uses the
+      // compact side rail instead.
+      bottomNavigationBar: isPortraitMobile
           ? BottomNavigationBar(
               currentIndex: _selectedIndex,
               selectedItemColor: Theme.of(context).colorScheme.primary,
@@ -367,79 +500,6 @@ class HomePage extends State<HomeState> {
   }
 
 
-    /*
-    return Scaffold(
-      appBar: AppBar(
-        surfaceTintColor: Colors.white,
-        backgroundColor: Colors.white,
-          /*flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF004D40), // teal dark
-                Color(0xFF00796B), // teal
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),*/
-        title: const Text('Vinovoltaics'),
-      ),
-      body: Row(
-        children: [
-          if (isWideScreen) NavigationRail(
-            
-            extended: true,
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _selectPage,
-            labelType: NavigationRailLabelType.none,
-            //backgroundColor: Colors.blueGrey[50],
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.radar),
-                label: Text('Stationary Sensors', style: TextStyle(fontSize: 14),),
-                padding: EdgeInsets.only(bottom: 16),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.camera_alt),
-                label: Text('Mobile Sensors', style: TextStyle(fontSize: 14),),
-                padding: EdgeInsets.only(bottom: 16),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.settings),
-                label: Text('Settings', style: TextStyle(fontSize: 14),),
-                padding: EdgeInsets.only(bottom: 16),
-              ),
-            ],
-          ),
-          Expanded(
-            child: _pages[_selectedIndex],
-          ),
-        ],
-      ),
-      bottomNavigationBar: !isWideScreen ? BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blueGrey,
-        onTap: _selectPage,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.show_chart),
-            label: 'Stationary',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt),
-            label: 'Mobile',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-      ) : null,
-    );
-  }
-  */
   @override
   void initState() {
     super.initState();
