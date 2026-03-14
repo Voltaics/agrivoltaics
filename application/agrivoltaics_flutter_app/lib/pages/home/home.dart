@@ -160,18 +160,28 @@ class HomePage extends State<HomeState> {
                         const SizedBox(height: 8),
                         const Divider(color: AppColors.dividerOnDark),
 
-                        // Sites Panel
-                        const SizedBox(
-                          height: 250,
-                          child: SitesPanel(),
+                        // Sites Panel — flexible up to 250px so it
+                        // shrinks proportionally on small laptop screens.
+                        // flex 5:4 matches the 250:200 max-height ratio.
+                        Flexible(
+                          flex: 5,
+                          child: ConstrainedBox(
+                            constraints:
+                                const BoxConstraints(maxHeight: 250),
+                            child: const SitesPanel(),
+                          ),
                         ),
 
                         const Divider(color: AppColors.dividerOnDark),
 
-                        // Zones Panel
-                        const SizedBox(
-                          height: 200,
-                          child: ZonesPanel(),
+                        // Zones Panel — flexible up to 200px
+                        Flexible(
+                          flex: 4,
+                          child: ConstrainedBox(
+                            constraints:
+                                const BoxConstraints(maxHeight: 200),
+                            child: const ZonesPanel(),
+                          ),
                         ),
 
                         const Divider(color: AppColors.dividerOnDark),
@@ -259,10 +269,46 @@ class HomePage extends State<HomeState> {
                       right: false,
                       child: Column(
                         children: [
-                          const SizedBox(height: 12),
-                          const Icon(Icons.eco,
-                              color: AppColors.textPrimary, size: 22),
                           const SizedBox(height: 8),
+
+                          // Org-switcher: avatar that opens the bottom sheet
+                          Consumer<AppState>(
+                            builder: (context, appState, _) {
+                              final org =
+                                  appState.selectedOrganization;
+                              return IconButton(
+                                padding: EdgeInsets.zero,
+                                icon: CircleAvatar(
+                                  radius: 14,
+                                  backgroundColor: AppColors.textPrimary
+                                      .withAlpha(
+                                          (0.25 * 255).toInt()),
+                                  backgroundImage: org?.logoUrl != null
+                                      ? NetworkImage(org!.logoUrl!)
+                                      : null,
+                                  child: org?.logoUrl == null
+                                      ? Text(
+                                          org?.name.isNotEmpty == true
+                                              ? org!.name[0]
+                                                  .toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                            color:
+                                                AppColors.textPrimary,
+                                            fontWeight:
+                                                FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                                onPressed: () =>
+                                    _showOrganizationMenu(context),
+                                tooltip: 'Switch Organization',
+                              );
+                            },
+                          ),
+
                           const Divider(color: AppColors.dividerOnDark),
 
                           // Icon-only navigation rail
@@ -278,23 +324,27 @@ class HomePage extends State<HomeState> {
                                 NavigationRailDestination(
                                   icon: Icon(MdiIcons.radioTower),
                                   label: const Text('Stationary'),
-                                  padding: const EdgeInsets.only(bottom: 8),
+                                  padding:
+                                      const EdgeInsets.only(bottom: 8),
                                 ),
                                 NavigationRailDestination(
                                   icon: Icon(MdiIcons.chartLine),
                                   label: const Text('History'),
-                                  padding: const EdgeInsets.only(bottom: 8),
+                                  padding:
+                                      const EdgeInsets.only(bottom: 8),
                                 ),
                                 NavigationRailDestination(
                                   icon: Icon(MdiIcons.quadcopter),
                                   label: const Text('Mobile'),
-                                  padding: const EdgeInsets.only(bottom: 8),
+                                  padding:
+                                      const EdgeInsets.only(bottom: 8),
                                 ),
                                 NavigationRailDestination(
                                   icon: const Icon(
                                       Icons.notifications_active),
                                   label: const Text('Alerts'),
-                                  padding: const EdgeInsets.only(bottom: 8),
+                                  padding:
+                                      const EdgeInsets.only(bottom: 8),
                                 ),
                               ],
                             ),
@@ -326,11 +376,12 @@ class HomePage extends State<HomeState> {
 
                 // ── Main content area ────────────────────────────────────
                 Expanded(
-                  child: isDesktop
-                      // Desktop: page fills the remaining space directly
+                  child: isDesktop || isLandscapeMobile
+                      // Desktop & landscape mobile: page fills the
+                      // remaining space directly — no redundant top-bar.
                       ? _pages[_selectedIndex]
-                      // Mobile (portrait & landscape): show the top bar with
-                      // org-selector + notifications + logout above the page.
+                      // Portrait mobile only: show the top bar with
+                      // org-selector + notifications + logout.
                       : Column(
                           children: [
                             Container(
