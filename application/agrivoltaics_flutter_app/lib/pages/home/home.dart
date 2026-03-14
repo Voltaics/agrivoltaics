@@ -269,42 +269,78 @@ class HomePage extends State<HomeState> {
                       right: false,
                       child: Column(
                         children: [
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
 
-                          // Org-switcher: avatar that opens the bottom sheet
+                          // Org selector: avatar + truncated name + chevron
                           Consumer<AppState>(
                             builder: (context, appState, _) {
                               final org =
                                   appState.selectedOrganization;
-                              return IconButton(
-                                padding: EdgeInsets.zero,
-                                icon: CircleAvatar(
-                                  radius: 14,
-                                  backgroundColor: AppColors.textPrimary
-                                      .withAlpha(
-                                          (0.25 * 255).toInt()),
-                                  backgroundImage: org?.logoUrl != null
-                                      ? NetworkImage(org!.logoUrl!)
-                                      : null,
-                                  child: org?.logoUrl == null
-                                      ? Text(
-                                          org?.name.isNotEmpty == true
-                                              ? org!.name[0]
-                                                  .toUpperCase()
-                                              : '?',
-                                          style: const TextStyle(
-                                            color:
-                                                AppColors.textPrimary,
-                                            fontWeight:
-                                                FontWeight.bold,
-                                            fontSize: 12,
+                              return Tooltip(
+                                message: org?.name ?? 'Switch Organization',
+                                child: InkWell(
+                                  onTap: () =>
+                                      _showOrganizationMenu(context),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 6),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 18,
+                                          backgroundColor:
+                                              AppColors.textPrimary
+                                                  .withAlpha(
+                                                      (0.25 * 255).toInt()),
+                                          backgroundImage:
+                                              org?.logoUrl != null
+                                                  ? NetworkImage(
+                                                      org!.logoUrl!)
+                                                  : null,
+                                          child: org?.logoUrl == null
+                                              ? Text(
+                                                  org?.name.isNotEmpty ==
+                                                          true
+                                                      ? org!.name[0]
+                                                          .toUpperCase()
+                                                      : '?',
+                                                  style: const TextStyle(
+                                                    color: AppColors
+                                                        .textPrimary,
+                                                    fontWeight:
+                                                        FontWeight.bold,
+                                                    fontSize: 14,
+                                                  ),
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          org?.name ?? 'No Org',
+                                          style: TextStyle(
+                                            color: AppColors.textPrimary
+                                                .withAlpha(
+                                                    (0.85 * 255).toInt()),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w500,
                                           ),
-                                        )
-                                      : null,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        Icon(
+                                          Icons.arrow_drop_down,
+                                          color: AppColors.textPrimary
+                                              .withAlpha(
+                                                  (0.6 * 255).toInt()),
+                                          size: 14,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                                onPressed: () =>
-                                    _showOrganizationMenu(context),
-                                tooltip: 'Switch Organization',
                               );
                             },
                           ),
