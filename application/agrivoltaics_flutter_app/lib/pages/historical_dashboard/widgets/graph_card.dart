@@ -85,10 +85,13 @@ class GraphCardWidget extends StatelessWidget {
                     activationMode: ActivationMode.singleTap,
                     lineType: TrackballLineType.vertical,
                     lineWidth: 1,
-                    shouldAlwaysShow: false,
-                    tooltipDisplayMode: TrackballDisplayMode.nearestPoint,
+                    // Persist after tap release; clear only on next tap
+                    shouldAlwaysShow: true,
+                    // Show all zone values at the nearest x-timestamp
+                    tooltipDisplayMode:
+                        TrackballDisplayMode.groupAllPoints,
                     tooltipSettings: InteractiveTooltip(
-                      format: 'series.name - point.x - point.y${unit.isEmpty ? '' : ' $unit'}',
+                      format: 'series.name : point.y${unit.isEmpty ? '' : ' $unit'}',
                       canShowMarker: true,
                     ),
                   ),

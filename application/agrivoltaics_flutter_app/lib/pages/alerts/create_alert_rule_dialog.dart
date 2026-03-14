@@ -322,7 +322,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                       : (v) => setState(() => _useTimeWindow = v),
                   title: const Text('Active only during season window'),
                   subtitle: const Text(
-                      'Restrict the alert to a seasonal date range (e.g. Nov 01 – Mar 31)',
+                      'Restrict the alert to a seasonal date range (e.g. 4/1 – 11/30)',
                       style: TextStyle(fontSize: 12)),
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -335,7 +335,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           controller: _dateStartCtrl,
                           decoration: const InputDecoration(
                             labelText: 'Start (MM/dd)',
-                            hintText: '11/01',
+                            hintText: '4/1',
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.calendar_today),
                           ),
@@ -351,7 +351,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           controller: _dateEndCtrl,
                           decoration: const InputDecoration(
                             labelText: 'End (MM/dd)',
-                            hintText: '03/31',
+                            hintText: '11/30',
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.calendar_today),
                           ),
