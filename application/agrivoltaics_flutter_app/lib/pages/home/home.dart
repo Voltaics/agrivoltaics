@@ -12,6 +12,7 @@ import '../stationary_dashboard/stationary_dashboard.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
 import '../historical_dashboard/historical_dashboard.dart';
 import '../alerts/alerts_page.dart';
+import '../analytics_dashboard/analytics_dashboard.dart';
 import 'widgets/organization_menu_sheet.dart';
 import 'widgets/organization_selector.dart';
 import 'widgets/sign_out_dialog.dart';
@@ -41,6 +42,7 @@ class HomePage extends State<HomeState> {
     StationaryDashboardPage(),  // Stationary Sensors
     HistoricalDashboardPage(),        // Historical Trends
     MobileDashboardPage(),            // Mobile Sensors
+    AnalyticsDashboardPage(),         // Analytics
     AlertsPage(),                     // Alert Rules
   ];
 
@@ -217,6 +219,13 @@ class HomePage extends State<HomeState> {
                                 padding:
                                     const EdgeInsets.only(bottom: 16),
                               ),
+                              const NavigationRailDestination(
+                                icon: Icon(Icons.analytics),
+                                label: Text('Analytics',
+                                    style: TextStyle(fontSize: 14)),
+                                padding:
+                                    EdgeInsets.only(bottom: 16),
+                              ),
                               NavigationRailDestination(
                                 icon:
                                     const Icon(Icons.notifications_active),
@@ -374,6 +383,12 @@ class HomePage extends State<HomeState> {
                                   label: const Text('Mobile'),
                                   padding:
                                       const EdgeInsets.only(bottom: 8),
+                                ),
+                                const NavigationRailDestination(
+                                  icon: Icon(Icons.analytics),
+                                  label: Text('Analytics'),
+                                  padding:
+                                      EdgeInsets.only(bottom: 8),
                                 ),
                                 NavigationRailDestination(
                                   icon: const Icon(
@@ -575,6 +590,10 @@ class HomePage extends State<HomeState> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.camera_alt),
                   label: 'Mobile',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.analytics),
+                  label: 'Analytics',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.notifications_active),
