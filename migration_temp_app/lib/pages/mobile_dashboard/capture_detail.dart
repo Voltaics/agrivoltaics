@@ -6,7 +6,7 @@ import 'capture_detail_tabs.dart';
 class CaptureDetailPage extends StatelessWidget {
   final DocumentSnapshot document;
 
-  const CaptureDetailPage({Key? key, required this.document}) : super(key: key);
+  const CaptureDetailPage({super.key, required this.document});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class CaptureDetailPage extends StatelessWidget {
     // Extract URLs from the 'url' list
     final List<String> imageUrls = List<String>.from(data['url'] ?? []);
     // Provide defaults if some images are missing
-    final rawUrl = imageUrls.length > 0 ? imageUrls[0] : '';
+    final rawUrl = imageUrls.isNotEmpty ? imageUrls[0] : '';
     final ndviUrl = imageUrls.length > 1 ? imageUrls[1] : '';
     final ndreUrl = imageUrls.length > 2 ? imageUrls[2] : '';
     final overlayUrl = imageUrls.length > 3 ? imageUrls[3] : '';

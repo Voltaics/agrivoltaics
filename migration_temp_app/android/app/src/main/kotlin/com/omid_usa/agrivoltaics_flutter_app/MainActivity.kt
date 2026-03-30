@@ -1,4 +1,4 @@
-package com.omidusa.agrivoltaics
+package com.omid_usa.agrivoltaics_flutter_app
 
 import io.flutter.embedding.android.FlutterActivity
 

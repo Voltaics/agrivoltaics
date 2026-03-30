@@ -98,7 +98,7 @@ class _NotificationsButtonState extends State<NotificationsButton> {
   @override
   Widget build(BuildContext context) {
     // Regularly refresh widget to check for new notifications
-    Timer.periodic(Duration(minutes: 1), (Timer t) => {if (this.mounted) setState((){})});
+    Timer.periodic(const Duration(minutes: 1), (Timer t) {if (this.mounted) setState((){});});
     return Consumer<AppState>(
       builder: (context, appState, child) {
         return FutureBuilder<List<AppNotification>>(
@@ -167,7 +167,7 @@ class AppNotification {
 }
 
 Future<List<AppNotification>> getNotifications(String? email) async {
-  http.Response response = await http.get(Uri.parse('https://vinovoltaics-notification-api-6ajy6wk4ca-ul.a.run.app/getNotifications?email=${email}'));
+  http.Response response = await http.get(Uri.parse('https://vinovoltaics-notification-api-6ajy6wk4ca-ul.a.run.app/getNotifications?email=$email'));
   List<AppNotification> notifications = [];
   if (response.statusCode == 200) {
     for (var notification in jsonDecode(response.body)['notifications']) {
@@ -178,6 +178,6 @@ Future<List<AppNotification>> getNotifications(String? email) async {
 }
 
 Future<void> readNotifications(String? email) async {
-  await http.post(Uri.parse('https://vinovoltaics-notification-api-6ajy6wk4ca-ul.a.run.app/readNotifications?email=${email}'));
+  await http.post(Uri.parse('https://vinovoltaics-notification-api-6ajy6wk4ca-ul.a.run.app/readNotifications?email=$email'));
   return;
 }

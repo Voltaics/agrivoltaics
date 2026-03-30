@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../app_state.dart';
-import 'sensors_config_section.dart';
-import 'sensor_data_section.dart';
+import '../../models/zone.dart';
+import '../../services/zone_service.dart';
+import '../../services/sensor_service.dart';
+import '../home/site_zone_breadcrumb.dart';
+import 'widgets/zone_card.dart';
+import 'widgets/empty_state_widget.dart';
+import 'widgets/sensor_config_bar.dart';
 
 class StationaryDashboardPage extends StatefulWidget {
   const StationaryDashboardPage({super.key});
@@ -12,216 +17,105 @@ class StationaryDashboardPage extends StatefulWidget {
 }
 
 class _StationaryDashboardPageState extends State<StationaryDashboardPage> {
+  final ZoneService _zoneService = ZoneService();
+  final SensorService _sensorService = SensorService();
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final selectedOrg = appState.selectedOrganization;
     final selectedSite = appState.selectedSite;
     final selectedZone = appState.selectedZone;
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Title
-              const Text(
-                'Stationary Sensors',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+        // Title row with options button
+        SensorConfigBar(
+          zoneService: _zoneService,
+          sensorService: _sensorService,
         ),
-        
-        // Main content
+
+        // Site > Zone breadcrumb
+        const SiteZoneBreadcrumb(),
+
+        // Main content area
         Expanded(
-          child: _buildContent(selectedSite, selectedZone),
+          child: _buildContent(selectedOrg, selectedSite, selectedZone),
         ),
       ],
     );
   }
 
-  Widget _buildContent(dynamic selectedSite, dynamic selectedZone) {
-    if (selectedSite == null) {
-      return _buildEmptyState(
-        icon: Icons.business,
-        title: 'No Site Selected',
-        message: 'Please select a site from the breadcrumb above',
-      );
+  Widget _buildContent(dynamic selectedOrg, dynamic selectedSite, dynamic selectedZone) {
+    // Check if org and site are selected
+    if (selectedOrg == null || selectedSite == null) {
+      return const EmptyStateWidget();
     }
 
-    if (selectedZone == null) {
-      return _buildEmptyState(
-        icon: Icons.location_on,
-        title: 'No Zone Selected',
-        message: 'Please select a zone from the breadcrumb above',
-      );
+    // Case 1: Site + Zone selected - Show single zone card
+    if (selectedZone != null) {
+      return _buildSingleZoneView(selectedOrg.id, selectedSite.id, selectedZone);
     }
 
-    // Show sensor configuration and data sections side by side
-    final appState = Provider.of<AppState>(context, listen: false);
-    final selectedOrg = appState.selectedOrganization;
-    
-    if (selectedOrg == null) {
-      return _buildEmptyState(
-        icon: Icons.business,
-        title: 'No Organization Selected',
-        message: 'Please select an organization',
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Mobile layout (vertical stack with dropdown)
-        if (constraints.maxWidth < 800) {
-          return _MobileSensorLayout(
-            orgId: selectedOrg.id,
-            siteId: selectedSite.id,
-            zoneId: selectedZone.id,
-          );
-        }
-        
-        // Desktop layout (side by side)
-        return Row(
-          children: [
-            // Left side: Sensor Configuration
-            Expanded(
-              flex: 1,
-              child: SensorsConfigSection(
-                orgId: selectedOrg.id,
-                siteId: selectedSite.id,
-                zoneId: selectedZone.id,
-              ),
-            ),
-            
-            // Right side: Sensor Data Display
-            Expanded(
-              flex: 1,
-              child: SensorDataSection(
-                orgId: selectedOrg.id,
-                siteId: selectedSite.id,
-                zoneId: selectedZone.id,
-                isDesktop: true,
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    // Case 2: Site only selected - Show all zones
+    return _buildAllZonesView(selectedOrg.id, selectedSite.id);
   }
 
-  Widget _buildEmptyState({
-    required IconData icon,
-    required String title,
-    required String message,
-  }) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 80, color: Colors.grey[400]),
-          const SizedBox(height: 24),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 20,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[500],
-              ),
-            ),
-          ),
-        ],
+  // Build view for single zone (site + zone selected)
+  Widget _buildSingleZoneView(String orgId, String siteId, dynamic zone) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+      child: ZoneCard(
+        orgId: orgId,
+        siteId: siteId,
+        zone: zone as Zone,
       ),
     );
   }
-}
 
-// Mobile layout widget with dropdown for sensor configuration
-class _MobileSensorLayout extends StatefulWidget {
-  final String orgId;
-  final String siteId;
-  final String zoneId;
+  // Build view for all zones (site only selected)
+  Widget _buildAllZonesView(String orgId, String siteId) {
+    return StreamBuilder<List<Zone>>(
+      stream: _zoneService.getZones(orgId, siteId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-  const _MobileSensorLayout({
-    required this.orgId,
-    required this.siteId,
-    required this.zoneId,
-  });
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error loading zones: ${snapshot.error}'),
+          );
+        }
 
-  @override
-  State<_MobileSensorLayout> createState() => _MobileSensorLayoutState();
-}
+        final zones = snapshot.data ?? [];
 
-class _MobileSensorLayoutState extends State<_MobileSensorLayout> {
-  bool _showConfigPanel = false;
+        if (zones.isEmpty) {
+          return const EmptyStateWidget();
+        }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Dropdown button for sensor configuration
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ElevatedButton.icon(
-            onPressed: () {
-              setState(() {
-                _showConfigPanel = !_showConfigPanel;
-              });
-            },
-            icon: Icon(_showConfigPanel ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
-            label: const Text('Sensor Configuration'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              alignment: Alignment.centerLeft,
-            ),
-          ),
-        ),
-        
-        // Expandable configuration panel
-        if (_showConfigPanel)
-          Container(
-            height: 300,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: SensorsConfigSection(
-              orgId: widget.orgId,
-              siteId: widget.siteId,
-              zoneId: widget.zoneId,
-            ),
-          ),
-        
-        // Sensor data display (scrollable)
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 32),
-            child: SensorDataSection(
-              orgId: widget.orgId,
-              siteId: widget.siteId,
-              zoneId: widget.zoneId,
-              isDesktop: false,
-            ),
-          ),
-        ),
-      ],
+        // Check if any zones have readings
+        final zonesWithReadings = zones.where((zone) => zone.readings.isNotEmpty).toList();
+
+        if (zonesWithReadings.isEmpty) {
+          return const EmptyStateWidget();
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+          itemCount: zonesWithReadings.length,
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ZoneCard(
+                orgId: orgId,
+                siteId: siteId,
+                zone: zonesWithReadings[index],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

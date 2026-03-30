@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 
 class MobileDashboardPage extends StatefulWidget {
-  MobileDashboardPage({super.key});
+  const MobileDashboardPage({super.key});
 
   @override
   State<MobileDashboardPage> createState() => _MobileDashboardPageState();
@@ -89,7 +89,7 @@ class MobileDashboard extends StatelessWidget {
   final bool showAllCaptures;
   final void Function(DocumentSnapshot doc) onCaptureSelected;
 
-  MobileDashboard({
+  const MobileDashboard({super.key, 
     required this.showAllCaptures,
     required this.onCaptureSelected,
   });
@@ -293,16 +293,19 @@ class MobileDashboard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 24, top: 12),
-            child: Container(
-              width: 419,
-              padding: const EdgeInsets.all(12),
-              color: Colors.grey[100],
-              child: PiControlPanel(
-                // piOnline: true, // TODO: replace with actual ping logic
-                // onStartCapture: () {
-                //   // TODO: add capture trigger logic
-                // },
+            padding: const EdgeInsets.only(right: 24, top: 12, bottom: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                color: Colors.grey[50],
+                child: const PiControlPanel(
+                  // piOnline: true, // TODO: replace with actual ping logic
+                  // onStartCapture: () {
+                  //   // TODO: add capture trigger logic
+                  // },
+                ),
               ),
             ),
           ),
@@ -314,16 +317,19 @@ class MobileDashboard extends StatelessWidget {
       return Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(right: 24, top: 12),
-            child: Container(
-              width: 419,
-              padding: const EdgeInsets.all(12),
-              color: Colors.grey[100],
-              child: PiControlPanel(
-                // piOnline: true, // TODO: replace with actual ping logic
-                // onStartCapture: () {
-                //   // TODO: add capture trigger logic
-                // },
+            padding: const EdgeInsets.only(right: 24, top: 12, bottom: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                color: Colors.grey[50],
+                child: const PiControlPanel(
+                  // piOnline: true, // TODO: replace with actual ping logic
+                  // onStartCapture: () {
+                  //   // TODO: add capture trigger logic
+                  // },
+                ),
               ),
             ),
           ),
@@ -508,6 +514,6 @@ class MobileDashboard extends StatelessWidget {
       );
     }
 
-    return Placeholder();
+    return const Placeholder();
   }
 }

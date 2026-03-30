@@ -75,8 +75,6 @@ class SensorService {
         model: model,
         location: location,
         fields: sensorFields,
-        status: 'inactive',
-        isOnline: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -193,60 +191,6 @@ class SensorService {
       await _lookupService.deleteSensorLookup(sensorId);
     } catch (e) {
       throw Exception('Failed to delete sensor: $e');
-    }
-  }
-
-  /// Update sensor status
-  Future<void> updateSensorStatus(
-    String orgId,
-    String siteId,
-    String zoneId,
-    String sensorId,
-    String status,
-  ) async {
-    try {
-      await _firestore
-          .collection('organizations')
-          .doc(orgId)
-          .collection('sites')
-          .doc(siteId)
-          .collection('zones')
-          .doc(zoneId)
-          .collection('sensors')
-          .doc(sensorId)
-          .update({
-        'status': status,
-        'updatedAt': Timestamp.fromDate(DateTime.now()),
-      });
-    } catch (e) {
-      throw Exception('Failed to update sensor status: $e');
-    }
-  }
-
-  /// Update sensor online status
-  Future<void> updateSensorOnlineStatus(
-    String orgId,
-    String siteId,
-    String zoneId,
-    String sensorId,
-    bool isOnline,
-  ) async {
-    try {
-      await _firestore
-          .collection('organizations')
-          .doc(orgId)
-          .collection('sites')
-          .doc(siteId)
-          .collection('zones')
-          .doc(zoneId)
-          .collection('sensors')
-          .doc(sensorId)
-          .update({
-        'isOnline': isOnline,
-        'updatedAt': Timestamp.fromDate(DateTime.now()),
-      });
-    } catch (e) {
-      throw Exception('Failed to update sensor online status: $e');
     }
   }
 
