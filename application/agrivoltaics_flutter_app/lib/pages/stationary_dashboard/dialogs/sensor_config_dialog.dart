@@ -35,113 +35,138 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final dialogWidth = screenSize.width * 0.94;
+    final dialogHeight = screenSize.height * 0.9;
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header with title and add button
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Sensor Configuration',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+      child: SizedBox(
+        width: dialogWidth,
+        height: dialogHeight,
+        child: Column(
+          children: [
+            // Header with title and add button
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Sensor Configuration',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                // Add sensor button
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AddSensorDialog(
-                        orgId: widget.orgId,
-                        siteId: widget.siteId,
-                        zone: widget.zone,
-                        sensorService: widget.sensorService,
-                        zoneService: widget.zoneService,
-                      ),
-                    );
-                  },
-                  tooltip: 'Add Sensor',
-                ),
-              ],
-            ),
-          ),
-          
-          const Divider(height: 1),
-          
-          // Tab selector (Sensors / Readings)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                _buildTabButton('Sensors', 0),
-                const SizedBox(width: 16),
-                _buildTabButton('Readings', 1),
-              ],
-            ),
-          ),
-          
-          const Divider(height: 1),
-          
-          // Content based on selected tab
-          Expanded(
-            child: _selectedTabIndex == 0
-                ? _buildSensorsTab()
-                : _buildReadingsTab(),
-          ),
-          
-          // Close button
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AddSensorDialog(
+                          orgId: widget.orgId,
+                          siteId: widget.siteId,
+                          zone: widget.zone,
+                          sensorService: widget.sensorService,
+                          zoneService: widget.zoneService,
+                        ),
+                      );
+                    },
+                    tooltip: 'Add Sensor',
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+
+            const Divider(height: 1),
+
+            Expanded(
+              child: Row(
+                children: [
+                  Container(
+                    width: 148,
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.scaffoldBackground,
+                      border: Border(
+                        right: BorderSide(color: AppColors.dividerOnDark.withAlpha(90)),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildSideTabButton('Sensors', Icons.sensors, 0),
+                        const SizedBox(height: 8),
+                        _buildSideTabButton('Readings', Icons.tune, 1),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: _selectedTabIndex == 0
+                        ? _buildSensorsTab()
+                        : _buildReadingsTab(),
+                  ),
+                ],
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTabButton(String label, int index) {
+  Widget _buildSideTabButton(String label, IconData icon, int index) {
     final isSelected = _selectedTabIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedTabIndex = index;
-          });
-        },
-        child: Column(
+    final selectedColor = Theme.of(context).colorScheme.primary;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () {
+        setState(() {
+          _selectedTabIndex = index;
+        });
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? selectedColor.withAlpha(26) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? selectedColor : Colors.transparent,
+          ),
+        ),
+        child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? selectedColor : AppColors.textMuted,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? AppColors.textOnLight : AppColors.textMuted,
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? selectedColor : AppColors.textMuted,
                 ),
               ),
             ),
-            if (isSelected)
-              Container(
-                height: 3,
-                color: Theme.of(context).colorScheme.primary,
-              ),
           ],
         ),
       ),

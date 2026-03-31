@@ -113,165 +113,230 @@ class _LoginPageState extends State<LoginPage> {
 
           // ── Content ─────────────────────────────────────────────────
           SafeArea(
-            child: Column(
-              children: [
-                // Hero section
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo mark
-                        Container(
-                          width: 84,
-                          height: 84,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.primary.withValues(alpha: 0.15),
-                            border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.45),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.eco,
-                            color: AppColors.textPrimary,
-                            size: 42,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isLandscape = constraints.maxWidth > constraints.maxHeight;
+                final isShortHeight = constraints.maxHeight < 760;
 
-                        // App name
-                        const Text(
-                          'Vinovoltaics',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 40,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Tagline
-                        const Text(
-                          'Precision insights for modern farms',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 15,
-                            letterSpacing: 0.3,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 52),
-
-                        // Feature chips
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            _FeatureChip(
-                              icon: Icons.eco,
-                              label: 'Crop Health',
-                              iconColor: AppColors.farmGreen,
-                            ),
-                            SizedBox(width: 12),
-                            _FeatureChip(
-                              icon: Icons.agriculture,
-                              label: 'Farm Data',
-                              iconColor: AppColors.amber,
-                            ),
-                            SizedBox(width: 12),
-                            _FeatureChip(
-                              icon: Icons.bar_chart_rounded,
-                              label: 'Analytics',
-                              iconColor: AppColors.primaryLight,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // ── Sign-in card ──────────────────────────────────────
-                Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(36),
-                    ),
-                  ),
-                  padding: const EdgeInsets.fromLTRB(32, 36, 32, 48),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                if (isLandscape) {
+                  return Row(
                     children: [
-                      const Text(
-                        'Welcome back',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.background,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Sign in to monitor your farms and track insights.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-
-                      // Error message
-                      if (_errorMessage != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          margin: const EdgeInsets.only(bottom: 20),
-                          decoration: BoxDecoration(
-                            color: AppColors.errorLight,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.errorBorder),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(Icons.error_outline,
-                                  color: AppColors.errorDark, size: 20),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  _errorMessage!,
-                                  style: const TextStyle(
-                                    color: AppColors.errorDark,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      Expanded(
+                        flex: 6,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Center(
+                            child: _buildHeroSection(isShortHeight: isShortHeight),
                           ),
                         ),
-                      ],
-
-                      // Google Sign-In button
-                      SizedBox(
-                        width: double.infinity,
-                        child: SignInButton(
-                          Buttons.Google,
-                          onPressed: _handleGoogleSignIn,
-                          padding: const EdgeInsets.symmetric(vertical: 2),
+                      ),
+                      Expanded(
+                        flex: 5,
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: SizedBox(
+                            width: constraints.maxWidth * 0.45,
+                            height: double.infinity,
+                            child: _buildSignInCard(
+                              isShortHeight: isShortHeight,
+                              landscapeAttached: true,
+                            ),
+                          ),
                         ),
                       ),
                     ],
+                  );
+                }
+
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                          child: _buildHeroSection(isShortHeight: isShortHeight),
+                        ),
+                        _buildSignInCard(isShortHeight: isShortHeight),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHeroSection({required bool isShortHeight}) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(height: isShortHeight ? 16 : 24),
+        Container(
+          width: isShortHeight ? 72 : 84,
+          height: isShortHeight ? 72 : 84,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.primary.withValues(alpha: 0.15),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.45),
+              width: 1.5,
+            ),
+          ),
+          child: Icon(
+            Icons.eco,
+            color: AppColors.textPrimary,
+            size: isShortHeight ? 36 : 42,
+          ),
+        ),
+        SizedBox(height: isShortHeight ? 16 : 24),
+        const Text(
+          'Vinovoltaics',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 40,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 10),
+        const Text(
+          'Precision insights for modern farms',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 15,
+            letterSpacing: 0.3,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: isShortHeight ? 24 : 52),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 12,
+          runSpacing: 10,
+          children: const [
+            _FeatureChip(
+              icon: Icons.eco,
+              label: 'Crop Health',
+              iconColor: AppColors.farmGreen,
+            ),
+            _FeatureChip(
+              icon: Icons.agriculture,
+              label: 'Farm Data',
+              iconColor: AppColors.amber,
+            ),
+            _FeatureChip(
+              icon: Icons.bar_chart_rounded,
+              label: 'Analytics',
+              iconColor: AppColors.primaryLight,
+            ),
+          ],
+        ),
+        SizedBox(height: isShortHeight ? 18 : 26),
+      ],
+    );
+  }
+
+  Widget _buildSignInCard({
+    required bool isShortHeight,
+    bool landscapeAttached = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: landscapeAttached
+            ? const BorderRadius.only(
+                topLeft: Radius.circular(36),
+                bottomLeft: Radius.circular(36),
+              )
+            : const BorderRadius.vertical(
+                top: Radius.circular(36),
+              ),
+        boxShadow: landscapeAttached
+            ? const [
+                BoxShadow(
+                  color: Color(0x2A000000),
+                  blurRadius: 16,
+                  offset: Offset(-4, 0),
+                ),
+              ]
+            : null,
+      ),
+      padding: EdgeInsets.fromLTRB(
+        32,
+        landscapeAttached ? (isShortHeight ? 28 : 36) : (isShortHeight ? 24 : 36),
+        32,
+        landscapeAttached ? (isShortHeight ? 24 : 32) : (isShortHeight ? 28 : 48),
+      ),
+      child: SingleChildScrollView(
+        physics: landscapeAttached
+            ? const NeverScrollableScrollPhysics()
+            : const ClampingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment:
+              landscapeAttached ? MainAxisAlignment.center : MainAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Welcome back',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                color: AppColors.background,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Sign in to monitor your farms and track insights.',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(height: 28),
+            if (_errorMessage != null) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.errorLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.errorBorder),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.error_outline, color: AppColors.errorDark, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(
+                          color: AppColors.errorDark,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(
+              width: double.infinity,
+              child: SignInButton(
+                Buttons.Google,
+                onPressed: _handleGoogleSignIn,
+                padding: const EdgeInsets.symmetric(vertical: 2),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

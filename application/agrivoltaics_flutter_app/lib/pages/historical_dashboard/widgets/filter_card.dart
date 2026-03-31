@@ -107,8 +107,8 @@ class FilterCardWidget extends StatelessWidget {
             const SizedBox(height: 8),
             SegmentedButton<String>(
               segments: const [
-                ButtonSegment(value: 'avg', label: Text('Avg')),
                 ButtonSegment(value: 'min', label: Text('Min')),
+                ButtonSegment(value: 'avg', label: Text('Avg')),
                 ButtonSegment(value: 'max', label: Text('Max')),
               ],
               selected: {selectedAggregation},
