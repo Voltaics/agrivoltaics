@@ -8,7 +8,8 @@ import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 class GraphCardWidget extends StatefulWidget {
   final HistoricalGraph graph;
   final Map<String, String> zoneLookup;
-  final bool isWideScreen;
+  final bool isDesktop;
+  final bool isMobileLandscape;
   final PickerDateRange dateRange;
   final String interval;
 
@@ -16,7 +17,8 @@ class GraphCardWidget extends StatefulWidget {
     super.key,
     required this.graph,
     required this.zoneLookup,
-    required this.isWideScreen,
+    required this.isDesktop,
+    required this.isMobileLandscape,
     required this.dateRange,
     required this.interval,
   });
@@ -58,6 +60,11 @@ class _GraphCardWidgetState extends State<GraphCardWidget> {
     final readingsService = ReadingsService();
     final title = readingsService.getReadingName(widget.graph.field);
     final unit = _unit.isEmpty ? '' : ' $_unit';
+    final chartHeight = widget.isDesktop
+      ? 320.0
+      : widget.isMobileLandscape
+        ? 280.0
+        : 240.0;
 
     final hasData = widget.graph.series.any((series) => series.points.isNotEmpty);
     final axisConfig = _getAxisConfig(widget.dateRange, widget.interval);
@@ -83,7 +90,7 @@ class _GraphCardWidgetState extends State<GraphCardWidget> {
               )
             else
               SizedBox(
-                height: widget.isWideScreen ? 320 : 240,
+                height: chartHeight,
                 child: MouseRegion(
                   onExit: (_) {
                     final index = _lastSelectedDataPointIndex;

@@ -230,11 +230,15 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+      contentPadding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       title: const Row(
         children: [
           Icon(Icons.edit, color: AppColors.primary),
           SizedBox(width: 12),
-          Text('Edit Organization'),
+          Expanded(child: Text('Edit Organization')),
         ],
       ),
       content: Form(
@@ -244,6 +248,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SizedBox(height: 6),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(

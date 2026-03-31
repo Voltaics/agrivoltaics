@@ -1,12 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app_colors.dart';
 import '../../models/alert_rule.dart';
 import '../../services/alert_service.dart';
 import '../../services/readings_service.dart';
-import '../../services/user_service.dart';
 
 /// Dialog for creating a new [AlertRule] or editing an existing one.
 class CreateAlertRuleDialog extends StatefulWidget {
@@ -29,7 +27,6 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
   final _formKey = GlobalKey<FormState>();
   final _alertService = AlertService();
   final _readingsService = ReadingsService();
-  final _userService = UserService();
 
   late final TextEditingController _nameCtrl;
   late final TextEditingController _thresholdCtrl;
@@ -179,11 +176,14 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
   Widget build(BuildContext context) {
     final readings = _readingsService.getAllReadings();
     final fieldOptions = readings.entries.toList();
+    final maxDialogWidth = MediaQuery.of(context).size.width * 0.95;
+    final dialogWidth = maxDialogWidth > 520 ? 520.0 : maxDialogWidth;
+    final isCompact = dialogWidth < 500;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: SizedBox(
-        width: 520,
+        width: dialogWidth,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -210,7 +210,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
             // ── Content ─────────────────────────────────────────────────────
             Flexible(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
                 child: Form(
                   key: _formKey,
                   child: SingleChildScrollView(
@@ -218,6 +218,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 4),
                 // ── Name ─────────────────────────────────────────────────────
                 TextFormField(
                   controller: _nameCtrl,
@@ -239,14 +240,11 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                         fontWeight: FontWeight.w600,
                         color: AppColors.textOnLight)),
                 const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Field alias dropdown
-                    Expanded(
-                      flex: 3,
-                      child: DropdownButtonFormField<String>(
-                        value: _fieldAlias,
+                if (isCompact)
+                  Column(
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: _fieldAlias,
                         isExpanded: true,
                         decoration: const InputDecoration(
                           labelText: 'Field',
@@ -264,13 +262,9 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                         validator: (v) =>
                             v == null ? 'Select a field' : null,
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Operator dropdown
-                    Expanded(
-                      flex: 2,
-                      child: DropdownButtonFormField<AlertOperator>(
-                        value: _operator,
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<AlertOperator>(
+                        initialValue: _operator,
                         decoration: const InputDecoration(
                           labelText: 'Operator',
                           border: OutlineInputBorder(),
@@ -285,12 +279,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                             ? null
                             : (v) => setState(() => _operator = v!),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Threshold
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
+                      const SizedBox(height: 8),
+                      TextFormField(
                         controller: _thresholdCtrl,
                         decoration: const InputDecoration(
                           labelText: 'Threshold',
@@ -309,9 +299,79 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                         },
                         enabled: !_saving,
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  )
+                else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _fieldAlias,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Field',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: fieldOptions
+                              .map((e) => DropdownMenuItem(
+                                    value: e.key,
+                                    child: Text(e.value.name,
+                                        overflow: TextOverflow.ellipsis),
+                                  ))
+                              .toList(),
+                          onChanged:
+                              _saving ? null : (v) => setState(() => _fieldAlias = v),
+                          validator: (v) =>
+                              v == null ? 'Select a field' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonFormField<AlertOperator>(
+                          initialValue: _operator,
+                          decoration: const InputDecoration(
+                            labelText: 'Operator',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: AlertOperator.values
+                              .map((op) => DropdownMenuItem(
+                                    value: op,
+                                    child: Text(op.label),
+                                  ))
+                              .toList(),
+                          onChanged: _saving
+                              ? null
+                              : (v) => setState(() => _operator = v!),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: TextFormField(
+                          controller: _thresholdCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Threshold',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true, signed: true),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Required';
+                            }
+                            if (double.tryParse(v.trim()) == null) {
+                              return 'Invalid number';
+                            }
+                            return null;
+                          },
+                          enabled: !_saving,
+                        ),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 16),
 
                 // ── Active season window ──────────────────────────────────────
@@ -328,10 +388,10 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                 ),
                 if (_useTimeWindow) ...[
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
+                  if (isCompact)
+                    Column(
+                      children: [
+                        TextFormField(
                           controller: _dateStartCtrl,
                           decoration: const InputDecoration(
                             labelText: 'Start (MM/dd)',
@@ -344,10 +404,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                               : null,
                           enabled: !_saving,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TextFormField(
+                        const SizedBox(height: 8),
+                        TextFormField(
                           controller: _dateEndCtrl,
                           decoration: const InputDecoration(
                             labelText: 'End (MM/dd)',
@@ -360,9 +418,44 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                               : null,
                           enabled: !_saving,
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _dateStartCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Start (MM/dd)',
+                              hintText: '11/01',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.calendar_today),
+                            ),
+                            validator: _useTimeWindow
+                                ? (v) => _validateDate(v)
+                                : null,
+                            enabled: !_saving,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _dateEndCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'End (MM/dd)',
+                              hintText: '03/31',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.calendar_today),
+                            ),
+                            validator: _useTimeWindow
+                                ? (v) => _validateDate(v)
+                                : null,
+                            enabled: !_saving,
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
                 const SizedBox(height: 16),
 

@@ -34,7 +34,8 @@ class ZoneSectionWidget extends StatefulWidget {
 
   final Future<HistoricalResponse>? futureResponse;
   final String? errorMessage;
-  final bool isWideScreen;
+  final bool isDesktop;
+  final bool isMobileLandscape;
   final PickerDateRange dateRange;
 
   const ZoneSectionWidget({
@@ -53,7 +54,8 @@ class ZoneSectionWidget extends StatefulWidget {
     required this.availableReadings,
     required this.futureResponse,
     required this.errorMessage,
-    required this.isWideScreen,
+    required this.isDesktop,
+    required this.isMobileLandscape,
     required this.dateRange,
   });
 
@@ -113,7 +115,8 @@ class _ZoneSectionWidgetState extends State<ZoneSectionWidget> {
               zoneLookup: {
                 for (final zone in zones) zone.id: zone.name,
               },
-              isWideScreen: widget.isWideScreen,
+              isDesktop: widget.isDesktop,
+              isMobileLandscape: widget.isMobileLandscape,
               dateRange: widget.dateRange,
             ),
           ],

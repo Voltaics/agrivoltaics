@@ -9,7 +9,8 @@ class ResultsSectionWidget extends StatelessWidget {
   final Set<String> selectedZoneIds;
   final Set<String> selectedReadings;
   final Map<String, String> zoneLookup;
-  final bool isWideScreen;
+  final bool isDesktop;
+  final bool isMobileLandscape;
   final PickerDateRange dateRange;
 
   const ResultsSectionWidget({
@@ -19,7 +20,8 @@ class ResultsSectionWidget extends StatelessWidget {
     required this.selectedZoneIds,
     required this.selectedReadings,
     required this.zoneLookup,
-    required this.isWideScreen,
+    required this.isDesktop,
+    required this.isMobileLandscape,
     required this.dateRange,
   });
 
@@ -96,7 +98,8 @@ class ResultsSectionWidget extends StatelessWidget {
               return GraphCardWidget(
                 graph: graph,
                 zoneLookup: zoneLookup,
-                isWideScreen: isWideScreen,
+                isDesktop: isDesktop,
+                isMobileLandscape: isMobileLandscape,
                 dateRange: dateRange,
                 interval: response.interval,
               );

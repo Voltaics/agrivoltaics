@@ -91,6 +91,8 @@ class _AlertsPageState extends State<AlertsPage> {
   }
 
   Widget _buildHeader(BuildContext context, String? orgId) {
+    final isCompact = MediaQuery.of(context).size.width < 640;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: const BoxDecoration(
@@ -103,27 +105,55 @@ class _AlertsPageState extends State<AlertsPage> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.notifications_active, color: AppColors.primary),
-          const SizedBox(width: 12),
-          const Text(
-            'Alert Rules',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textOnLight,
+      child: isCompact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.notifications_active, color: AppColors.primary),
+                    SizedBox(width: 12),
+                    Text(
+                      'Alert Rules',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textOnLight,
+                      ),
+                    ),
+                  ],
+                ),
+                if (orgId != null) ...[
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () => _openCreateDialog(context, orgId),
+                    icon: const Icon(Icons.add),
+                    label: const Text('New Alert'),
+                  ),
+                ],
+              ],
+            )
+          : Row(
+              children: [
+                const Icon(Icons.notifications_active, color: AppColors.primary),
+                const SizedBox(width: 12),
+                const Text(
+                  'Alert Rules',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textOnLight,
+                  ),
+                ),
+                const Spacer(),
+                if (orgId != null)
+                  FilledButton.icon(
+                    onPressed: () => _openCreateDialog(context, orgId),
+                    icon: const Icon(Icons.add),
+                    label: const Text('New Alert'),
+                  ),
+              ],
             ),
-          ),
-          const Spacer(),
-          if (orgId != null)
-            FilledButton.icon(
-              onPressed: () => _openCreateDialog(context, orgId),
-              icon: const Icon(Icons.add),
-              label: const Text('New Alert'),
-            ),
-        ],
-      ),
     );
   }
 
