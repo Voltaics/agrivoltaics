@@ -30,6 +30,7 @@ class GraphCardWidget extends StatefulWidget {
 class _GraphCardWidgetState extends State<GraphCardWidget> {
   late final TrackballBehavior _trackballBehavior;
   int? _lastSelectedDataPointIndex;
+  bool _trackballDismissedByOutsideTap = false;
 
   @override
   void initState() {
@@ -91,65 +92,73 @@ class _GraphCardWidgetState extends State<GraphCardWidget> {
             else
               SizedBox(
                 height: chartHeight,
-                child: MouseRegion(
-                  onExit: (_) {
-                    final index = _lastSelectedDataPointIndex;
-                    if (index == null) {
-                      return;
-                    }
-                    // Syncfusion hides trackball on pointer exit; restore the
-                    // last selected point so values stay sticky until next input.
-                    Future<void>.delayed(Duration.zero, () {
-                      if (!mounted) {
+                child: TapRegion(
+                  onTapOutside: (_) {
+                    _trackballDismissedByOutsideTap = true;
+                    _lastSelectedDataPointIndex = null;
+                    _trackballBehavior.hide();
+                  },
+                  child: MouseRegion(
+                    onExit: (_) {
+                      final index = _lastSelectedDataPointIndex;
+                      if (index == null || _trackballDismissedByOutsideTap) {
                         return;
                       }
-                      _trackballBehavior.showByIndex(index);
-                    });
-                  },
-                  child: SfCartesianChart(
-                    onTrackballPositionChanging: (TrackballArgs args) {
-                      final pointIndex = args.chartPointInfo.dataPointIndex;
-                      if (pointIndex != null) {
-                        _lastSelectedDataPointIndex = pointIndex;
-                      }
+                      // Syncfusion hides trackball on pointer exit; restore the
+                      // last selected point so values stay sticky until next input.
+                      Future<void>.delayed(Duration.zero, () {
+                        if (!mounted || _trackballDismissedByOutsideTap) {
+                          return;
+                        }
+                        _trackballBehavior.showByIndex(index);
+                      });
                     },
-                    legend: const Legend(
-                      isVisible: true,
-                      position: LegendPosition.bottom,
-                      overflowMode: LegendItemOverflowMode.wrap,
-                    ),
-                    primaryXAxis: DateTimeAxis(
-                      minimum: widget.dateRange.startDate,
-                      maximum: widget.dateRange.endDate,
-                      edgeLabelPlacement: EdgeLabelPlacement.shift,
-                      dateFormat: axisConfig.dateFormat,
-                      intervalType: axisConfig.intervalType,
-                      interval: axisConfig.axisInterval,
-                      axisLabelFormatter: (AxisLabelRenderDetails details) {
-                        final dt = DateTime.fromMillisecondsSinceEpoch(
-                          details.value.toInt(),
-                        );
-                        return ChartAxisLabel(
-                          axisConfig.labelDateFormat.format(dt),
-                          details.textStyle,
-                        );
+                    child: SfCartesianChart(
+                      onTrackballPositionChanging: (TrackballArgs args) {
+                        final pointIndex = args.chartPointInfo.dataPointIndex;
+                        if (pointIndex != null) {
+                          _trackballDismissedByOutsideTap = false;
+                          _lastSelectedDataPointIndex = pointIndex;
+                        }
                       },
+                      legend: const Legend(
+                        isVisible: true,
+                        position: LegendPosition.bottom,
+                        overflowMode: LegendItemOverflowMode.wrap,
+                      ),
+                      primaryXAxis: DateTimeAxis(
+                        minimum: widget.dateRange.startDate,
+                        maximum: widget.dateRange.endDate,
+                        edgeLabelPlacement: EdgeLabelPlacement.shift,
+                        dateFormat: axisConfig.dateFormat,
+                        intervalType: axisConfig.intervalType,
+                        interval: axisConfig.axisInterval,
+                        axisLabelFormatter: (AxisLabelRenderDetails details) {
+                          final dt = DateTime.fromMillisecondsSinceEpoch(
+                            details.value.toInt(),
+                          );
+                          return ChartAxisLabel(
+                            axisConfig.labelDateFormat.format(dt),
+                            details.textStyle,
+                          );
+                        },
+                      ),
+                      primaryYAxis: const NumericAxis(
+                        majorGridLines: MajorGridLines(width: 0.5),
+                      ),
+                      trackballBehavior: _trackballBehavior,
+                      series: widget.graph.series.map((series) {
+                        return LineSeries<HistoricalPoint, DateTime>(
+                          name: widget.zoneLookup[series.zoneId] ?? series.zoneId,
+                          dataSource: series.points,
+                          xValueMapper: (point, _) => point.time,
+                          yValueMapper: (point, _) => point.value,
+                          markerSettings: MarkerSettings(
+                            isVisible: series.points.length <= 8,
+                          ),
+                        );
+                      }).toList(),
                     ),
-                    primaryYAxis: const NumericAxis(
-                      majorGridLines: MajorGridLines(width: 0.5),
-                    ),
-                    trackballBehavior: _trackballBehavior,
-                    series: widget.graph.series.map((series) {
-                      return LineSeries<HistoricalPoint, DateTime>(
-                        name: widget.zoneLookup[series.zoneId] ?? series.zoneId,
-                        dataSource: series.points,
-                        xValueMapper: (point, _) => point.time,
-                        yValueMapper: (point, _) => point.value,
-                        markerSettings: MarkerSettings(
-                          isVisible: series.points.length <= 8,
-                        ),
-                      );
-                    }).toList(),
                   ),
                 ),
               ),
