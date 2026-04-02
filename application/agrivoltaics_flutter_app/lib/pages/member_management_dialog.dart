@@ -100,11 +100,21 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final isLandscape = media.orientation == Orientation.landscape;
+    final isDesktop = media.size.width >= 1280;
+    final dialogWidth = isLandscape
+      ? (isDesktop ? 900.0 : media.size.width * 0.9)
+        : 600.0;
+    final maxDialogWidth = media.size.width * 0.95;
+    final effectiveWidth = dialogWidth > maxDialogWidth ? maxDialogWidth : dialogWidth;
+    final dialogMaxHeight = media.size.height * (isDesktop ? 0.84 : 0.9);
 
     return Dialog(
       child: Container(
-        width: isLandscape ? media.size.width * 0.9 : 600,
-        constraints: BoxConstraints(maxHeight: isLandscape ? media.size.height * 0.9 : 700),
+        width: effectiveWidth,
+        constraints: BoxConstraints(
+          maxHeight: dialogMaxHeight,
+          minHeight: isLandscape ? 460 : 420,
+        ),
         child: Column(
           children: [
             // Header
@@ -171,7 +181,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                         width: 300,
                         child: _buildAddMemberPanel(compact: false),
                       ),
-                      VerticalDivider(
+                      const VerticalDivider(
                         width: 1,
                         thickness: 1,
                         color: AppColors.scaffoldBackground,
@@ -243,7 +253,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
       decoration: BoxDecoration(
         color: AppColors.scaffoldBackground,
         border: compact
-            ? Border(top: BorderSide(color: AppColors.scaffoldBackground))
+            ? const Border(top: BorderSide(color: AppColors.scaffoldBackground))
             : null,
       ),
       child: Column(
@@ -348,7 +358,7 @@ class _MemberListItemState extends State<MemberListItem> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            const Icon(Icons.warning, color: AppColors.warning),
+            Icon(Icons.warning, color: AppColors.warning),
             SizedBox(width: 12),
             Text('Remove Member?'),
           ],
@@ -369,7 +379,7 @@ class _MemberListItemState extends State<MemberListItem> {
                 ),
                 if (userEmail.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(userEmail, style: TextStyle(color: AppColors.textMuted)),
+                  Text(userEmail, style: const TextStyle(color: AppColors.textMuted)),
                 ],
                 const SizedBox(height: 12),
                 const Text(
@@ -467,7 +477,7 @@ class _MemberListItemState extends State<MemberListItem> {
               if (email.isNotEmpty)
                 Text(
                   email,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textMuted,
                   ),
@@ -500,7 +510,7 @@ class _MemberListItemState extends State<MemberListItem> {
                   tooltip: 'Remove member',
                 )
               else
-                Tooltip(
+                const Tooltip(
                   message: 'You cannot remove yourself',
                   child: Icon(
                     Icons.person,

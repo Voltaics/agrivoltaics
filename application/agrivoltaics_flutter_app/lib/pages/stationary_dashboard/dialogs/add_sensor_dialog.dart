@@ -17,7 +17,7 @@ class AddSensorDialog extends StatefulWidget {
   final SensorService sensorService;
   final ZoneService zoneService;
 
-  const AddSensorDialog({
+  const AddSensorDialog({super.key, 
     required this.orgId,
     required this.siteId,
     required this.zone,
@@ -49,17 +49,26 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final isDesktop = media.size.width >= 1280;
+    final dialogWidth = isDesktop ? 620.0 : 540.0;
+    final dialogMaxHeight = media.size.height * (isDesktop ? 0.82 : 0.9);
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: SizedBox(
+        width: dialogWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: dialogMaxHeight),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               // Title
               const Text(
                 'Add New Sensor',
@@ -154,10 +163,10 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                     color: AppColors.scaffoldBackground,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
+                  child: const Text(
                     'No readings added yet. Add at least one reading to continue.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       color: AppColors.textMuted,
                     ),
@@ -241,7 +250,9 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                   ),
                 ],
               ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -267,7 +278,7 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
             if (isRequired)
               const Text(
                 ' *',
-                style: const TextStyle(color: AppColors.error),
+                style: TextStyle(color: AppColors.error),
               ),
           ],
         ),
@@ -320,6 +331,11 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
     showDialog(
       context: outerContext,
       builder: (innerContext) {
+        final media = MediaQuery.of(innerContext);
+        final isDesktop = media.size.width >= 1280;
+        final addReadingWidth = isDesktop ? 540.0 : 480.0;
+        final addReadingMaxHeight = media.size.height * (isDesktop ? 0.68 : 0.78);
+
         return StatefulBuilder(
           builder: (context, setDialogState) {
 
@@ -327,12 +343,17 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: SizedBox(
+                width: addReadingWidth,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: addReadingMaxHeight),
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                     const Text(
                       'Add Reading',
                       style: TextStyle(
@@ -459,7 +480,10 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                         ),
                       ],
                     ),
-                  ],
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             );
@@ -664,16 +688,16 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
         }
       }
 
-      if (mounted) {
-        await showSensorConfigParamsDialog(
-          context,
-          orgId: widget.orgId,
-          siteId: widget.siteId,
-          zoneId: widget.zone.id,
-          sensorId: sensorId,
-        );
-        Navigator.pop(context);
-      }
+      if (!mounted) return;
+      await showSensorConfigParamsDialog(
+        context,
+        orgId: widget.orgId,
+        siteId: widget.siteId,
+        zoneId: widget.zone.id,
+        sensorId: sensorId,
+      );
+      if (!mounted) return;
+      Navigator.pop(context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

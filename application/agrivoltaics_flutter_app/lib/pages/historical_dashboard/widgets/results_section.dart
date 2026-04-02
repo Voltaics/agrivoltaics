@@ -94,16 +94,57 @@ class ResultsSectionWidget extends StatelessWidget {
                 ],
               ),
             ),
-            ...response.graphs.map((graph) {
-              return GraphCardWidget(
-                graph: graph,
-                zoneLookup: zoneLookup,
-                isDesktop: isDesktop,
-                isMobileLandscape: isMobileLandscape,
-                dateRange: dateRange,
-                interval: response.interval,
-              );
-            }).toList(),
+            if (!isDesktop)
+              ...response.graphs.map((graph) {
+                return GraphCardWidget(
+                  graph: graph,
+                  zoneLookup: zoneLookup,
+                  isDesktop: isDesktop,
+                  isMobileLandscape: isMobileLandscape,
+                  dateRange: dateRange,
+                  interval: response.interval,
+                );
+              })
+            else
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final maxWidth = constraints.maxWidth;
+                  final crossAxisCount = maxWidth >= 2100
+                      ? 3
+                      : maxWidth >= 1300
+                          ? 2
+                          : 1;
+                  const spacing = 12.0;
+                  final totalSpacing = spacing * (crossAxisCount - 1);
+                  final itemWidth = (maxWidth - totalSpacing) / crossAxisCount;
+                    const targetItemHeight = 460.0;
+                  final childAspectRatio =
+                      (itemWidth / targetItemHeight).clamp(0.8, 2.2);
+
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: response.graphs.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: spacing,
+                      mainAxisSpacing: spacing,
+                      childAspectRatio: childAspectRatio,
+                    ),
+                    itemBuilder: (context, index) {
+                      final graph = response.graphs[index];
+                      return GraphCardWidget(
+                        graph: graph,
+                        zoneLookup: zoneLookup,
+                        isDesktop: isDesktop,
+                        isMobileLandscape: isMobileLandscape,
+                        dateRange: dateRange,
+                        interval: response.interval,
+                      );
+                    },
+                  );
+                },
+              ),
           ],
         );
       },

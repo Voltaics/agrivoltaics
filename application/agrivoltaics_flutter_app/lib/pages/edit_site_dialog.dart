@@ -245,6 +245,13 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final isDesktop = media.size.width >= 1280;
+    final maxDialogWidth = media.size.width * 0.95;
+    final preferredWidth = isDesktop ? 620.0 : 500.0;
+    final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
+    final contentMaxHeight = media.size.height * (isDesktop ? 0.62 : 0.72);
+
     return AlertDialog(
       title: Row(
         children: [
@@ -258,14 +265,16 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         ],
       ),
       content: SizedBox(
-        width: 500,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        width: dialogWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: contentMaxHeight),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -361,7 +370,8 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
                 ),
                 const SizedBox(height: 16),
 
-              ],
+                ],
+              ),
             ),
           ),
         ),
