@@ -6,8 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import 'notifications.dart';
-import 'sites_panel.dart';
-import 'zones_panel.dart';
 import '../stationary_dashboard/stationary_dashboard.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
 import '../historical_dashboard/historical_dashboard.dart';
@@ -150,66 +148,53 @@ class HomePage extends State<HomeState> {
                   ),
                   const SizedBox(height: 8),
                   const Divider(color: AppColors.dividerOnDark),
-                  const SizedBox(height: 8),
-                  
-                  // Organization Selector
-                  const OrganizationSelector(),
-                  
-                  const SizedBox(height: 8),
-                  const Divider(color: AppColors.dividerOnDark),
 
-                  // Sites Panel
-                  const SizedBox(
-                    height: 250,
-                    child: SitesPanel(),
+                  const SizedBox(height: 6),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: OrganizationSelector(),
                   ),
-
-                  const Divider(color: AppColors.dividerOnDark),
-
-                  // Zones Panel
-                  const SizedBox(
-                    height: 200,
-                    child: ZonesPanel(),
-                  ),
-
-                  const Divider(color: AppColors.dividerOnDark),
+                  const SizedBox(height: 6),
+                  const NotificationsButton(),
                   const SizedBox(height: 8),
+                  const Divider(color: AppColors.dividerOnDark),
 
                   // Navigation items
                   Expanded(
-                    child: NavigationRail(
-                      extended: true,
-                      backgroundColor: Colors.transparent,
-                      selectedIndex: _selectedIndex,
-                      onDestinationSelected: _selectPage,
-                      labelType: NavigationRailLabelType.none,
-                      destinations: [
-                        NavigationRailDestination(
-                          icon: Icon(MdiIcons.radioTower),
-                          label: const Text('Stationary Sensors', style: TextStyle(fontSize: 14),),
-                          padding: const EdgeInsets.only(bottom: 16),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(MdiIcons.chartLine),
-                          label: const Text('Historical Trends', style: TextStyle(fontSize: 14),),
-                          padding: const EdgeInsets.only(bottom: 16),
-                        ),
-                        NavigationRailDestination(
-                          icon: Icon(MdiIcons.quadcopter),
-                          label: const Text('Mobile Sensors', style: TextStyle(fontSize: 14),),
-                          padding: const EdgeInsets.only(bottom: 16),
-                        ),
-                        NavigationRailDestination(
-                          icon: const Icon(Icons.notifications_active),
-                          label: const Text('Alerts', style: TextStyle(fontSize: 14)),
-                          padding: const EdgeInsets.only(bottom: 16),
-                        ),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: NavigationRail(
+                        extended: true,
+                        backgroundColor: Colors.transparent,
+                        selectedIndex: _selectedIndex,
+                        onDestinationSelected: _selectPage,
+                        labelType: NavigationRailLabelType.none,
+                        groupAlignment: -0.55,
+                        destinations: [
+                          NavigationRailDestination(
+                            icon: Icon(MdiIcons.radioTower),
+                            label: const Text('Stationary Sensors', style: TextStyle(fontSize: 14),),
+                            padding: const EdgeInsets.only(bottom: 10),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(MdiIcons.chartLine),
+                            label: const Text('Historical Trends', style: TextStyle(fontSize: 14),),
+                            padding: const EdgeInsets.only(bottom: 10),
+                          ),
+                          NavigationRailDestination(
+                            icon: Icon(MdiIcons.quadcopter),
+                            label: const Text('Mobile Sensors', style: TextStyle(fontSize: 14),),
+                            padding: const EdgeInsets.only(bottom: 10),
+                          ),
+                          const NavigationRailDestination(
+                            icon: Icon(Icons.notifications_active),
+                            label: Text('Alerts', style: TextStyle(fontSize: 14)),
+                            padding: EdgeInsets.only(bottom: 10),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-
-                  // Notifications button
-                  const NotificationsButton(),
 
                   // Sign Out button at the bottom
                   Padding(

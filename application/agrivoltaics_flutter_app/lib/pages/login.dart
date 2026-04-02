@@ -116,9 +116,10 @@ class _LoginPageState extends State<LoginPage> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final isLandscape = constraints.maxWidth > constraints.maxHeight;
+                final isDesktop = constraints.maxWidth >= 1100;
                 final isShortHeight = constraints.maxHeight < 760;
 
-                if (isLandscape) {
+                if (isLandscape && !isDesktop) {
                   return Row(
                     children: [
                       Expanded(
@@ -143,6 +144,25 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                         ),
+                      ),
+                    ],
+                  );
+                }
+
+                if (isDesktop) {
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                          child: Center(
+                            child: _buildHeroSection(isShortHeight: isShortHeight),
+                          ),
+                        ),
+                      ),
+                      _buildSignInCard(
+                        isShortHeight: isShortHeight,
+                        minHeight: isShortHeight ? 300 : 340,
                       ),
                     ],
                   );
@@ -214,11 +234,11 @@ class _LoginPageState extends State<LoginPage> {
           textAlign: TextAlign.center,
         ),
         SizedBox(height: isShortHeight ? 24 : 52),
-        Wrap(
+        const Wrap(
           alignment: WrapAlignment.center,
           spacing: 12,
           runSpacing: 10,
-          children: const [
+          children: [
             _FeatureChip(
               icon: Icons.eco,
               label: 'Crop Health',
@@ -244,9 +264,12 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildSignInCard({
     required bool isShortHeight,
     bool landscapeAttached = false,
+    double? minHeight,
   }) {
     return Container(
       width: double.infinity,
+      constraints:
+          minHeight != null ? BoxConstraints(minHeight: minHeight) : null,
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: landscapeAttached

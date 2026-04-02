@@ -116,6 +116,7 @@ class MobileDashboard extends StatelessWidget {
       return Row(
         children: [
           Expanded(
+            flex: 5,
             child: StreamBuilder<QuerySnapshot>(
               stream: stream,
               builder: (context, snapshot) {
@@ -292,17 +293,16 @@ class MobileDashboard extends StatelessWidget {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 24, top: 12),
-            child: Container(
-              width: 419,
-              padding: const EdgeInsets.all(12),
-              color: AppColors.scaffoldBackground,
-              child: const PiControlPanel(
-                // piOnline: true, // TODO: replace with actual ping logic
-                // onStartCapture: () {
-                //   // TODO: add capture trigger logic
-                // },
+          Expanded(
+            flex: 3,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 24, 24, 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: const PiControlPanel(),
+                ),
               ),
             ),
           ),
@@ -497,19 +497,9 @@ class MobileDashboard extends StatelessWidget {
     if (viewportInfo.isMobilePortrait) {
       return Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 24, top: 12),
-            child: Container(
-              width: 419,
-              padding: const EdgeInsets.all(12),
-              color: AppColors.scaffoldBackground,
-              child: const PiControlPanel(
-                // piOnline: true, // TODO: replace with actual ping logic
-                // onStartCapture: () {
-                //   // TODO: add capture trigger logic
-                // },
-              ),
-            ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: PiControlPanel(),
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(

@@ -61,7 +61,7 @@ class _GraphCardWidgetState extends State<GraphCardWidget> {
     final title = readingsService.getReadingName(widget.graph.field);
     final unit = _unit.isEmpty ? '' : ' $_unit';
     final chartHeight = widget.isDesktop
-      ? 320.0
+      ? 350.0
       : widget.isMobileLandscape
         ? 280.0
         : 240.0;
@@ -113,7 +113,7 @@ class _GraphCardWidgetState extends State<GraphCardWidget> {
                         _lastSelectedDataPointIndex = pointIndex;
                       }
                     },
-                    legend: Legend(
+                    legend: const Legend(
                       isVisible: true,
                       position: LegendPosition.bottom,
                       overflowMode: LegendItemOverflowMode.wrap,
@@ -135,8 +135,8 @@ class _GraphCardWidgetState extends State<GraphCardWidget> {
                         );
                       },
                     ),
-                    primaryYAxis: NumericAxis(
-                      majorGridLines: const MajorGridLines(width: 0.5),
+                    primaryYAxis: const NumericAxis(
+                      majorGridLines: MajorGridLines(width: 0.5),
                     ),
                     trackballBehavior: _trackballBehavior,
                     series: widget.graph.series.map((series) {

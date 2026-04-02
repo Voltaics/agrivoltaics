@@ -176,16 +176,21 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
   Widget build(BuildContext context) {
     final readings = _readingsService.getAllReadings();
     final fieldOptions = readings.entries.toList();
-    final maxDialogWidth = MediaQuery.of(context).size.width * 0.95;
-    final dialogWidth = maxDialogWidth > 520 ? 520.0 : maxDialogWidth;
+    final media = MediaQuery.of(context);
+    final isDesktop = media.size.width >= 1280;
+    final maxDialogWidth = media.size.width * 0.95;
+    final preferredWidth = isDesktop ? 620.0 : 520.0;
+    final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
+    final maxDialogHeight = media.size.height * (isDesktop ? 0.84 : 0.92);
     final isCompact = dialogWidth < 500;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: SizedBox(
         width: dialogWidth,
+        height: maxDialogHeight,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── Title ───────────────────────────────────────────────────────

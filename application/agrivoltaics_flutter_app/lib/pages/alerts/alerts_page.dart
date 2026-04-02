@@ -200,6 +200,9 @@ class _AlertsPageState extends State<AlertsPage> {
   }
 
   Widget _buildRulesList(String orgId) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final useDesktopGrid = screenWidth >= 1280;
+
     return StreamBuilder<List<AlertRule>>(
       stream: _alertService.getAlertRules(orgId),
       builder: (context, snapshot) {
@@ -242,9 +245,24 @@ class _AlertsPageState extends State<AlertsPage> {
           );
         }
 
-        return ListView.builder(
+        if (!useDesktopGrid) {
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: rules.length,
+            itemBuilder: (context, index) =>
+                _buildRuleCard(context, orgId, rules[index]),
+          );
+        }
+
+        return GridView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: rules.length,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 560,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.45,
+          ),
           itemBuilder: (context, index) =>
               _buildRuleCard(context, orgId, rules[index]),
         );

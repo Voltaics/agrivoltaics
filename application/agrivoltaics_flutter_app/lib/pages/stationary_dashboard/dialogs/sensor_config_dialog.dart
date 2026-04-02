@@ -18,6 +18,7 @@ class SensorConfigDialog extends StatefulWidget {
   final ZoneService zoneService;
 
   const SensorConfigDialog({
+    super.key,
     required this.orgId,
     required this.siteId,
     required this.zone,
@@ -35,9 +36,15 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final dialogWidth = screenSize.width * 0.94;
-    final dialogHeight = screenSize.height * 0.9;
+    final media = MediaQuery.of(context);
+    final screenSize = media.size;
+    final isPortrait = media.orientation == Orientation.portrait;
+    final isDesktop = screenSize.width >= 1280;
+    final isMobilePortrait = !isDesktop && isPortrait;
+    final maxDialogWidth = screenSize.width * 0.94;
+    final preferredWidth = isDesktop ? 920.0 : 980.0;
+    final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
+    final dialogHeight = screenSize.height * (isDesktop ? 0.86 : 0.92);
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -84,32 +91,57 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
             const Divider(height: 1),
 
             Expanded(
-              child: Row(
-                children: [
-                  Container(
-                    width: 148,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: AppColors.scaffoldBackground,
-                      border: Border(
-                        right: BorderSide(color: AppColors.dividerOnDark.withAlpha(90)),
-                      ),
-                    ),
-                    child: Column(
+              child: isMobilePortrait
+                  ? Column(
                       children: [
-                        _buildSideTabButton('Sensors', Icons.sensors, 0),
-                        const SizedBox(height: 8),
-                        _buildSideTabButton('Readings', Icons.tune, 1),
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                          color: AppColors.scaffoldBackground,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _buildTopTabButton('Sensors', Icons.sensors, 0),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildTopTabButton('Readings', Icons.tune, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: _selectedTabIndex == 0
+                              ? _buildSensorsTab()
+                              : _buildReadingsTab(),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Container(
+                          width: 148,
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.scaffoldBackground,
+                            border: Border(
+                              right: BorderSide(color: AppColors.dividerOnDark.withAlpha(90)),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              _buildSideTabButton('Sensors', Icons.sensors, 0),
+                              const SizedBox(height: 8),
+                              _buildSideTabButton('Readings', Icons.tune, 1),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: _selectedTabIndex == 0
+                              ? _buildSensorsTab()
+                              : _buildReadingsTab(),
+                        ),
                       ],
                     ),
-                  ),
-                  Expanded(
-                    child: _selectedTabIndex == 0
-                        ? _buildSensorsTab()
-                        : _buildReadingsTab(),
-                  ),
-                ],
-              ),
             ),
 
             Padding(
@@ -173,6 +205,49 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
     );
   }
 
+  Widget _buildTopTabButton(String label, IconData icon, int index) {
+    final isSelected = _selectedTabIndex == index;
+    final selectedColor = Theme.of(context).colorScheme.primary;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: () {
+        setState(() {
+          _selectedTabIndex = index;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? selectedColor.withAlpha(26) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? selectedColor : AppColors.dividerOnDark.withAlpha(70),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? selectedColor : AppColors.textMuted,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? selectedColor : AppColors.textMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSensorsTab() {
     return StreamBuilder<List<Sensor>>(
       stream: widget.sensorService.getSensors(
@@ -194,9 +269,9 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
         final sensors = snapshot.data ?? [];
 
         if (sensors.isEmpty) {
-          return Center(
+          return const Center(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -205,7 +280,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                     size: 48,
                     color: AppColors.textMuted,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'No sensors configured for this zone',
                     textAlign: TextAlign.center,
@@ -289,7 +364,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
             // Sensor model info
             Text(
               'Model: ${sensor.model}',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textMuted,
               ),
@@ -302,7 +377,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Readings:',
                     style: TextStyle(
                       fontSize: 13,
@@ -325,7 +400,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                           ),
                           Text(
                             field.unit,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 13,
                               color: AppColors.textMuted,
                             ),
@@ -337,7 +412,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                 ],
               )
             else
-              Text(
+              const Text(
                 'No readings available',
                 style: TextStyle(
                   fontSize: 13,
@@ -354,9 +429,9 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
   Widget _buildReadingsTab() {
     // Get all unique reading names from zone readings map
     if (widget.zone.readings.isEmpty) {
-      return Center(
+      return const Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -365,7 +440,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                 size: 48,
                 color: AppColors.textMuted,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 'No readings configured for this zone',
                 textAlign: TextAlign.center,
@@ -448,7 +523,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                           const SizedBox(height: 4),
                           Text(
                             '${sensorsWithReading.length} sensor${sensorsWithReading.length != 1 ? 's' : ''}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
                               color: AppColors.textMuted,
                             ),
@@ -461,7 +536,7 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                     Expanded(
                       flex: 3,
                       child: sensorsWithReading.isEmpty
-                          ? Text(
+                          ? const Text(
                               'No sensors available',
                               style: TextStyle(
                                 fontSize: 13,
@@ -502,39 +577,37 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
                                     );
 
                                     // Show confirmation
-                                    if (mounted) {
-                                      final newSensor = sensors.firstWhere(
-                                        (s) => s.id == newSensorId,
-                                        orElse: () => Sensor(
-                                          id: '',
-                                          name: 'Unknown',
-                                          model: '',
-                                          fields: {},
-                                          createdAt: DateTime.now(),
-                                          updatedAt: DateTime.now(),
-                                        ),
-                                      );
-                                      final oldSensorName = currentPrimarySensor.name;
-                                      final newSensorName = newSensor.name;
+                                    if (!context.mounted) return;
+                                    final newSensor = sensors.firstWhere(
+                                      (s) => s.id == newSensorId,
+                                      orElse: () => Sensor(
+                                        id: '',
+                                        name: 'Unknown',
+                                        model: '',
+                                        fields: {},
+                                        createdAt: DateTime.now(),
+                                        updatedAt: DateTime.now(),
+                                      ),
+                                    );
+                                    final oldSensorName = currentPrimarySensor.name;
+                                    final newSensorName = newSensor.name;
 
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            '$readingName: "$oldSensorName" → "$newSensorName"',
-                                          ),
-                                          duration: const Duration(seconds: 2),
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          '$readingName: "$oldSensorName" → "$newSensorName"',
                                         ),
-                                      );
-                                    }
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
                                   } catch (e) {
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Error updating reading: $e'),
-                                          backgroundColor: AppColors.error,
-                                        ),
-                                      );
-                                    }
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error updating reading: $e'),
+                                        backgroundColor: AppColors.error,
+                                      ),
+                                    );
                                   }
                                 }
                               },

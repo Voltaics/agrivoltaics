@@ -59,41 +59,56 @@ class _CreateZoneDialogState extends State<CreateZoneDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final isDesktop = media.size.width >= 1280;
+    final maxDialogWidth = media.size.width * 0.95;
+    final preferredWidth = isDesktop ? 560.0 : 460.0;
+    final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
+    final contentMaxHeight = media.size.height * (isDesktop ? 0.6 : 0.66);
+
     return AlertDialog(
       title: const Text('Create Zone'),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Zone Name *',
-                hintText: 'e.g., Zone 1, North Section',
-                border: OutlineInputBorder(),
+      content: SizedBox(
+        width: dialogWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: contentMaxHeight),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Zone Name *',
+                      hintText: 'e.g., Zone 1, North Section',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a zone name';
+                      }
+                      return null;
+                    },
+                    textCapitalization: TextCapitalization.words,
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description (Optional)',
+                      hintText: 'Brief description of this zone',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
+                ],
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a zone name';
-                }
-                return null;
-              },
-              textCapitalization: TextCapitalization.words,
-              autofocus: true,
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description (Optional)',
-                hintText: 'Brief description of this zone',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-          ],
+          ),
         ),
       ),
       actions: [
