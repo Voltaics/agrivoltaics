@@ -10,6 +10,7 @@ import '../stationary_dashboard/stationary_dashboard.dart';
 import '../mobile_dashboard/mobile_dashboard.dart';
 import '../historical_dashboard/historical_dashboard.dart';
 import '../alerts/alerts_page.dart';
+import '../analytics/analytics_dashboard.dart';
 import 'widgets/organization_menu_sheet.dart';
 import 'widgets/organization_selector.dart';
 import 'widgets/sign_out_dialog.dart';
@@ -40,6 +41,7 @@ class HomePage extends State<HomeState> {
     StationaryDashboardPage(),  // Stationary Sensors
     HistoricalDashboardPage(),        // Historical Trends
     MobileDashboardPage(),            // Mobile Sensors
+    AnalyticsDashboardPage(),         // Analytics
     AlertsPage(),                     // Alert Rules
   ];
 
@@ -187,6 +189,11 @@ class HomePage extends State<HomeState> {
                             padding: const EdgeInsets.only(bottom: 10),
                           ),
                           const NavigationRailDestination(
+                            icon: Icon(Icons.analytics),
+                            label: Text('Analytics', style: TextStyle(fontSize: 14)),
+                            padding: EdgeInsets.only(bottom: 10),
+                          ),
+                          const NavigationRailDestination(
                             icon: Icon(Icons.notifications_active),
                             label: Text('Alerts', style: TextStyle(fontSize: 14)),
                             padding: EdgeInsets.only(bottom: 10),
@@ -259,6 +266,10 @@ class HomePage extends State<HomeState> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.camera_alt),
                   label: 'Mobile',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.analytics),
+                  label: 'Analytics',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.notifications_active),
@@ -389,10 +400,19 @@ class HomePage extends State<HomeState> {
                       ),
                       Expanded(
                         child: _buildLandscapeNavItem(
-                          label: 'Alerts',
-                          iconData: Icons.notifications_active,
+                          label: 'Analytics',
+                          iconData: Icons.analytics,
                           selected: _selectedIndex == 3,
                           onTap: () => _selectPage(3),
+                          compactRail: compactRail,
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildLandscapeNavItem(
+                          label: 'Alerts',
+                          iconData: Icons.notifications_active,
+                          selected: _selectedIndex == 4,
+                          onTap: () => _selectPage(4),
                           compactRail: compactRail,
                         ),
                       ),
@@ -614,3 +634,4 @@ class HomePage extends State<HomeState> {
     if (mounted) setState(() => _fcmTokenInvalid = wasRegistered && !hasTokens);
   }
 }
+
