@@ -60,7 +60,7 @@ class _IrrigationNeedExampleModelState extends State<IrrigationNeedExampleModel>
     }
 
     final rawScore = ((temperature * 2) - soilMoisture).clamp(0, 100);
-    final score = rawScore is int ? rawScore : rawScore.toInt();
+    final score = rawScore;
     final liters = (score * 12).clamp(120, 1200);
 
     String recommendation;
