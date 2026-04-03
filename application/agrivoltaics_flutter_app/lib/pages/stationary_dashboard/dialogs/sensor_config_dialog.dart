@@ -5,6 +5,7 @@ import '../../../models/sensor.dart';
 import '../../../services/zone_service.dart';
 import '../../../services/sensor_service.dart';
 import '../../../services/formatters_service.dart';
+import '../../../services/readings_service.dart';
 import 'add_sensor_dialog.dart';
 import 'edit_sensor_dialog.dart';
 import 'sensor_config_params_dialog.dart';
@@ -33,6 +34,7 @@ class SensorConfigDialog extends StatefulWidget {
 class _SensorConfigDialogState extends State<SensorConfigDialog> {
   int _selectedTabIndex = 0; // 0 = Sensors, 1 = Readings
   final FormattersService _formattersService = FormattersService();
+  final ReadingsService _readingsService = ReadingsService();
 
   @override
   Widget build(BuildContext context) {
@@ -473,13 +475,19 @@ class _SensorConfigDialogState extends State<SensorConfigDialog> {
         }
 
         final sensors = snapshot.data ?? [];
+        final sortedReadings = widget.zone.readings.entries.toList()
+          ..sort(
+            (a, b) => _readingsService
+                .getReadingName(a.key)
+                .toLowerCase()
+                .compareTo(_readingsService.getReadingName(b.key).toLowerCase()),
+          );
 
         return ListView.builder(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          itemCount: widget.zone.readings.length,
+          itemCount: sortedReadings.length,
           itemBuilder: (context, index) {
-            final readings = widget.zone.readings.entries.toList();
-            final entry = readings[index];
+            final entry = sortedReadings[index];
             final readingName = entry.key;
             final currentPrimarySensorId = entry.value;
 

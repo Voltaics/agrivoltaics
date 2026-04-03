@@ -1,4 +1,5 @@
 import 'package:agrivoltaics_flutter_app/services/historical_series_service.dart';
+import 'package:agrivoltaics_flutter_app/services/readings_service.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'graph_card.dart';
@@ -24,6 +25,25 @@ class ResultsSectionWidget extends StatelessWidget {
     required this.isMobileLandscape,
     required this.dateRange,
   });
+
+  String _formatIntervalLabel(String interval) {
+    switch (interval.toUpperCase()) {
+      case 'MINUTE_15':
+        return '15 minutes';
+      case 'MINUTE_30':
+        return '30 minutes';
+      case 'HOUR':
+        return '1 hour';
+      case 'DAY':
+        return '1 day';
+      case 'WEEK':
+        return '1 week';
+      case 'MONTH':
+        return '1 month';
+      default:
+        return interval;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +101,15 @@ class ResultsSectionWidget extends StatelessWidget {
           );
         }
 
+        final readingsService = ReadingsService();
+        final sortedGraphs = response.graphs.toList()
+          ..sort(
+            (a, b) => readingsService
+                .getReadingName(a.field)
+                .toLowerCase()
+                .compareTo(readingsService.getReadingName(b.field).toLowerCase()),
+          );
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -90,12 +119,12 @@ class ResultsSectionWidget extends StatelessWidget {
                 children: [
                   const Icon(Icons.timeline, size: 18),
                   const SizedBox(width: 8),
-                  Text('Interval: ${response.interval}'),
+                  Text('Interval: ${_formatIntervalLabel(response.interval)}'),
                 ],
               ),
             ),
             if (!isDesktop)
-              ...response.graphs.map((graph) {
+              ...sortedGraphs.map((graph) {
                 return GraphCardWidget(
                   graph: graph,
                   zoneLookup: zoneLookup,
@@ -124,7 +153,7 @@ class ResultsSectionWidget extends StatelessWidget {
                   return GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: response.graphs.length,
+                    itemCount: sortedGraphs.length,
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
                       crossAxisSpacing: spacing,
@@ -132,7 +161,7 @@ class ResultsSectionWidget extends StatelessWidget {
                       childAspectRatio: childAspectRatio,
                     ),
                     itemBuilder: (context, index) {
-                      final graph = response.graphs[index];
+                      final graph = sortedGraphs[index];
                       return GraphCardWidget(
                         graph: graph,
                         zoneLookup: zoneLookup,

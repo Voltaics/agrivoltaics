@@ -1,6 +1,7 @@
 import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../models/zone.dart';
+import '../../../services/formatters_service.dart';
 import 'reading_card.dart';
 
 /// Widget for displaying a single zone card with its readings
@@ -18,6 +19,15 @@ class ZoneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final formattersService = FormattersService();
+    final sortedReadings = zone.readings.entries.toList()
+      ..sort(
+        (a, b) => formattersService
+            .formatReadingName(a.key)
+            .toLowerCase()
+            .compareTo(formattersService.formatReadingName(b.key).toLowerCase()),
+      );
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -51,7 +61,7 @@ class ZoneCard extends StatelessWidget {
                 ),
               )
             else
-              ...zone.readings.entries.map((entry) {
+              ...sortedReadings.map((entry) {
                 final readingName = entry.key;
                 final sensorId = entry.value;
                 return Padding(
