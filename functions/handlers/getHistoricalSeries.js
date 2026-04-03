@@ -1,7 +1,7 @@
 const functions = require('firebase-functions');
 const {bigquery, DATASET_ID, TABLE_ID} = require('../lib/firebase');
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MS_PER_DAY = 24 * 60 * 60 * 1000; // Get the number of milliseconds in a day
 
 const pickInterval = (startMillis, endMillis) => {
   const range = Math.max(0, endMillis - startMillis);
