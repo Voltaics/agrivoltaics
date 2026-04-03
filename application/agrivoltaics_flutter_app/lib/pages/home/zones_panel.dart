@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../app_state.dart';
@@ -40,7 +41,7 @@ class ZonesPanel extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Text(
               'Error loading zones',
-              style: TextStyle(color: Colors.red[300], fontSize: 12),
+              style: TextStyle(color: AppColors.error, fontSize: 12),
             ),
           );
         }
@@ -59,7 +60,7 @@ class ZonesPanel extends StatelessWidget {
                   const Text(
                     'Zones',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
@@ -67,7 +68,7 @@ class ZonesPanel extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.add, size: 18),
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () {
@@ -93,14 +94,14 @@ class ZonesPanel extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.layers_outlined,
-                      color: Colors.white.withAlpha((0.3 * 255).toInt()),
+                    color: AppColors.textPrimary.withAlpha((0.3 * 255).toInt()),
                       size: 32,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'No zones yet',
                       style: TextStyle(
-                        color: Colors.white.withAlpha((0.5 * 255).toInt()),
+                        color: AppColors.textPrimary.withAlpha((0.5 * 255).toInt()),
                         fontSize: 12,
                       ),
                       textAlign: TextAlign.center,
@@ -109,7 +110,7 @@ class ZonesPanel extends StatelessWidget {
                     Text(
                       'Click + to add a zone',
                       style: TextStyle(
-                        color: Colors.white.withAlpha((0.4 * 255).toInt()),
+                        color: AppColors.textPrimary.withAlpha((0.4 * 255).toInt()),
                         fontSize: 11,
                       ),
                       textAlign: TextAlign.center,
@@ -130,7 +131,7 @@ class ZonesPanel extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 4),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Colors.white.withAlpha((0.2 * 255).toInt())
+                            ? AppColors.textPrimary.withAlpha((0.2 * 255).toInt())
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(6),
                       ),
@@ -161,7 +162,7 @@ class ZonesPanel extends StatelessWidget {
                         ),
                         trailing: IconButton(
                           icon: const Icon(Icons.edit, size: 16),
-                          color: Colors.white.withAlpha((0.7 * 255).toInt()),
+                          color: AppColors.textPrimary.withAlpha((0.7 * 255).toInt()),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () {

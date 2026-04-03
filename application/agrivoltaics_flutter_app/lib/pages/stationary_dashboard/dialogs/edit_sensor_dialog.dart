@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/zone.dart';
@@ -282,7 +283,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                               searchText.isEmpty
                                   ? 'No items'
                                   : 'No results for "$searchText"',
-                              style: TextStyle(color: Colors.grey[600]),
+                              style: const TextStyle(color: AppColors.textMuted),
                             ),
                           )
                         : ListView.builder(
@@ -334,7 +335,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: const Text('Delete'),
           ),
         ],
@@ -615,7 +616,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.info_outline, size: 18, color: Colors.orange),
+                          const Icon(Icons.info_outline, size: 18, color: AppColors.warning),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -633,7 +634,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.swap_horiz, size: 18, color: Colors.blue),
+                          const Icon(Icons.swap_horiz, size: 18, color: AppColors.info),
                           const SizedBox(width: 8),
                           Expanded(
                             child: RichText(
@@ -707,7 +708,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.blue[50],
+                color: AppColors.infoLight,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(12),
                   topRight: Radius.circular(12),
@@ -715,7 +716,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.edit, color: Colors.blue),
+                  const Icon(Icons.edit, color: AppColors.info),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
@@ -825,15 +826,15 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
+                          color: AppColors.scaffoldBackground,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           'No readings configured. Add at least one reading to continue.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
-                            color: Colors.grey[600],
+                            color: AppColors.textMuted,
                           ),
                         ),
                       )
@@ -851,8 +852,8 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    border: Border.all(color: Colors.grey[300]!),
+                                    color: AppColors.surface,
+                                    border: Border.all(color: AppColors.scaffoldBackground),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Row(
@@ -869,9 +870,9 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                                       ),
                                       Text(
                                         reading.unit,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 13,
-                                          color: Colors.grey[600],
+                                          color: AppColors.textMuted,
                                         ),
                                       ),
                                     ],
@@ -883,7 +884,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                                 icon: const Icon(Icons.delete, size: 18),
                                 onPressed: _isLoading ? null : () => _removeReading(index),
                                 tooltip: 'Remove',
-                                color: Colors.red[400],
+                                color: AppColors.error,
                                 constraints: const BoxConstraints(),
                                 padding: EdgeInsets.zero,
                               ),
@@ -900,7 +901,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: Colors.grey[300]!)),
+                border: Border(top: BorderSide(color: AppColors.scaffoldBackground)),
               ),
               child: Row(
                 children: [
@@ -910,7 +911,7 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                     icon: const Icon(Icons.delete, size: 18),
                     label: const Text('Delete Sensor'),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
+                      foregroundColor: AppColors.error,
                     ),
                   ),
                   const Spacer(),

@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 
 /// Displayed when no site is selected on the Historical Dashboard.
@@ -17,7 +18,7 @@ class NoSitePlaceholderWidget extends StatelessWidget {
               Icon(
                 Icons.business,
                 size: 48,
-                color: Colors.grey[400],
+                color: AppColors.textMuted,
               ),
               const SizedBox(height: 16),
               const Text(

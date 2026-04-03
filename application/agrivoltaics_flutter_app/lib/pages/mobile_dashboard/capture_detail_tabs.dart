@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class CaptureDetailDualEqualView extends StatefulWidget {
@@ -17,7 +18,7 @@ class CaptureDetailDualEqualView extends StatefulWidget {
   });
 
   @override
-  _CaptureDetailDualEqualViewState createState() =>
+  State<CaptureDetailDualEqualView> createState() =>
       _CaptureDetailDualEqualViewState();
 }
 
@@ -49,56 +50,59 @@ class _CaptureDetailDualEqualViewState extends State<CaptureDetailDualEqualView>
     final primaryColor = theme.colorScheme.primary;
     final List<String> tabs = ["Raw", "NDVI", "NDRE", "Overlay", "Heatmap"];
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(tabs.length, (index) {
-        bool isSelected = index == selectedTabIndex;
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              selectedTabIndex = index;
-              // Reset blendValue if not on "Overlay" tab.
-              if (selectedTabIndex != 3) blendValue = 0.0;
-            });
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isSelected ? primaryColor.withAlpha((0.1 * 255).toInt()) : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isSelected ? primaryColor : Colors.grey.shade300,
-                width: 1,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(tabs.length, (index) {
+          bool isSelected = index == selectedTabIndex;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedTabIndex = index;
+                // Reset blendValue if not on "Overlay" tab.
+                if (selectedTabIndex != 3) blendValue = 0.0;
+              });
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? primaryColor.withAlpha((0.1 * 255).toInt()) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? primaryColor : AppColors.scaffoldBackground,
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    tabs[index],
+                    style: TextStyle(
+                      color: isSelected ? primaryColor : AppColors.textMuted,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  if (isSelected)
+                    Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      height: 2,
+                      width: 20,
+                      color: primaryColor,
+                    ),
+                ],
               ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  tabs[index],
-                  style: TextStyle(
-                    color: isSelected ? primaryColor : Colors.grey,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-                if (isSelected)
-                  Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    height: 2,
-                    width: 20,
-                    color: primaryColor,
-                  ),
-              ],
-            ),
-          ),
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 
   // Left pane: Pill tab bar + Card that centers and scales the selected image.
-  Widget _buildLeftPane(BuildContext context) {
+  Widget _buildLeftPane(BuildContext context, double paneHeight) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -113,8 +117,8 @@ class _CaptureDetailDualEqualViewState extends State<CaptureDetailDualEqualView>
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              width: 784,
-              height: 588,
+              width: double.infinity,
+              height: paneHeight,
               alignment: Alignment.center,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -138,7 +142,7 @@ class _CaptureDetailDualEqualViewState extends State<CaptureDetailDualEqualView>
   }
 
   // Right pane: "Overlay Slider" text + Card with a centered, scaled blended image, and slider below.
-  Widget _buildRightPane(BuildContext context) {
+  Widget _buildRightPane(BuildContext context, double paneHeight) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -158,8 +162,8 @@ class _CaptureDetailDualEqualViewState extends State<CaptureDetailDualEqualView>
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              width: 784,
-              height: 588,
+              width: double.infinity,
+              height: paneHeight,
               alignment: Alignment.center,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -220,11 +224,13 @@ class _CaptureDetailDualEqualViewState extends State<CaptureDetailDualEqualView>
     // Two equal-width columns side by side, top-aligned.
     return LayoutBuilder(
       builder: (context, constraints) {
+        final paneHeight = (constraints.maxHeight - 170).clamp(220.0, 588.0).toDouble();
+
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _buildLeftPane(context)),
-            Expanded(child: _buildRightPane(context)),
+            Expanded(child: _buildLeftPane(context, paneHeight)),
+            Expanded(child: _buildRightPane(context, paneHeight)),
           ],
         );
       },

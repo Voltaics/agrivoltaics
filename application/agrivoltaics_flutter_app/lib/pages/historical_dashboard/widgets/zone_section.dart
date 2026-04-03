@@ -34,7 +34,8 @@ class ZoneSectionWidget extends StatefulWidget {
 
   final Future<HistoricalResponse>? futureResponse;
   final String? errorMessage;
-  final bool isWideScreen;
+  final bool isDesktop;
+  final bool isMobileLandscape;
   final PickerDateRange dateRange;
 
   const ZoneSectionWidget({
@@ -53,7 +54,8 @@ class ZoneSectionWidget extends StatefulWidget {
     required this.availableReadings,
     required this.futureResponse,
     required this.errorMessage,
-    required this.isWideScreen,
+    required this.isDesktop,
+    required this.isMobileLandscape,
     required this.dateRange,
   });
 
@@ -90,32 +92,58 @@ class _ZoneSectionWidgetState extends State<ZoneSectionWidget> {
           });
         }
 
+        final filterCard = FilterCardWidget(
+          zones: zones,
+          selectedZoneIds: widget.selectedZoneIds,
+          selectedReadings: widget.selectedReadings,
+          onApplyFilters: widget.onApplyFilters,
+          onZoneSelected: widget.onZoneSelected,
+          onReadingSelected: widget.onReadingSelected,
+          availableReadings: widget.availableReadings(zones),
+          selectedAggregation: widget.selectedAggregation,
+          onAggregationChanged: widget.onAggregationChanged,
+        );
+
+        final resultsSection = ResultsSectionWidget(
+          futureResponse: widget.futureResponse,
+          errorMessage: widget.errorMessage,
+          selectedZoneIds: widget.selectedZoneIds,
+          selectedReadings: widget.selectedReadings,
+          zoneLookup: {
+            for (final zone in zones) zone.id: zone.name,
+          },
+          isDesktop: widget.isDesktop,
+          isMobileLandscape: widget.isMobileLandscape,
+          dateRange: widget.dateRange,
+        );
+
+        if (widget.isDesktop) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 340,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16, bottom: 24),
+                  child: filterCard,
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8, bottom: 24),
+                  child: resultsSection,
+                ),
+              ),
+            ],
+          );
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            FilterCardWidget(
-              zones: zones,
-              selectedZoneIds: widget.selectedZoneIds,
-              selectedReadings: widget.selectedReadings,
-              onApplyFilters: widget.onApplyFilters,
-              onZoneSelected: widget.onZoneSelected,
-              onReadingSelected: widget.onReadingSelected,
-              availableReadings: widget.availableReadings(zones),
-              selectedAggregation: widget.selectedAggregation,
-              onAggregationChanged: widget.onAggregationChanged,
-            ),
+            filterCard,
             const SizedBox(height: 16),
-            ResultsSectionWidget(
-              futureResponse: widget.futureResponse,
-              errorMessage: widget.errorMessage,
-              selectedZoneIds: widget.selectedZoneIds,
-              selectedReadings: widget.selectedReadings,
-              zoneLookup: {
-                for (final zone in zones) zone.id: zone.name,
-              },
-              isWideScreen: widget.isWideScreen,
-              dateRange: widget.dateRange,
-            ),
+            resultsSection,
           ],
         );
       },

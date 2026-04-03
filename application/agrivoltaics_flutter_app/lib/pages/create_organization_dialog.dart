@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../app_state.dart';
@@ -49,6 +50,8 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
 
       // Fetch the newly created organization and set it as selected
       final newOrg = await _organizationService.getOrganization(orgId);
+      if (!mounted) return;
+
       if (newOrg != null) {
         final appState = Provider.of<AppState>(context, listen: false);
         appState.setSelectedOrganization(newOrg);
@@ -72,7 +75,7 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Organization "${_nameController.text}" created successfully!'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
@@ -85,7 +88,7 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error creating organization: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -93,25 +96,36 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final isDesktop = media.size.width >= 1280;
+    final maxDialogWidth = media.size.width * 0.95;
+    final preferredWidth = isDesktop ? 560.0 : 520.0;
+    final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
+    final contentMaxHeight = media.size.height * (isDesktop ? 0.58 : 0.72);
+
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.business, color: Color(0xFF2D53DA)),
+          Icon(Icons.business, color: AppColors.primary),
           SizedBox(width: 12),
           Text('Create Organization'),
         ],
       ),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+      content: SizedBox(
+        width: dialogWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: contentMaxHeight),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
               const Text(
                 'Create a new organization to manage your sites, sensors, and team members.',
                 style: TextStyle(
-                  color: Colors.black87,
+                  color: AppColors.textMuted,
                   fontSize: 14,
                 ),
               ),
@@ -152,15 +166,17 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
                 enabled: !_isLoading,
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'You will be set as the owner with full permissions.',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: AppColors.textMuted,
                   fontSize: 12,
                   fontStyle: FontStyle.italic,
                 ),
               ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -177,14 +193,14 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
                   ),
                 )
               : const Icon(Icons.add),
           label: Text(_isLoading ? 'Creating...' : 'Create'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2D53DA),
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textPrimary,
           ),
         ),
       ],

@@ -81,11 +81,11 @@ class CaptureDetailPage extends StatelessWidget {
                           ? 'Disease Detected'
                           : 'No Disease Detected',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 14,
                       ),
                     ),
-                    backgroundColor: data['detected_disease'] == true ? Colors.red : Colors.green,
+                    backgroundColor: data['detected_disease'] == true ? AppColors.error : AppColors.success,
                   ),
                   const SizedBox(height: 16),
                   // AI Analysis summary

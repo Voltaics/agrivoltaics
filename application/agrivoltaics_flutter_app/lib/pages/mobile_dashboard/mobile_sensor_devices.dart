@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -23,10 +24,12 @@ class _PiControlPanelState extends State<PiControlPanel> {
       final response = await http
           .get(Uri.parse('$piAddress/ping'))
           .timeout(const Duration(seconds: 2));
+      if (!mounted) return;
       setState(() {
         piOnline = response.statusCode == 200;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => piOnline = false);
     }
   }
@@ -38,6 +41,7 @@ class _PiControlPanelState extends State<PiControlPanel> {
       final response = await http
           .post(url)
           .timeout(const Duration(seconds: 5));
+      if (!mounted) return;
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Capture started ($mode)'))
@@ -46,6 +50,7 @@ class _PiControlPanelState extends State<PiControlPanel> {
         throw Exception('Server returned ${response.statusCode}');
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to start capture: $e'))
       );
@@ -54,6 +59,8 @@ class _PiControlPanelState extends State<PiControlPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.of(context).size.width < 420;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 3,
@@ -96,9 +103,9 @@ class _PiControlPanelState extends State<PiControlPanel> {
                 Chip(
                   label: Text(
                     piOnline ? "Online" : "Offline",
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: AppColors.textPrimary),
                   ),
-                  backgroundColor: piOnline ? Colors.green : Colors.red,
+                  backgroundColor: piOnline ? AppColors.success : AppColors.error,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                     side: BorderSide.none,
@@ -110,27 +117,34 @@ class _PiControlPanelState extends State<PiControlPanel> {
 
             const SizedBox(height: 24),
 
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
               children: [
-                ElevatedButton.icon(
-                  onPressed: piOnline ? () => startCapture("single") : null,
-                  icon: const Icon(Icons.camera),
-                  label: const Text("Single Capture"),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    textStyle: const TextStyle(fontSize: 14),
+                SizedBox(
+                  width: isNarrow ? double.infinity : null,
+                  child: ElevatedButton.icon(
+                    onPressed: piOnline ? () => startCapture("single") : null,
+                    icon: const Icon(Icons.camera),
+                    label: const Text("Single Capture"),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      textStyle: const TextStyle(fontSize: 14),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: piOnline ? () => startCapture("continuous") : null,
-                  icon: const Icon(Icons.loop),
-                  label: const Text("Continuous Capture"),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    textStyle: const TextStyle(fontSize: 14),
+                SizedBox(
+                  width: isNarrow ? double.infinity : null,
+                  child: ElevatedButton.icon(
+                    onPressed: piOnline ? () => startCapture("continuous") : null,
+                    icon: const Icon(Icons.loop),
+                    label: const Text("Continuous Capture"),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      textStyle: const TextStyle(fontSize: 14),
+                    ),
                   ),
                 ),
               ],

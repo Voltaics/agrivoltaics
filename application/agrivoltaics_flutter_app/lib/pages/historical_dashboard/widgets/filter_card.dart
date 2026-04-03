@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:agrivoltaics_flutter_app/models/zone.dart';
 import 'package:agrivoltaics_flutter_app/services/readings_service.dart';
 import 'package:flutter/material.dart';
@@ -48,12 +49,6 @@ class FilterCardWidget extends StatelessWidget {
                 const Text(
                   'Filters',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: onApplyFilters,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Apply'),
                 ),
               ],
             ),
@@ -112,8 +107,8 @@ class FilterCardWidget extends StatelessWidget {
             const SizedBox(height: 8),
             SegmentedButton<String>(
               segments: const [
-                ButtonSegment(value: 'avg', label: Text('Avg')),
                 ButtonSegment(value: 'min', label: Text('Min')),
+                ButtonSegment(value: 'avg', label: Text('Avg')),
                 ButtonSegment(value: 'max', label: Text('Max')),
               ],
               selected: {selectedAggregation},
@@ -125,15 +120,34 @@ class FilterCardWidget extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline, size: 14, color: Colors.grey[600]),
+                Icon(Icons.info_outline, size: 14, color: AppColors.textMuted),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'Press Apply after making any changes to update the graphs.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onApplyFilters,
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                label: const Text(
+                  'Apply',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.sidebarEnd,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
             ),
           ],
         ),

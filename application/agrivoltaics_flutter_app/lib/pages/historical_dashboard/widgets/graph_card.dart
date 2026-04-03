@@ -5,10 +5,11 @@ import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
-class GraphCardWidget extends StatelessWidget {
+class GraphCardWidget extends StatefulWidget {
   final HistoricalGraph graph;
   final Map<String, String> zoneLookup;
-  final bool isWideScreen;
+  final bool isDesktop;
+  final bool isMobileLandscape;
   final PickerDateRange dateRange;
   final String interval;
 
@@ -16,21 +17,58 @@ class GraphCardWidget extends StatelessWidget {
     super.key,
     required this.graph,
     required this.zoneLookup,
-    required this.isWideScreen,
+    required this.isDesktop,
+    required this.isMobileLandscape,
     required this.dateRange,
     required this.interval,
   });
 
   @override
+  State<GraphCardWidget> createState() => _GraphCardWidgetState();
+}
+
+class _GraphCardWidgetState extends State<GraphCardWidget> {
+  late final TrackballBehavior _trackballBehavior;
+  int? _lastSelectedDataPointIndex;
+  bool _trackballDismissedByOutsideTap = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _trackballBehavior = TrackballBehavior(
+      enable: true,
+      activationMode: ActivationMode.singleTap,
+      lineType: TrackballLineType.vertical,
+      lineWidth: 1,
+      shouldAlwaysShow: true,
+      tooltipDisplayMode: TrackballDisplayMode.groupAllPoints,
+      tooltipAlignment: ChartAlignment.near,
+      tooltipSettings: InteractiveTooltip(
+        format:
+            'series.name - point.x - point.y${_unit.isEmpty ? '' : ' $_unit'}',
+        canShowMarker: true,
+      ),
+    );
+  }
+
+  String get _unit =>
+      widget.graph.unit != null && widget.graph.unit!.isNotEmpty
+      ? '(${widget.graph.unit})'
+      : '';
+
+  @override
   Widget build(BuildContext context) {
     final readingsService = ReadingsService();
-    final title = readingsService.getReadingName(graph.field);
-    final unit = graph.unit != null && graph.unit!.isNotEmpty
-        ? ' (${graph.unit})'
-        : '';
+    final title = readingsService.getReadingName(widget.graph.field);
+    final unit = _unit.isEmpty ? '' : ' $_unit';
+    final chartHeight = widget.isDesktop
+      ? 350.0
+      : widget.isMobileLandscape
+        ? 280.0
+        : 240.0;
 
-    final hasData = graph.series.any((series) => series.points.isNotEmpty);
-    final axisConfig = _getAxisConfig(dateRange, interval);
+    final hasData = widget.graph.series.any((series) => series.points.isNotEmpty);
+    final axisConfig = _getAxisConfig(widget.dateRange, widget.interval);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -53,56 +91,75 @@ class GraphCardWidget extends StatelessWidget {
               )
             else
               SizedBox(
-                height: isWideScreen ? 320 : 240,
-                child: SfCartesianChart(
-                  legend: Legend(
-                    isVisible: true,
-                    position: LegendPosition.bottom,
-                    overflowMode: LegendItemOverflowMode.wrap,
-                  ),
-                  primaryXAxis: DateTimeAxis(
-                    minimum: dateRange.startDate,
-                    maximum: dateRange.endDate,
-                    edgeLabelPlacement: EdgeLabelPlacement.shift,
-                    dateFormat: axisConfig.dateFormat,
-                    intervalType: axisConfig.intervalType,
-                    interval: axisConfig.axisInterval,
-                    axisLabelFormatter: (AxisLabelRenderDetails details) {
-                      final dt = DateTime.fromMillisecondsSinceEpoch(
-                        details.value.toInt(),
-                      );
-                      return ChartAxisLabel(
-                        axisConfig.labelDateFormat.format(dt),
-                        details.textStyle,
-                      );
+                height: chartHeight,
+                child: TapRegion(
+                  onTapOutside: (_) {
+                    _trackballDismissedByOutsideTap = true;
+                    _lastSelectedDataPointIndex = null;
+                    _trackballBehavior.hide();
+                  },
+                  child: MouseRegion(
+                    onExit: (_) {
+                      final index = _lastSelectedDataPointIndex;
+                      if (index == null || _trackballDismissedByOutsideTap) {
+                        return;
+                      }
+                      // Syncfusion hides trackball on pointer exit; restore the
+                      // last selected point so values stay sticky until next input.
+                      Future<void>.delayed(Duration.zero, () {
+                        if (!mounted || _trackballDismissedByOutsideTap) {
+                          return;
+                        }
+                        _trackballBehavior.showByIndex(index);
+                      });
                     },
-                  ),
-                  primaryYAxis: NumericAxis(
-                    majorGridLines: const MajorGridLines(width: 0.5),
-                  ),
-                  trackballBehavior: TrackballBehavior(
-                    enable: true,
-                    activationMode: ActivationMode.singleTap,
-                    lineType: TrackballLineType.vertical,
-                    lineWidth: 1,
-                    shouldAlwaysShow: false,
-                    tooltipDisplayMode: TrackballDisplayMode.nearestPoint,
-                    tooltipSettings: InteractiveTooltip(
-                      format: 'series.name - point.x - point.y${unit.isEmpty ? '' : ' $unit'}',
-                      canShowMarker: true,
+                    child: SfCartesianChart(
+                      onTrackballPositionChanging: (TrackballArgs args) {
+                        final pointIndex = args.chartPointInfo.dataPointIndex;
+                        if (pointIndex != null) {
+                          _trackballDismissedByOutsideTap = false;
+                          _lastSelectedDataPointIndex = pointIndex;
+                        }
+                      },
+                      legend: const Legend(
+                        isVisible: true,
+                        position: LegendPosition.bottom,
+                        overflowMode: LegendItemOverflowMode.wrap,
+                      ),
+                      primaryXAxis: DateTimeAxis(
+                        minimum: widget.dateRange.startDate,
+                        maximum: widget.dateRange.endDate,
+                        edgeLabelPlacement: EdgeLabelPlacement.shift,
+                        dateFormat: axisConfig.dateFormat,
+                        intervalType: axisConfig.intervalType,
+                        interval: axisConfig.axisInterval,
+                        axisLabelFormatter: (AxisLabelRenderDetails details) {
+                          final dt = DateTime.fromMillisecondsSinceEpoch(
+                            details.value.toInt(),
+                          );
+                          return ChartAxisLabel(
+                            axisConfig.labelDateFormat.format(dt),
+                            details.textStyle,
+                          );
+                        },
+                      ),
+                      primaryYAxis: const NumericAxis(
+                        majorGridLines: MajorGridLines(width: 0.5),
+                      ),
+                      trackballBehavior: _trackballBehavior,
+                      series: widget.graph.series.map((series) {
+                        return LineSeries<HistoricalPoint, DateTime>(
+                          name: widget.zoneLookup[series.zoneId] ?? series.zoneId,
+                          dataSource: series.points,
+                          xValueMapper: (point, _) => point.time,
+                          yValueMapper: (point, _) => point.value,
+                          markerSettings: MarkerSettings(
+                            isVisible: series.points.length <= 8,
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
-                  series: graph.series.map((series) {
-                    return LineSeries<HistoricalPoint, DateTime>(
-                      name: zoneLookup[series.zoneId] ?? series.zoneId,
-                      dataSource: series.points,
-                      xValueMapper: (point, _) => point.time,
-                      yValueMapper: (point, _) => point.value,
-                      markerSettings: MarkerSettings(
-                        isVisible: series.points.length <= 8,
-                      ),
-                    );
-                  }).toList(),
                 ),
               ),
           ],

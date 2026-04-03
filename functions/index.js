@@ -8,7 +8,9 @@
 const {ingestSensorData} = require('./handlers/ingestSensorData');
 const {setupBigQuery} = require('./handlers/setupBigQuery');
 const {getHistoricalSeries} = require('./handlers/getHistoricalSeries');
+const {sendTestAlert} = require('./handlers/sendTestAlert');
 
 exports.ingestSensorData = ingestSensorData;
 exports.setupBigQuery = setupBigQuery;
 exports.getHistoricalSeries = getHistoricalSeries;
+exports.sendTestAlert = sendTestAlert;

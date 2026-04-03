@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/organization.dart';
@@ -36,7 +37,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter an email address'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -47,7 +48,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a valid email address'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
@@ -76,7 +77,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Added $email as $_selectedRole'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
@@ -89,7 +90,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error adding member: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -97,25 +98,37 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final isLandscape = media.orientation == Orientation.landscape;
+    final isDesktop = media.size.width >= 1280;
+    final dialogWidth = isLandscape
+      ? (isDesktop ? 900.0 : media.size.width * 0.9)
+        : 600.0;
+    final maxDialogWidth = media.size.width * 0.95;
+    final effectiveWidth = dialogWidth > maxDialogWidth ? maxDialogWidth : dialogWidth;
+    final dialogMaxHeight = media.size.height * (isDesktop ? 0.84 : 0.9);
+
     return Dialog(
       child: Container(
-        width: 600,
-        constraints: const BoxConstraints(maxHeight: 700),
+        width: effectiveWidth,
+        constraints: BoxConstraints(
+          maxHeight: dialogMaxHeight,
+          minHeight: isLandscape ? 460 : 420,
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
             // Header
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                color: Color(0xFF2D53DA),
+                color: AppColors.primary,
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(4),
                 ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.people, color: Colors.white),
+                  const Icon(Icons.people, color: AppColors.textPrimary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -124,7 +137,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                         const Text(
                           'Manage Members',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -133,7 +146,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                         Text(
                           widget.organization.name,
                           style: TextStyle(
-                            color: Colors.white.withAlpha((0.9 * 255).toInt()),
+                            color: AppColors.textPrimary.withAlpha((0.9 * 255).toInt()),
                             fontSize: 14,
                           ),
                         ),
@@ -141,152 +154,181 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: AppColors.textPrimary),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
             ),
             
-            // Member List
-            Flexible(
-              child: StreamBuilder<List<Member>>(
-                stream: _organizationService.getOrganizationMembers(widget.organization.id),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final useTwoColumns = isLandscape;
 
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(
-                          'Error loading members: ${snapshot.error}',
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
+                  if (!useTwoColumns) {
+                    return Column(
+                      children: [
+                        Expanded(child: _buildMemberList()),
+                        _buildAddMemberPanel(compact: true),
+                      ],
                     );
                   }
 
-                  final members = snapshot.data ?? [];
-
-                  if (members.isEmpty) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Text('No members found'),
+                  return Row(
+                    children: [
+                      SizedBox(
+                        width: 300,
+                        child: _buildAddMemberPanel(compact: false),
                       ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: members.length,
-                    itemBuilder: (context, index) {
-                      final member = members[index];
-                      return MemberListItem(
-                        member: member,
-                        organization: widget.organization,
-                      );
-                    },
+                      const VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: AppColors.scaffoldBackground,
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: _buildMemberList(),
+                      ),
+                    ],
                   );
                 },
               ),
             ),
-
-            // Footer with Add Member button
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                border: Border(
-                  top: BorderSide(color: Colors.grey[300]!),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'Add New Member',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Email field - full width
-                  TextField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email Address',
-                      hintText: 'user@example.com',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email),
-                      isDense: true,
-                    ),
-                    enabled: !_isAddingMember,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _addMember(),
-                  ),
-                  const SizedBox(height: 12),
-                  // Role selector and Add button - side by side
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _selectedRole,
-                          decoration: const InputDecoration(
-                            labelText: 'Role',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 'owner', child: Text('Owner')),
-                            DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                            DropdownMenuItem(value: 'member', child: Text('Member')),
-                            DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
-                          ],
-                          onChanged: _isAddingMember
-                              ? null
-                              : (value) {
-                                  if (value != null) {
-                                    _selectedRole = value;
-                                  }
-                                },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        onPressed: _isAddingMember ? null : _addMember,
-                        icon: _isAddingMember
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : const Icon(Icons.add),
-                        label: Text(_isAddingMember ? 'Adding...' : 'Add'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2D53DA),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMemberList() {
+    return StreamBuilder<List<Member>>(
+      stream: _organizationService.getOrganizationMembers(widget.organization.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text(
+                'Error loading members: ${snapshot.error}',
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ),
+          );
+        }
+
+        final members = snapshot.data ?? [];
+
+        if (members.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text('No members found'),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: members.length,
+          itemBuilder: (context, index) {
+            final member = members[index];
+            return MemberListItem(
+              member: member,
+              organization: widget.organization,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAddMemberPanel({required bool compact}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.scaffoldBackground,
+        border: compact
+            ? const Border(top: BorderSide(color: AppColors.scaffoldBackground))
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Add New Member',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _emailController,
+            decoration: const InputDecoration(
+              labelText: 'Email Address',
+              hintText: 'user@example.com',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.email),
+              isDense: true,
+            ),
+            enabled: !_isAddingMember,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _addMember(),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: _selectedRole,
+            decoration: const InputDecoration(
+              labelText: 'Role',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: const [
+              DropdownMenuItem(value: 'owner', child: Text('Owner')),
+              DropdownMenuItem(value: 'admin', child: Text('Admin')),
+              DropdownMenuItem(value: 'member', child: Text('Member')),
+              DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
+            ],
+            onChanged: _isAddingMember
+                ? null
+                : (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedRole = value;
+                      });
+                    }
+                  },
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isAddingMember ? null : _addMember,
+              icon: _isAddingMember
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
+                      ),
+                    )
+                  : const Icon(Icons.add),
+              label: Text(_isAddingMember ? 'Adding...' : 'Add Member'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -316,7 +358,7 @@ class _MemberListItemState extends State<MemberListItem> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.warning, color: Colors.orange),
+            Icon(Icons.warning, color: AppColors.warning),
             SizedBox(width: 12),
             Text('Remove Member?'),
           ],
@@ -337,12 +379,12 @@ class _MemberListItemState extends State<MemberListItem> {
                 ),
                 if (userEmail.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(userEmail, style: TextStyle(color: Colors.grey[600])),
+                  Text(userEmail, style: const TextStyle(color: AppColors.textMuted)),
                 ],
                 const SizedBox(height: 12),
                 const Text(
                   'They will lose access to this organization and all its data.',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(color: AppColors.error),
                 ),
               ],
             );
@@ -356,8 +398,8 @@ class _MemberListItemState extends State<MemberListItem> {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.textPrimary,
             ),
             child: const Text('Remove'),
           ),
@@ -382,7 +424,7 @@ class _MemberListItemState extends State<MemberListItem> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Member removed successfully'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
@@ -395,7 +437,7 @@ class _MemberListItemState extends State<MemberListItem> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -416,11 +458,11 @@ class _MemberListItemState extends State<MemberListItem> {
 
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: const Color(0xFF2D53DA),
+            backgroundColor: AppColors.primary,
             child: Text(
               displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -435,9 +477,9 @@ class _MemberListItemState extends State<MemberListItem> {
               if (email.isNotEmpty)
                 Text(
                   email,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[600],
+                    color: AppColors.textMuted,
                   ),
                 ),
               const SizedBox(height: 4),
@@ -463,17 +505,17 @@ class _MemberListItemState extends State<MemberListItem> {
               else if (!isCurrentUser) // Hide delete button for current user
                 IconButton(
                   icon: const Icon(Icons.delete, size: 20),
-                  color: Colors.red,
+                  color: AppColors.error,
                   onPressed: _removeMember,
                   tooltip: 'Remove member',
                 )
               else
-                Tooltip(
+                const Tooltip(
                   message: 'You cannot remove yourself',
                   child: Icon(
                     Icons.person,
                     size: 20,
-                    color: Colors.grey[400],
+                    color: AppColors.textMuted,
                   ),
                 ),
             ],
@@ -487,19 +529,19 @@ class _MemberListItemState extends State<MemberListItem> {
     Color badgeColor;
     switch (role) {
       case 'owner':
-        badgeColor = Colors.purple;
+        badgeColor = AppColors.primaryLight;
         break;
       case 'admin':
-        badgeColor = Colors.blue;
+        badgeColor = AppColors.primary;
         break;
       case 'member':
-        badgeColor = Colors.green;
+        badgeColor = AppColors.success;
         break;
       case 'viewer':
-        badgeColor = Colors.grey;
+        badgeColor = AppColors.textMuted;
         break;
       default:
-        badgeColor = Colors.grey;
+        badgeColor = AppColors.textMuted;
     }
 
     return Container(
@@ -538,13 +580,13 @@ class _MemberListItemState extends State<MemberListItem> {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.blue.withAlpha((0.1 * 255).toInt()),
+              color: AppColors.info.withAlpha((0.1 * 255).toInt()),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               perm,
               style: const TextStyle(
-                color: Colors.blue,
+                color: AppColors.info,
                 fontSize: 9,
               ),
             ),

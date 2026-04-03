@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:agrivoltaics_flutter_app/services/site_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -93,7 +94,7 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Site created successfully'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -102,7 +103,7 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error creating site: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -117,17 +118,26 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final isDesktop = media.size.width >= 1280;
+    final maxDialogWidth = media.size.width * 0.95;
+    final preferredWidth = isDesktop ? 620.0 : 500.0;
+    final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
+    final contentMaxHeight = media.size.height * (isDesktop ? 0.62 : 0.72);
+
     return AlertDialog(
       title: const Text('Create New Site'),
       content: SizedBox(
-        width: 500,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        width: dialogWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: contentMaxHeight),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -223,7 +233,8 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
                 ),
                 const SizedBox(height: 16),
 
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -236,7 +247,7 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
         ElevatedButton(
           onPressed: _isLoading ? null : _createSite,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.success,
           ),
           child: _isLoading
               ? const SizedBox(
@@ -244,7 +255,7 @@ class _CreateSiteDialogState extends State<CreateSiteDialog> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
                   ),
                 )
               : const Text('Create Site'),

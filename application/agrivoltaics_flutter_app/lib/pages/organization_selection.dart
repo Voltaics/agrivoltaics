@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -85,7 +86,7 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
             const Icon(
               Icons.business_outlined,
               size: 80,
-              color: Colors.grey,
+              color: AppColors.textMuted,
             ),
             const SizedBox(height: 24),
             const Text(
@@ -101,7 +102,7 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey,
+                color: AppColors.textMuted,
               ),
             ),
             const SizedBox(height: 32),

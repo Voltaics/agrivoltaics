@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 
 /// Static header displayed at the top of the Historical Dashboard page.
@@ -18,7 +19,7 @@ class HistoricalDashboardHeader extends StatelessWidget {
           SizedBox(height: 4),
           Text(
             'Review sensor trends over time with custom filters.',
-            style: TextStyle(color: Colors.grey),
+            style: const TextStyle(color: AppColors.textMuted),
           ),
         ],
       ),

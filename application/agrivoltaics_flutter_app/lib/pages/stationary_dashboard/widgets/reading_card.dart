@@ -1,3 +1,4 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../models/sensor.dart';
 import '../../../services/sensor_service.dart';
@@ -72,7 +73,7 @@ class ReadingCard extends StatelessWidget {
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: Colors.grey[300]!),
+        side: BorderSide(color: AppColors.scaffoldBackground),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -98,9 +99,9 @@ class ReadingCard extends StatelessWidget {
             else if (error != null)
               Text(
                 error,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[500],
+                  color: AppColors.textMuted,
                   fontStyle: FontStyle.italic,
                 ),
               )
@@ -112,16 +113,16 @@ class ReadingCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: AppColors.textOnLight,
                     ),
                   ),
                   if (unit != null && unit.isNotEmpty) ...[
                     const SizedBox(width: 4),
                     Text(
                       unit,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[700],
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ],
@@ -130,9 +131,9 @@ class ReadingCard extends StatelessWidget {
             else
               Text(
                 'No data',
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[500],
+                  color: AppColors.textMuted,
                   fontStyle: FontStyle.italic,
                 ),
               ),

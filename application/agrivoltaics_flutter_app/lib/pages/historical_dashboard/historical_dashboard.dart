@@ -16,6 +16,7 @@ import 'widgets/no_site_placeholder.dart';
 import 'widgets/page_header.dart';
 import 'widgets/site_selector.dart';
 import 'widgets/zone_section.dart';
+import '../../responsive/app_viewport.dart';
 
 class HistoricalDashboardPage extends StatefulWidget {
   const HistoricalDashboardPage({super.key});
@@ -63,7 +64,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
 
   final Set<String> _selectedZoneIds = <String>{};
   final Set<String> _selectedReadings = <String>{};
-  String _selectedAggregation = 'avg';
+  String _selectedAggregation = 'max';
 
   Future<HistoricalResponse>? _futureResponse;
   String? _errorMessage;
@@ -111,36 +112,164 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
     _refreshOnOrgChange(selectedOrg?.id);
     _refreshOnSiteChange(selectedSite?.id);
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isWideScreen = screenWidth >= 1280 || screenHeight < screenWidth;
+    final viewportInfo = AppViewportInfo.fromMediaQuery(MediaQuery.of(context));
 
     if (selectedOrg == null) {
-      return const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 8),
-          HistoricalDashboardHeader(),
-          NoOrgPlaceholderWidget(),
-        ],
+      if (viewportInfo.isDesktop) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    HistoricalDashboardHeader(),
+                    SizedBox(height: 12),
+                    NoOrgPlaceholderWidget(),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      }
+
+      return const SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 8),
+            HistoricalDashboardHeader(),
+            NoOrgPlaceholderWidget(),
+          ],
+        ),
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        const HistoricalDashboardHeader(),
-        Expanded(
-          child: SingleChildScrollView(
+    if (viewportInfo.isDesktop) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                StreamBuilder<List<models.Site>>(
-                  stream: _getSiteStream(selectedOrg.id),
-                  builder: (context, snapshot) {
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const HistoricalDashboardHeader(),
+                  StreamBuilder<List<models.Site>>(
+              stream: _getSiteStream(selectedOrg.id),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text('Error loading sites: ${snapshot.error}'),
+                    ),
+                  );
+                }
+
+                final sites = snapshot.data ?? [];
+
+                return SiteSelectorWidget(
+                  orgId: selectedOrg.id,
+                  sites: sites,
+                  selectedSite: _selectedSite,
+                  dateRange: _dateRange,
+                  onSiteChanged: (site) {
+                    setState(() {
+                      _selectedSite = site;
+                      _selectedZoneIds.clear();
+                      _selectedReadings.clear();
+                    });
+                  },
+                  onDateRangePressed: () {
+                    showDateRangePickerDialog(
+                      context,
+                      initialRange: _dateRange,
+                      onApplied: (range) {
+                        _applyFilters(newDateRange: range);
+                      },
+                    );
+                  },
+                  isLoading: false,
+                );
+              },
+            ),
+                  const SizedBox(height: 12),
+                  if (selectedSite != null)
+                    ZoneSectionWidget(
+                orgId: selectedOrg.id,
+                selectedSite: selectedSite,
+                zoneStream: _getZoneStream(selectedOrg.id, selectedSite.id),
+                selectedZoneIds: _selectedZoneIds,
+                selectedReadings: _selectedReadings,
+                selectedAggregation: _selectedAggregation,
+                onApplyFilters: _applyFilters,
+                onZoneSelected: (zoneId, selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedZoneIds.add(zoneId);
+                    } else {
+                      _selectedZoneIds.remove(zoneId);
+                    }
+                  });
+                },
+                onReadingSelected: (reading, selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedReadings.add(reading);
+                    } else {
+                      _selectedReadings.remove(reading);
+                    }
+                  });
+                },
+                onAggregationChanged: (agg) {
+                  setState(() {
+                    _selectedAggregation = agg;
+                  });
+                },
+                onZonesLoaded: _syncSelections,
+                availableReadings: _availableReadings,
+                futureResponse: _futureResponse,
+                errorMessage: _errorMessage,
+                isDesktop: viewportInfo.isDesktop,
+                isMobileLandscape: viewportInfo.isMobileLandscape,
+                dateRange: _dateRange,
+              )
+                  else
+                    const NoSitePlaceholderWidget(),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return SingleChildScrollView(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const HistoricalDashboardHeader(),
+          StreamBuilder<List<models.Site>>(
+            stream: _getSiteStream(selectedOrg.id),
+            builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
@@ -153,78 +282,76 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
 
                     final sites = snapshot.data ?? [];
 
-                    return SiteSelectorWidget(
-                      orgId: selectedOrg.id,
-                      sites: sites,
-                      selectedSite: _selectedSite,
-                      dateRange: _dateRange,
-                      onSiteChanged: (site) {
-                        setState(() {
-                          _selectedSite = site;
-                          _selectedZoneIds.clear();
-                          _selectedReadings.clear();
-                        });
-                      },
-                      onDateRangePressed: () {
-                        showDateRangePickerDialog(
-                          context,
-                          initialRange: _dateRange,
-                          onApplied: (range) {
-                            _applyFilters(newDateRange: range);
-                          },
-                        );
-                      },
-                      isLoading: false,
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                if (selectedSite != null)
-                  ZoneSectionWidget(
-                    orgId: selectedOrg.id,
-                    selectedSite: selectedSite,
-                    zoneStream: _getZoneStream(selectedOrg.id, selectedSite.id),
-                    selectedZoneIds: _selectedZoneIds,
-                    selectedReadings: _selectedReadings,
-                    selectedAggregation: _selectedAggregation,
-                    onApplyFilters: _applyFilters,
-                    onZoneSelected: (zoneId, selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedZoneIds.add(zoneId);
-                        } else {
-                          _selectedZoneIds.remove(zoneId);
-                        }
-                      });
+              return SiteSelectorWidget(
+                orgId: selectedOrg.id,
+                sites: sites,
+                selectedSite: _selectedSite,
+                dateRange: _dateRange,
+                onSiteChanged: (site) {
+                  setState(() {
+                    _selectedSite = site;
+                    _selectedZoneIds.clear();
+                    _selectedReadings.clear();
+                  });
+                },
+                onDateRangePressed: () {
+                  showDateRangePickerDialog(
+                    context,
+                    initialRange: _dateRange,
+                    onApplied: (range) {
+                      _applyFilters(newDateRange: range);
                     },
-                    onReadingSelected: (reading, selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedReadings.add(reading);
-                        } else {
-                          _selectedReadings.remove(reading);
-                        }
-                      });
-                    },
-                    onAggregationChanged: (agg) {
-                      setState(() {
-                        _selectedAggregation = agg;
-                      });
-                    },
-                    onZonesLoaded: _syncSelections,
-                    availableReadings: _availableReadings,
-                    futureResponse: _futureResponse,
-                    errorMessage: _errorMessage,
-                    isWideScreen: isWideScreen,
-                    dateRange: _dateRange,
-                  )
-                else
-                  const NoSitePlaceholderWidget(),
-              ],
-            ),
+                  );
+                },
+                isLoading: false,
+              );
+            },
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          if (selectedSite != null)
+            ZoneSectionWidget(
+              orgId: selectedOrg.id,
+              selectedSite: selectedSite,
+              zoneStream: _getZoneStream(selectedOrg.id, selectedSite.id),
+              selectedZoneIds: _selectedZoneIds,
+              selectedReadings: _selectedReadings,
+              selectedAggregation: _selectedAggregation,
+              onApplyFilters: _applyFilters,
+              onZoneSelected: (zoneId, selected) {
+                setState(() {
+                  if (selected) {
+                    _selectedZoneIds.add(zoneId);
+                  } else {
+                    _selectedZoneIds.remove(zoneId);
+                  }
+                });
+              },
+              onReadingSelected: (reading, selected) {
+                setState(() {
+                  if (selected) {
+                    _selectedReadings.add(reading);
+                  } else {
+                    _selectedReadings.remove(reading);
+                  }
+                });
+              },
+              onAggregationChanged: (agg) {
+                setState(() {
+                  _selectedAggregation = agg;
+                });
+              },
+              onZonesLoaded: _syncSelections,
+              availableReadings: _availableReadings,
+              futureResponse: _futureResponse,
+              errorMessage: _errorMessage,
+              isDesktop: viewportInfo.isDesktop,
+              isMobileLandscape: viewportInfo.isMobileLandscape,
+              dateRange: _dateRange,
+            )
+          else
+            const NoSitePlaceholderWidget(),
+        ],
+      ),
     );
   }
 

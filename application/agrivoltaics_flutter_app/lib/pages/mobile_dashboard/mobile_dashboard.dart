@@ -1,8 +1,10 @@
+import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:agrivoltaics_flutter_app/pages/mobile_dashboard/mobile_sensor_devices.dart';
 import 'package:agrivoltaics_flutter_app/pages/mobile_dashboard/capture_detail.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import '../../responsive/app_viewport.dart';
 
 
 class MobileDashboardPage extends StatefulWidget {
@@ -96,10 +98,8 @@ class MobileDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isWideScreen = MediaQuery.of(context).size.width >= 1280 || screenHeight < screenWidth;
+    final viewportInfo = AppViewportInfo.fromMediaQuery(MediaQuery.of(context));
+    final isDesktop = viewportInfo.isDesktop;
 
     final stream = showAllCaptures
         ? FirebaseFirestore.instance
@@ -112,10 +112,11 @@ class MobileDashboard extends StatelessWidget {
             .orderBy('timestamp', descending: true)
             .snapshots();
 
-    if (isWideScreen) {
+    if (isDesktop) {
       return Row(
         children: [
           Expanded(
+            flex: 5,
             child: StreamBuilder<QuerySnapshot>(
               stream: stream,
               builder: (context, snapshot) {
@@ -222,12 +223,12 @@ class MobileDashboard extends StatelessWidget {
                                       ? 'Disease Detected'
                                       : 'No Disease Detected',
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppColors.textPrimary,
                                     fontSize: 14,
                                   ),
                                 ),
                                 backgroundColor:
-                                    isDisease ? Colors.red : Colors.green,
+                                    isDisease ? AppColors.error : AppColors.success,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                   side: BorderSide.none,
@@ -292,40 +293,213 @@ class MobileDashboard extends StatelessWidget {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 24, top: 12),
-            child: Container(
-              width: 419,
-              padding: const EdgeInsets.all(12),
-              color: Colors.grey[100],
-              child: const PiControlPanel(
-                // piOnline: true, // TODO: replace with actual ping logic
-                // onStartCapture: () {
-                //   // TODO: add capture trigger logic
-                // },
+          Expanded(
+            flex: 3,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 24, 24, 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: const PiControlPanel(),
+                ),
               ),
             ),
           ),
         ],
       );
     }
-    
-    if (!isWideScreen){
-      return Column(
+
+    if (viewportInfo.isMobileLandscape) {
+      return Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.only(right: 24, top: 12),
-            child: Container(
-              width: 419,
-              padding: const EdgeInsets.all(12),
-              color: Colors.grey[100],
-              child: const PiControlPanel(
-                // piOnline: true, // TODO: replace with actual ping logic
-                // onStartCapture: () {
-                //   // TODO: add capture trigger logic
-                // },
+          SizedBox(
+            width: 310,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16, top: 12, bottom: 12),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                color: AppColors.scaffoldBackground,
+                child: const PiControlPanel(),
               ),
             ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: stream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No captures found'));
+                }
+
+                final captures = snapshot.data!.docs;
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  child: ListView.builder(
+                    itemCount: captures.length,
+                    itemBuilder: (context, index) {
+                      final doc = captures[index];
+                      final data = doc.data() as Map<String, dynamic>;
+
+                      final timestamp = DateTime.fromMillisecondsSinceEpoch(
+                        data['timestamp'].seconds * 1000,
+                      ).toLocal();
+
+                      final dateStr =
+                          "${timestamp.month}/${timestamp.day}/${timestamp.year}";
+                      final timeStr =
+                          "${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
+
+                      final urlData = data['url'];
+                      final imagePaths = urlData == null
+                          ? []
+                          : (urlData is List
+                              ? List<String>.from(urlData)
+                              : [urlData]);
+
+                      final bool isDisease = data['detected_disease'] == true;
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      children: [
+                                        const Icon(Icons.calendar_today, size: 16),
+                                        Text(
+                                          dateStr,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const Icon(Icons.access_time, size: 16),
+                                        Text(
+                                          timeStr,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  ElevatedButton.icon(
+                                    onPressed: () => onCaptureSelected(doc),
+                                    icon: const Icon(Icons.visibility),
+                                    label: const Text('View'),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 10,
+                                      ),
+                                      textStyle: const TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Chip(
+                                label: Text(
+                                  isDisease
+                                      ? 'Disease Detected'
+                                      : 'No Disease Detected',
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                backgroundColor:
+                                    isDisease ? AppColors.error : AppColors.success,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  side: BorderSide.none,
+                                ),
+                                side: BorderSide.none,
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                height: 90,
+                                child: imagePaths.isEmpty
+                                    ? const Center(child: Text('No images'))
+                                    : ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: imagePaths.length,
+                                        itemBuilder: (context, imgIndex) {
+                                          final path = imagePaths[imgIndex];
+                                          return Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 10),
+                                            child: FutureBuilder(
+                                              future: FirebaseStorage.instance
+                                                  .ref(path)
+                                                  .getDownloadURL(),
+                                              builder: (context, imgSnapshot) {
+                                                if (!imgSnapshot.hasData) {
+                                                  return const SizedBox(
+                                                    width: 90,
+                                                    child: Center(
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                                return ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  child: Image.network(
+                                                    imgSnapshot.data!,
+                                                    width: 90,
+                                                    height: 90,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        },
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (viewportInfo.isMobilePortrait) {
+      return Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: PiControlPanel(),
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
@@ -434,12 +608,12 @@ class MobileDashboard extends StatelessWidget {
                                       ? 'Disease Detected'
                                       : 'No Disease Detected',
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppColors.textPrimary,
                                     fontSize: 14,
                                   ),
                                 ),
                                 backgroundColor:
-                                    isDisease ? Colors.red : Colors.green,
+                                    isDisease ? AppColors.error : AppColors.success,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                   side: BorderSide.none,
@@ -511,3 +685,4 @@ class MobileDashboard extends StatelessWidget {
     return const Placeholder();
   }
 }
+
