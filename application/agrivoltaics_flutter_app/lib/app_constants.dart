@@ -1,5 +1,6 @@
 abstract class AppConstants {
   static const double desktopMinWidth = 1280;
+  
 
   static const String influxdbUrl = String.fromEnvironment(
     'INFLUXDB_URL',
@@ -41,7 +42,13 @@ abstract class AppConstants {
     defaultValue:
         'https://us-central1-agrivoltaics-flutter-firebase.cloudfunctions.net/getHistoricalSeries'
   );
-  
+
+  static const String frostPredictionSeriesEndpoint = String.fromEnvironment(
+    'FROST_PREDICTION_SERIES_ENDPOINT',
+    defaultValue:
+        'https://us-central1-agrivoltaics-flutter-firebase.cloudfunctions.net/getFrostPredictionSeries'
+  );
+
   static const int numSites = 1;
   static const int numZones = 4;
 
