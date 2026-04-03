@@ -1,15 +1,15 @@
 const functions = require('firebase-functions');
 const {bigquery, DATASET_ID, TABLE_ID} = require('../lib/firebase');
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MS_PER_DAY = 24 * 60 * 60 * 1000; // Get the number of milliseconds in a day
 
 const pickInterval = (startMillis, endMillis) => {
   const range = Math.max(0, endMillis - startMillis);
 
-  if (range <= MS_PER_DAY) return 'MINUTE_15';
+  if (range <= 3 * MS_PER_DAY) return 'MINUTE_30';
   if (range <= 7 * MS_PER_DAY) return 'HOUR';
-  if (range <= 14 * MS_PER_DAY) return 'DAY';
-  if (range <= 90 * MS_PER_DAY) return 'WEEK';
+  if (range <= 30 * MS_PER_DAY) return 'DAY';
+  if (range <= 360 * MS_PER_DAY) return 'WEEK';
   return 'MONTH';
 };
 
@@ -106,16 +106,21 @@ const getHistoricalSeries = functions.https.onRequest(async (req, res) => {
     }
 
     const requestedInterval = typeof interval === 'string' ? interval.toUpperCase() : null;
-    const allowedIntervals = new Set(['MINUTE_15', 'HOUR', 'DAY', 'WEEK', 'MONTH']);
+    const allowedIntervals = new Set(['MINUTE_15', 'MINUTE_30', 'HOUR', 'DAY', 'WEEK', 'MONTH']);
     const resolvedInterval = allowedIntervals.has(requestedInterval) ?
       requestedInterval :
       pickInterval(startDate.getTime(), endDate.getTime());
 
-    // Build the bucket expression — MINUTE_15 requires manual 15-min floor since
+    // Build the bucket expression — sub-hour intervals require manual flooring since
     // TIMESTAMP_TRUNC does not support sub-hour intervals.
-    const bucketExpr = resolvedInterval === 'MINUTE_15' ?
-      'TIMESTAMP_SECONDS(DIV(UNIX_SECONDS(timestamp), 900) * 900)' :
-      `TIMESTAMP_TRUNC(timestamp, ${resolvedInterval}, @timezone)`;
+    let bucketExpr;
+    if (resolvedInterval === 'MINUTE_15') {
+      bucketExpr = 'TIMESTAMP_SECONDS(DIV(UNIX_SECONDS(timestamp), 900) * 900)';
+    } else if (resolvedInterval === 'MINUTE_30') {
+      bucketExpr = 'TIMESTAMP_SECONDS(DIV(UNIX_SECONDS(timestamp), 1800) * 1800)';
+    } else {
+      bucketExpr = `TIMESTAMP_TRUNC(timestamp, ${resolvedInterval}, @timezone)`;
+    }
 
     const sql = `
       SELECT
