@@ -34,6 +34,15 @@ class FilterCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final readingsService = ReadingsService();
+    final sortedReadings = availableReadings.toList()
+      ..sort(
+        (a, b) => readingsService
+            .getReadingName(a)
+            .toLowerCase()
+            .compareTo(readingsService.getReadingName(b).toLowerCase()),
+      );
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -87,8 +96,7 @@ class FilterCardWidget extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: availableReadings.map((reading) {
-                final readingsService = ReadingsService();
+              children: sortedReadings.map((reading) {
                 final isSelected = selectedReadings.contains(reading);
                 return FilterChip(
                   label: Text(readingsService.getReadingName(reading)),

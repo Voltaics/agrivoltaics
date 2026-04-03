@@ -64,7 +64,7 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
 
   final Set<String> _selectedZoneIds = <String>{};
   final Set<String> _selectedReadings = <String>{};
-  String _selectedAggregation = 'max';
+  String _selectedAggregation = 'avg';
 
   Future<HistoricalResponse>? _futureResponse;
   String? _errorMessage;
