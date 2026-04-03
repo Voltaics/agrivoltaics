@@ -26,6 +26,25 @@ class ResultsSectionWidget extends StatelessWidget {
     required this.dateRange,
   });
 
+  String _formatIntervalLabel(String interval) {
+    switch (interval.toUpperCase()) {
+      case 'MINUTE_15':
+        return '15 minutes';
+      case 'MINUTE_30':
+        return '30 minutes';
+      case 'HOUR':
+        return '1 hour';
+      case 'DAY':
+        return '1 day';
+      case 'WEEK':
+        return '1 week';
+      case 'MONTH':
+        return '1 month';
+      default:
+        return interval;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (selectedZoneIds.isEmpty || selectedReadings.isEmpty) {
@@ -100,7 +119,7 @@ class ResultsSectionWidget extends StatelessWidget {
                 children: [
                   const Icon(Icons.timeline, size: 18),
                   const SizedBox(width: 8),
-                  Text('Interval: ${response.interval}'),
+                  Text('Interval: ${_formatIntervalLabel(response.interval)}'),
                 ],
               ),
             ),

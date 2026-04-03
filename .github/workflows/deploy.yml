@@ -13,6 +13,24 @@ env:
   RUN_REGION: us-east4
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      functions_changed: ${{ steps.filter.outputs.functions }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Detect function-related changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            functions:
+              - 'functions/**'
+              - 'firebase.json'
+              - '.firebaserc'
+
   #
   # Flutter web application
   #
@@ -76,3 +94,30 @@ jobs:
           service: vinovoltaics-webapp
           image: ${{ env.AR_BASE }}/vinovoltaics-webapp-image:latest
           region: ${{ env.RUN_REGION }}
+
+  functions-deploy:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.functions_changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: "read"
+      id-token: "write"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Deploy Cloud Functions
+        run: firebase deploy --only functions --project ${{ env.GCP_PROJECT_ID }} --non-interactive
