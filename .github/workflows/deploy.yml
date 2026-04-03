@@ -119,5 +119,8 @@ jobs:
       - name: Install Firebase CLI
         run: npm install --global firebase-tools
 
+      - name: Install functions dependencies
+        run: npm ci --prefix functions
+
       - name: Deploy Cloud Functions
         run: firebase deploy --only functions --project ${{ env.GCP_PROJECT_ID }} --non-interactive
