@@ -162,13 +162,7 @@ const getFrostPredictionSeries = functions.https.onRequest(async (req, res) => {
         temperature,
         humidity,
         soilTemperature,
-        COALESCE(
-          LAST_VALUE(pred_raw IGNORE NULLS) OVER (
-            ORDER BY bucket_ts
-            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-          ),
-          0
-        ) AS predictedChance
+        pred_raw AS predictedChance
       FROM joined
       ORDER BY timestamp
     `;
@@ -193,7 +187,7 @@ const getFrostPredictionSeries = functions.https.onRequest(async (req, res) => {
       temperature: row.temperature == null ? null : Number(row.temperature),
       humidity: row.humidity == null ? null : Number(row.humidity),
       soilTemperature: row.soilTemperature == null ? null : Number(row.soilTemperature),
-      predictedChance: row.predictedChance == null ? 0 : Number(row.predictedChance),
+      predictedChance: row.predictedChance == null ? null : Number(row.predictedChance),
     }));
 
     return res.status(200).json({
