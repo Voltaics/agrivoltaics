@@ -264,7 +264,7 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'View temperature, humidity, soil temperature, and forward-filled frost prediction chance for a selected zone.',
+                  'View temperature, humidity, soil temperature, and frost prediction chance for a selected zone.',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -534,7 +534,7 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                         yValueMapper: (p, _) => p.soilTemperature!,
                       ),
                       LineSeries<FrostTimelinePoint, DateTime>(
-                        name: 'Predicted Chance (%)',
+                        name: 'Frost Chance (%)',
                         dataSource: response.points,
                         xValueMapper: (p, _) => p.time,
                         yValueMapper: (p, _) => p.predictedChance,
