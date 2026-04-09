@@ -126,8 +126,10 @@ class _LoginPageState extends State<LoginPage> {
                         flex: 6,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 32),
-                          child: Center(
-                            child: _buildHeroSection(isShortHeight: isShortHeight),
+                          child: SingleChildScrollView(
+                            child: Center(
+                              child: _buildHeroSection(isShortHeight: isShortHeight),
+                            ),
                           ),
                         ),
                       ),
@@ -155,14 +157,15 @@ class _LoginPageState extends State<LoginPage> {
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                          child: Center(
-                            child: _buildHeroSection(isShortHeight: isShortHeight),
+                          child: SingleChildScrollView(
+                            child: Center(
+                              child: _buildHeroSection(isShortHeight: isShortHeight),
+                            ),
                           ),
                         ),
                       ),
                       _buildSignInCard(
                         isShortHeight: isShortHeight,
-                        minHeight: isShortHeight ? 300 : 340,
                       ),
                     ],
                   );
