@@ -59,7 +59,7 @@
 | Team Member | Primary Responsibilities | Hours/Week | Total Hours |
 |-------------|-------------------------|------------|-------------|
 | Huy Nguyen | Integration, Testing | 2.5 | 40 |
-| Eli Rindler | UI/UX Refinement | 2.5 | 40 |
+| Eli Rindler | UI/UX Refinement | 3 | 48 |
 | Dylan Serger | API Development, DevOps | 2.5 | 40 |
 | Amogh Silaparasetti | Field Testing, Deployment | 2.5 | 40 |
 | Ayushi Sharma | Model Training, Optimization | 2.5 | 40 |
