@@ -254,24 +254,24 @@ class HomePage extends State<HomeState> {
               selectedItemColor: Theme.of(context).colorScheme.primary,
               unselectedItemColor: AppColors.textMuted,
               onTap: _selectPage,
-              items: const [
+              items: [
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.radar),
+                  icon: Icon(MdiIcons.radioTower),
                   label: 'Stationary',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.show_chart),
+                  icon: Icon(MdiIcons.chartLine),
                   label: 'History',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.camera_alt),
+                  icon: Icon(MdiIcons.quadcopter),
                   label: 'Mobile',
                 ),
-                BottomNavigationBarItem(
+                const BottomNavigationBarItem(
                   icon: Icon(Icons.analytics),
                   label: 'Analytics',
                 ),
-                BottomNavigationBarItem(
+                const BottomNavigationBarItem(
                   icon: Icon(Icons.notifications_active),
                   label: 'Alerts',
                 ),
