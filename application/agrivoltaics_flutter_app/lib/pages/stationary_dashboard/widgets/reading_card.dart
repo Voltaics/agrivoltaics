@@ -1,62 +1,49 @@
 import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
-import '../../../models/sensor.dart';
-import '../../../services/sensor_service.dart';
 import '../../../services/formatters_service.dart';
 
 /// Widget for displaying a single sensor reading card
 class ReadingCard extends StatelessWidget {
+  static const Duration _staleThreshold = Duration(minutes: 30);
+
   final String orgId;
   final String siteId;
   final String zoneId;
   final String readingName;
-  final String sensorId;
+  final double? value;
+  final String? unit;
+  final DateTime? readingLastUpdated;
+  final DateTime zoneDataDateTime;
+  final bool isLoading;
+  final String? error;
 
   const ReadingCard({
     required this.orgId,
     required this.siteId,
     required this.zoneId,
     required this.readingName,
-    required this.sensorId,
+    required this.value,
+    required this.unit,
+    required this.readingLastUpdated,
+    required this.zoneDataDateTime,
+    this.isLoading = false,
+    this.error,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    final sensorService = SensorService();
     final formattersService = FormattersService();
 
-    return StreamBuilder<Sensor?>(
-      stream: sensorService.getSensors(orgId, siteId, zoneId).map((sensors) {
-        try {
-          return sensors.firstWhere((s) => s.id == sensorId);
-        } catch (e) {
-          return null;
-        }
-      }),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildReadingCardUI(readingName, null, null, formattersService, isLoading: true);
-        }
-
-        final sensor = snapshot.data;
-        if (sensor == null) {
-          return _buildReadingCardUI(readingName, null, null, formattersService, error: 'Sensor not found');
-        }
-
-        // Get the field from the sensor that matches this reading name
-        final field = sensor.fields[readingName];
-        if (field == null) {
-          return _buildReadingCardUI(readingName, null, null, formattersService, error: 'Reading not available');
-        }
-
-        return _buildReadingCardUI(
-          readingName,
-          field.currentValue,
-          field.unit,
-          formattersService,
-        );
-      },
+    return _buildReadingCardUI(
+      readingName,
+      value,
+      unit,
+      formattersService,
+      readingLastUpdated: readingLastUpdated,
+      zoneDataDateTime: zoneDataDateTime,
+      isLoading: isLoading,
+      error: error,
     );
   }
 
@@ -66,14 +53,22 @@ class ReadingCard extends StatelessWidget {
     double? value,
     String? unit,
     FormattersService formattersService, {
+    DateTime? readingLastUpdated,
+    DateTime? zoneDataDateTime,
     bool isLoading = false,
     String? error,
   }) {
+    final bool isStale = !isLoading &&
+        error == null &&
+        zoneDataDateTime != null &&
+        (readingLastUpdated == null ||
+            zoneDataDateTime.difference(readingLastUpdated) > _staleThreshold);
+
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: AppColors.scaffoldBackground),
+        side: const BorderSide(color: AppColors.scaffoldBackground),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -108,6 +103,19 @@ class ReadingCard extends StatelessWidget {
             else if (value != null)
               Row(
                 children: [
+                  if (isStale) ...[
+                    Tooltip(
+                      message: readingLastUpdated == null
+                          ? 'Reading out of sync: this reading has no update timestamp.'
+                          : 'Reading out of sync: last updated ${formattersService.formatDateAndTime(readingLastUpdated)}.',
+                      child: const Icon(
+                        Icons.warning_amber_rounded,
+                        size: 18,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Text(
                     value.toStringAsFixed(1),
                     style: const TextStyle(
@@ -129,13 +137,30 @@ class ReadingCard extends StatelessWidget {
                 ],
               )
             else
-              Text(
-                'No data',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textMuted,
-                  fontStyle: FontStyle.italic,
-                ),
+              Row(
+                children: [
+                  if (isStale) ...[
+                    Tooltip(
+                      message: readingLastUpdated == null
+                          ? 'Reading out of sync: this reading has no update timestamp.'
+                          : 'Reading out of sync: last updated ${formattersService.formatDateAndTime(readingLastUpdated)}.',
+                      child: const Icon(
+                        Icons.warning_amber_rounded,
+                        size: 18,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  const Text(
+                    'No data',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textMuted,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ),
           ],
         ),
