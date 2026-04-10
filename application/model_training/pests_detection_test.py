@@ -13,7 +13,7 @@ from collections import Counter
 # --- CONFIGURATION ---
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MODEL_PATH = "pest_presence_resnet.pth"
-TEST_DIR = "./pests_presence/test"
+TEST_DIR = "./pests_presence/valid"
 
 # Exact mapping from your training script
 CLASS_NAMES = [
