@@ -154,10 +154,15 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
       _selectedUserIds.addAll(rule.notifyUserIds);
     }
 
-    // Good default spring season for new alert rules
-    if (!_isEdit) {
+    // Good default season windows for new alert rules
+    if (!_isEdit && _ruleType == AlertRuleType.frostWarning) {
       _dateStartCtrl.text = '04/01';
       _dateEndCtrl.text = '05/31';
+    } else if (!_isEdit &&
+        (_ruleType == AlertRuleType.moldRisk ||
+            _ruleType == AlertRuleType.blackRotRisk)) {
+      _dateStartCtrl.text = '06/01';
+      _dateEndCtrl.text = '08/31';
     }
 
     _loadMembers();
@@ -452,12 +457,15 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                                       }
                                     }
 
-                                    if (_ruleType == AlertRuleType.frostWarning ||
-                                        _ruleType == AlertRuleType.moldRisk ||
-                                        _ruleType == AlertRuleType.blackRotRisk) {
+                                    if (_ruleType == AlertRuleType.frostWarning) {
                                       _useTimeWindow = true;
                                       _dateStartCtrl.text = '04/01';
                                       _dateEndCtrl.text = '05/31';
+                                    } else if (_ruleType == AlertRuleType.moldRisk ||
+                                        _ruleType == AlertRuleType.blackRotRisk) {
+                                      _useTimeWindow = true;
+                                      _dateStartCtrl.text = '06/01';
+                                      _dateEndCtrl.text = '08/31';
                                     }
                                   });
                                 },
@@ -774,7 +782,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           onChanged: _saving ? null : (v) => setState(() => _useTimeWindow = v),
                           title: const Text('Active only during season window'),
                           subtitle: const Text(
-                            'Recommended for frost: 04/01–05/31',
+                            'Recommended for frost: 04/01\u201305/31',
                             style: TextStyle(fontSize: 12),
                           ),
                           contentPadding: EdgeInsets.zero,

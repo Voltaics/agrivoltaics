@@ -65,7 +65,7 @@ class _AlertsPageState extends State<AlertsPage> {
       final tempMin = config['tempMinF'] ?? 68.0;
       final tempMax = config['tempMaxF'] ?? 86.0;
       final hours = config['durationHours'] ?? 6.0;
-      return 'Mold: RH ≥ $humidity% for $hours hr, temp $tempMin–$tempMax°F';
+      return 'Mold: RH ≥ $humidity% for $hours hr, temp $tempMin\u2013$tempMax°F';
     }
 
     if (rule.ruleType == AlertRuleType.blackRotRisk) {
@@ -73,7 +73,7 @@ class _AlertsPageState extends State<AlertsPage> {
       final tempMin = config['tempMinF'] ?? 70.0;
       final tempMax = config['tempMaxF'] ?? 85.0;
       final hours = config['followupHours'] ?? 48.0;
-      return 'Black rot: RH ≥ $humidity%, temp $tempMin–$tempMax°F, humid follow-up $hours hr';
+      return 'Black rot: RH ≥ $humidity%, temp $tempMin\u2013$tempMax°F, humid follow-up $hours hr';
     }
 
     final fieldName = _readingsService.getReadingName(rule.fieldAlias);
@@ -108,13 +108,13 @@ class _AlertsPageState extends State<AlertsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // â”€â”€ Header bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        //  Header bar 
         _buildHeader(context, org?.id),
 
-        // â”€â”€ FCM registration banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        //  FCM registration banner 
         if (_fcmChecked && !_fcmGranted) _buildFcmBanner(),
 
-        // â”€â”€ Alert rules list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        //  Alert rules list 
         Expanded(
           child: org == null
               ? _buildNoOrgState()
@@ -315,7 +315,7 @@ class _AlertsPageState extends State<AlertsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // â”€â”€ Title row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //  Title row 
             Row(
               children: [
                 Expanded(
@@ -352,7 +352,6 @@ class _AlertsPageState extends State<AlertsPage> {
             ),
             const SizedBox(height: 8),
 
-            // â”€â”€ Condition summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Wrap(
               spacing: 8,
               runSpacing: 4,
@@ -362,7 +361,7 @@ class _AlertsPageState extends State<AlertsPage> {
                     rule.activeRangeEnd != null)
                   _chip(
                     Icons.schedule,
-                    '${rule.activeRangeStart} â€“ ${rule.activeRangeEnd}',
+                    '${rule.activeRangeStart} \u2013 ${rule.activeRangeEnd}',
                   ),
                 _chip(
                   Icons.people_outline,
@@ -373,7 +372,7 @@ class _AlertsPageState extends State<AlertsPage> {
             ),
             const SizedBox(height: 8),
 
-            // â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //  Actions 
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
