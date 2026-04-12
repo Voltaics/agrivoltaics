@@ -1,11 +1,10 @@
 import 'package:agrivoltaics_flutter_app/app_colors.dart';
-import 'package:agrivoltaics_flutter_app/app_constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'widgets/app_overflow_menu_button.dart';
 
 import 'notifications.dart';
 import '../stationary_dashboard/stationary_dashboard.dart';
@@ -15,7 +14,6 @@ import '../alerts/alerts_page.dart';
 import '../analytics/analytics_dashboard.dart';
 import 'widgets/organization_menu_sheet.dart';
 import 'widgets/organization_selector.dart';
-import 'widgets/sign_out_dialog.dart';
 import '../../app_state.dart';
 import '../../services/fcm_service.dart';
 import '../../responsive/app_viewport.dart';
@@ -55,68 +53,6 @@ class HomePage extends State<HomeState> {
     setState(() {
       _selectedIndex = index;
     });
-  }
-
-  Future<void> _openHelpPdf() async {
-    final uri = Uri.parse(AppConstants.helpPdfUrl);
-
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Unable to open help PDF.'),
-        ),
-      );
-    }
-  }
-
-  Future<void> _handleOverflowMenuSelection(String value) async {
-    switch (value) {
-      case 'help':
-        await _openHelpPdf();
-        break;
-      case 'logout':
-        if (!mounted) return;
-        showDialog(
-          context: context,
-          builder: (BuildContext context) => const SignOutDialog(),
-        );
-        break;
-    }
-  }
-
-  Widget _buildOverflowMenuButton({
-    Color iconColor = AppColors.textPrimary,
-    VisualDensity? visualDensity,
-  }) {
-    return PopupMenuButton<String>(
-      tooltip: 'Menu',
-      icon: Icon(Icons.menu, color: iconColor),
-      onSelected: _handleOverflowMenuSelection,
-      itemBuilder: (context) => const [
-        PopupMenuItem<String>(
-          value: 'help',
-          child: Row(
-            children: [
-              Icon(Icons.help_outline),
-              SizedBox(width: 12),
-              Text('Help'),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'logout',
-          child: Row(
-            children: [
-              Icon(Icons.logout),
-              SizedBox(width: 12),
-              Text('Logout'),
-            ],
-          ),
-        ),
-      ],
-    );
   }
 
   void _showOrganizationMenu(BuildContext context) {
@@ -268,9 +204,9 @@ class HomePage extends State<HomeState> {
                   ),
 
                   // Overflow menu at the bottom
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: _buildOverflowMenuButton(
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: AppOverflowMenuButton(
                       iconColor: AppColors.textPrimary,
                     ),
                   ),
@@ -363,7 +299,7 @@ class HomePage extends State<HomeState> {
                 child: _buildMobileOrganizationSelector(context),
               ),
               const NotificationsButton(iconColor: AppColors.textPrimary),
-              _buildOverflowMenuButton(
+              const AppOverflowMenuButton(
                 iconColor: AppColors.textPrimary,
               ),
             ],
@@ -401,11 +337,12 @@ class HomePage extends State<HomeState> {
                   ),
                 ),
                 const NotificationsButton(iconColor: AppColors.textPrimary),
-                _buildOverflowMenuButton(
+                AppOverflowMenuButton(
                   iconColor: AppColors.textPrimary,
-                  visualDensity: compactRail
-                      ? VisualDensity.compact
-                      : VisualDensity.standard,
+                  padding: compactRail
+                      ? const EdgeInsets.all(4)
+                      : const EdgeInsets.all(8),
+                  iconSize: compactRail ? 22 : null,
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
