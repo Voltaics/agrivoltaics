@@ -27,6 +27,7 @@ class _AlertsPageState extends State<AlertsPage> {
   final AlertService _alertService = AlertService();
   final FcmService _fcmService = FcmService();
   final ReadingsService _readingsService = ReadingsService();
+  
 
   bool _fcmGranted = false;
   bool _fcmChecked = false;
@@ -48,6 +49,23 @@ class _AlertsPageState extends State<AlertsPage> {
     }
   }
 
+  String _buildConditionLabel(AlertRule rule) {
+    if (rule.ruleType == AlertRuleType.frostWarning) {
+      final frost = rule.frostConfig ?? {};
+      final drop = frost['tempDropRateFPerHour'] ?? 2.0;
+      final humidity = frost['humidityMin'] ?? 90.0;
+      final air = frost['airTempMaxF'] ?? 39.0;
+      final soil = frost['soilTempMaxF'] ?? 45.0;
+      return 'Frost warning: drop > $drop°F/hr, RH ≥ $humidity%, air ≤ $air°F, soil ≤ $soil°F';
+    }
+
+    final fieldName = _readingsService.getReadingName(rule.fieldAlias);
+    final operatorLabel = rule.operator?.label ?? '?';
+    final thresholdLabel = rule.threshold?.toString() ?? '?';
+
+    return '$fieldName $operatorLabel $thresholdLabel';
+  }
+  
   Future<void> _registerFcm() async {
     final granted = await _fcmService.requestPermissionAndSaveToken();
     if (mounted) {
@@ -272,7 +290,7 @@ class _AlertsPageState extends State<AlertsPage> {
 
   Widget _buildRuleCard(
       BuildContext context, String orgId, AlertRule rule) {
-    final fieldName = _readingsService.getReadingName(rule.fieldAlias);
+    final conditionLabel = _buildConditionLabel(rule);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -323,10 +341,7 @@ class _AlertsPageState extends State<AlertsPage> {
               spacing: 8,
               runSpacing: 4,
               children: [
-                _chip(
-                  Icons.sensors,
-                  '$fieldName ${rule.operator.label} ${rule.threshold}',
-                ),
+                _chip(Icons.rule, conditionLabel),
                 if (rule.activeRangeStart != null &&
                     rule.activeRangeEnd != null)
                   _chip(

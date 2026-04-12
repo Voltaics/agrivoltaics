@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
 typedef OnDateRangeApplied = void Function(PickerDateRange range);
+final now = DateTime.now();
+final minAllowedDate = DateTime(now.year, now.month - 3, now.day);
 
 void showDateRangePickerDialog(
   BuildContext context, {
@@ -47,7 +49,8 @@ void showDateRangePickerDialog(
                 child: SfDateRangePicker(
                   selectionMode: DateRangePickerSelectionMode.range,
                   initialSelectedRange: initialRange,
-                  maxDate: DateTime.now(),
+                  minDate: minAllowedDate,
+                  maxDate: now,
                   onSelectionChanged: (args) {
                     if (args.value is PickerDateRange) {
                       tempRange = args.value;
@@ -68,6 +71,9 @@ void showDateRangePickerDialog(
                       final today = DateTime(now.year, now.month, now.day);
 
                       final normalizedStart = DateTime(start.year, start.month, start.day);
+                      final clampedStart = normalizedStart.isBefore(minAllowedDate)
+                          ? minAllowedDate
+                          : normalizedStart;
 
                       final endDate = DateTime(end.year, end.month, end.day);
                       final DateTime normalizedEnd;
@@ -78,7 +84,7 @@ void showDateRangePickerDialog(
                         normalizedEnd = DateTime(end.year, end.month, end.day, 23, 59, 59);
                       }
 
-                      final normalizedRange = PickerDateRange(normalizedStart, normalizedEnd);
+                      final normalizedRange = PickerDateRange(clampedStart, normalizedEnd);
                       onApplied(normalizedRange);
                     } else {
                       onApplied(tempRange);
