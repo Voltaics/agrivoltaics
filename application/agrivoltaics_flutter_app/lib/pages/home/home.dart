@@ -38,11 +38,11 @@ class HomePage extends State<HomeState> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    StationaryDashboardPage(),  // Stationary Sensors
-    HistoricalDashboardPage(),        // Historical Trends
-    MobileDashboardPage(),            // Mobile Sensors
-    AnalyticsDashboardPage(),         // Analytics
-    AlertsPage(),                     // Alert Rules
+    StationaryDashboardPage(key: PageStorageKey('stationary-dashboard')),
+    HistoricalDashboardPage(key: PageStorageKey('historical-dashboard')),
+    MobileDashboardPage(key: PageStorageKey('mobile-dashboard')),
+    AnalyticsDashboardPage(key: PageStorageKey('analytics-dashboard')),
+    AlertsPage(key: PageStorageKey('alerts-page')),
   ];
 
   // FCM token status for in-app banner
@@ -53,6 +53,13 @@ class HomePage extends State<HomeState> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  Widget _buildCurrentPage() {
+    return IndexedStack(
+      index: _selectedIndex,
+      children: _pages,
+    );
   }
 
   void _showOrganizationMenu(BuildContext context) {
@@ -220,7 +227,7 @@ class HomePage extends State<HomeState> {
                     children: [
                       _buildMobileTopBar(context),
                       Expanded(
-                        child: _pages[_selectedIndex],
+                        child: _buildCurrentPage(),
                       ),
                     ],
                   )
@@ -229,11 +236,11 @@ class HomePage extends State<HomeState> {
                         children: [
                           _buildMobileLandscapeSidebar(context),
                           Expanded(
-                            child: _pages[_selectedIndex],
+                            child: _buildCurrentPage(),
                           ),
                         ],
                       )
-                    : _pages[_selectedIndex],
+                    : _buildCurrentPage(),
           ),
         ],
             ),
