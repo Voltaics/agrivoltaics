@@ -1,0 +1,36 @@
+{
+  "architectures": [
+    "ViTForImageClassification"
+  ],
+  "attention_probs_dropout_prob": 0.0,
+  "dtype": "float32",
+  "encoder_stride": 16,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.0,
+  "hidden_size": 768,
+  "id2label": {
+    "0": "Grape___Black_rot",
+    "1": "Grape___Esca_(Black_Measles)",
+    "2": "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+    "3": "Grape___healthy"
+  },
+  "image_size": 224,
+  "initializer_range": 0.02,
+  "intermediate_size": 3072,
+  "label2id": {
+    "Grape___Black_rot": 0,
+    "Grape___Esca_(Black_Measles)": 1,
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": 2,
+    "Grape___healthy": 3
+  },
+  "layer_norm_eps": 1e-12,
+  "model_type": "vit",
+  "num_attention_heads": 12,
+  "num_channels": 3,
+  "num_hidden_layers": 12,
+  "patch_size": 16,
+  "pooler_act": "tanh",
+  "pooler_output_size": 768,
+  "qkv_bias": true,
+  "transformers_version": "4.57.1"
+}
