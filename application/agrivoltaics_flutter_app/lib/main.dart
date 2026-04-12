@@ -63,66 +63,56 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => AppState(),
-      child: MaterialApp(
-        title: 'Vinovoltaics',
-        /*theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey)
-        ),*/
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: const ColorScheme.light(
-            primary:     AppColors.primary,
-            onPrimary:   AppColors.textPrimary,
-            secondary:   AppColors.primary,
-            onSecondary: AppColors.textPrimary,
-            surface:     AppColors.surface,
-            onSurface:   AppColors.textOnLight,
-            error:       AppColors.error,
-            onError:     AppColors.textPrimary,
+    return MaterialApp(
+      title: 'Vinovoltaics',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: const ColorScheme.light(
+          primary:     AppColors.primary,
+          onPrimary:   AppColors.textPrimary,
+          secondary:   AppColors.primary,
+          onSecondary: AppColors.textPrimary,
+          surface:     AppColors.surface,
+          onSurface:   AppColors.textOnLight,
+          error:       AppColors.error,
+          onError:     AppColors.textPrimary,
+        ),
+        scaffoldBackgroundColor: AppColors.scaffoldBackground,
+        cardTheme: CardThemeData(
+          color: AppColors.surface,
+          surfaceTintColor: AppColors.surface,
+          elevation: 4,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          scaffoldBackgroundColor: AppColors.scaffoldBackground,
-          cardTheme: CardThemeData(
-            color: AppColors.surface,
-            surfaceTintColor: AppColors.surface,
-            elevation: 4,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.surface,
+          foregroundColor: AppColors.textOnLight,
+          elevation: 1,
+        ),
+        navigationRailTheme: const NavigationRailThemeData(
+          backgroundColor: AppColors.surface,
+          selectedIconTheme: IconThemeData(color: AppColors.primary),
+          selectedLabelTextStyle: TextStyle(color: AppColors.textPrimary),
+          unselectedIconTheme: IconThemeData(color: AppColors.textPrimary),
+          unselectedLabelTextStyle: TextStyle(color: AppColors.textPrimary),
+          indicatorColor: AppColors.textPrimary,
+          labelType: NavigationRailLabelType.none,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textPrimary,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: AppColors.surface,
-            foregroundColor: AppColors.textOnLight,
-            elevation: 1,
-          ),
-          navigationRailTheme: const NavigationRailThemeData(
-            backgroundColor: AppColors.surface,
-            selectedIconTheme: IconThemeData(color: AppColors.primary),
-            selectedLabelTextStyle: TextStyle(color: AppColors.textPrimary),
-            unselectedIconTheme: IconThemeData(color: AppColors.textPrimary),
-            unselectedLabelTextStyle: TextStyle(color: AppColors.textPrimary),
-            indicatorColor: AppColors.textPrimary, // No oval highlight
-            labelType: NavigationRailLabelType.none,
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textPrimary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
         ),
-
-
-        home: const LoginPage(),
-        // home: const HomePage(),
-        debugShowCheckedModeBanner: false,
       ),
+      home: const LoginPage(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
