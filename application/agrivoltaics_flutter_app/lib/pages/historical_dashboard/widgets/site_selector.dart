@@ -36,6 +36,7 @@ class SiteSelectorWidget extends StatelessWidget {
     final dateFormat = DateFormat('MMM d, yyyy');
     final start = dateRange.startDate ?? DateTime.now();
     final end = dateRange.endDate ?? start;
+    final isDateRangeEnabled = selectedSite != null;
 
     return Card(
       elevation: 2,
@@ -55,7 +56,7 @@ class SiteSelectorWidget extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Text(
                   'No sites available',
-                  style: const TextStyle(color: AppColors.textMuted),
+                  style: TextStyle(color: AppColors.textMuted),
                 ),
               )
             else
@@ -93,9 +94,25 @@ class SiteSelectorWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   ActionChip(
-                    label: Text('${dateFormat.format(start)} - ${dateFormat.format(end)}'),
-                    avatar: const Icon(Icons.date_range, size: 18),
-                    onPressed: onDateRangePressed,
+                    label: Text(
+                      '${dateFormat.format(start)} - ${dateFormat.format(end)}',
+                      style: TextStyle(
+                        color: isDateRangeEnabled
+                            ? null
+                            : Theme.of(context).disabledColor,
+                      ),
+                    ),
+                    avatar: Icon(
+                      Icons.date_range,
+                      size: 18,
+                      color: isDateRangeEnabled
+                          ? null
+                          : Theme.of(context).disabledColor,
+                    ),
+                    backgroundColor: isDateRangeEnabled
+                        ? null
+                        : Theme.of(context).disabledColor.withAlpha((0.12 * 255).toInt()),
+                    onPressed: isDateRangeEnabled ? onDateRangePressed : null,
                   ),
                 ],
               ),

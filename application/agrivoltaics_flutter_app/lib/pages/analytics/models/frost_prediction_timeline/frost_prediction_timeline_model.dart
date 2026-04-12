@@ -45,7 +45,7 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
   @override
   void initState() {
     super.initState();
-    _service = FrostPredictionSeriesService(
+    _service = const FrostPredictionSeriesService(
       endpointUrl: AppConstants.frostPredictionSeriesEndpoint,
     );
 
@@ -387,20 +387,23 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
           ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          onPressed: () {
-            showDateRangePickerDialog(
-              context,
-              initialRange: _dateRange ?? PickerDateRange(DateTime.now(), DateTime.now()),
-              onApplied: (range) {
-                setState(() {
-                  _dateRange = range;
-                  _response = null;
-                  _state = _LoadState.idle;
-                  _error = null;
-                });
-              },
-            );
-          },
+          onPressed: _selectedSite == null
+              ? null
+              : () {
+                  showDateRangePickerDialog(
+                    context,
+                    initialRange:
+                        _dateRange ?? PickerDateRange(DateTime.now(), DateTime.now()),
+                    onApplied: (range) {
+                      setState(() {
+                        _dateRange = range;
+                        _response = null;
+                        _state = _LoadState.idle;
+                        _error = null;
+                      });
+                    },
+                  );
+                },
           icon: const Icon(Icons.date_range),
           label: Text(_formatRange(_dateRange!)),
         ),

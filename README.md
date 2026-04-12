@@ -30,14 +30,25 @@ See below for Abstract
 * [Project Constraints Essay](./assignments/2025-2026/project-constraints-essay/Project-Constraints-Essay.md)
 
 ## PPT Slideshow
-* [Slideshow](./assignments/2025-2026/slideshow/OMID%USA%-%AI%Farming%Drone.pptx)
+* [Expo Slideshow](./assignments/2025-2026/slideshow/Expo%20Presentation.pdf)
+* [Spring Presentation](./assignments/2025-2026/slideshow/OMID%20USA%20-%20Spring%20Presentation.pdf)
+
+## Expo Poster
+* [Poster](./assignments/2025-2026/Expo-Poster.pdf)
 
 ## Self-Assessment Essays
-* [Amogh Silaparasetti](./assignments/2025-2026/biographies/Amogh-Silaparasetti-Self-Assessment.md)
-* [Ayushi Sharma](./assignments/2025-2026/Self-Assessment%20Essays/Ayushi-Sharma-Self-Assessment.md)
-* [Dylan Serger](./assignments/2025-2026/Self-Assessment%20Essays/Dylan-Serger-Self-Assessment.md)
-* [Eli Rindler](./assignments/2025-2026/Self-Assessment%20Essays/Eli-Rindler-Self-Assessment.md)
-* [Huy Nguyen](./assignments/2025-2026/Self-Assessment%20Essays/Huy-Nguyen-Self-Assessment.md)
+### Initial (Fall Semester)
+* [Amogh Silaparasetti](./assignments/2025-2026/Self-Assessment%20Essays/Fall%202025/Amogh-Silaparasetti-Self-Assessment.md)
+* [Ayushi Sharma](./assignments/2025-2026/Self-Assessment%20Essays/Fall%202025/Ayushi-Sharma-Self-Assessment.md)
+* [Dylan Serger](./assignments/2025-2026/Self-Assessment%20Essays/Fall%202025/Dylan-Serger-Self-Assessment.md)
+* [Eli Rindler](./assignments/2025-2026/Self-Assessment%20Essays/Fall%202025/Eli-Rindler-Self-Assessment.md)
+* [Huy Nguyen](./assignments/2025-2026/Self-Assessment%20Essays/Fall%202025/Huy-Nguyen-Self-Assessment.md)
+### Final (Spring Semester)
+* [Amogh Silaparasetti](./assignments/2025-2026/Self-Assessment%20Essays/Spring%202026/Amogh-Silaparasetti-Self-Assessment.md)
+* [Ayushi Sharma](./assignments/2025-2026/Self-Assessment%20Essays/Spring%202026/Ayushi-Sharma-Self-Assessment.md)
+* [Dylan Serger](./assignments/2025-2026/Self-Assessment%20Essays/Spring%202026/Dylan-Serger-Self-Assessment.md)
+* [Eli Rindler](./assignments/2025-2026/Self-Assessment%20Essays/Spring%202026/Eli-Rindler-Self-Assessment.md)
+* [Huy Nguyen](./assignments/2025-2026/Self-Assessment%20Essays/Spring%202026/Huy-Nguyen-Self-Assessment.md)
 
 ## Professional Biographies
 * [Amogh Silaparasetti](./assignments/2025-2026/biographies/Amogh-Silaparasetti-Professional-Biography.md)
