@@ -7,9 +7,8 @@ const pickInterval = (startMillis, endMillis) => {
   const range = Math.max(0, endMillis - startMillis);
 
   if (range <= 3 * MS_PER_DAY) return 'MINUTE_30';
-  if (range <= 7 * MS_PER_DAY) return 'HOUR';
-  if (range <= 30 * MS_PER_DAY) return 'DAY';
-  if (range <= 360 * MS_PER_DAY) return 'WEEK';
+  if (range <= 5 * MS_PER_DAY) return 'HOUR';
+  if (range > 5 * MS_PER_DAY) return 'DAY';
   return 'MONTH';
 };
 

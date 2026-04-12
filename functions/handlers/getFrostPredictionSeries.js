@@ -12,9 +12,9 @@ const READINGS_TABLE_ID = 'readings';
  * of the time series to balance detail and performance.
  *
  * Bucketing strategy:
- * - <= 7 days   → 15-minute intervals
- * - <= 31 days  → 1-hour intervals
- * - > 31 days   → 1-day intervals
+ * - <= 3 days   → 30-minute intervals
+ * - <= 5 days  → 1-hour intervals
+ * - > 5 days   → 1-day intervals
  *
  * @param {Date} startDate - Start of the requested time range.
  * @param {Date} endDate - End of the requested time range.
@@ -26,22 +26,22 @@ function getBucketConfig(startDate, endDate) {
   const diffMs = endDate.getTime() - startDate.getTime();
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
-  if (diffDays <= 7) {
+  if (diffDays <= 3) {
     return {
-      intervalLabel: 'MINUTE_15',
-      bucketSeconds: 900,
+      intervalLabel: '30 minutes',
+      bucketSeconds: 1800,
     };
   }
 
-  if (diffDays <= 31) {
+  if (diffDays <= 5) {
     return {
-      intervalLabel: 'HOUR_1',
+      intervalLabel: 'hourly',
       bucketSeconds: 3600,
     };
   }
 
   return {
-    intervalLabel: 'DAY_1',
+    intervalLabel: 'daily',
     bucketSeconds: 86400,
   };
 }
