@@ -86,10 +86,10 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       endpointUrl: AppConstants.historicalSeriesEndpoint,
     );
     
-    // Initialize date range: exactly 7 days (168 hours) ago to now
+    // Initialize date range: exactly 2 days (48 hours) ago to now
     final now = DateTime.now();
-    final sevenDaysAgo = now.subtract(const Duration(days: 7));
-    _dateRange = PickerDateRange(sevenDaysAgo, now);
+    final twoDaysAgo = now.subtract(const Duration(days: 2));
+    _dateRange = PickerDateRange(twoDaysAgo, now);
   }
 
   @override
@@ -417,10 +417,10 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       start = effectiveRange.startDate!;
       end = effectiveRange.endDate!;
     } else {
-      // Fallback: 7 days ago at 00:00:00 to now
+      // Fallback: 2 days ago at 00:00:00 to now
       final now = DateTime.now();
-      final sevenDaysAgo = now.subtract(const Duration(days: 7));
-      start = DateTime(sevenDaysAgo.year, sevenDaysAgo.month, sevenDaysAgo.day);
+      final twoDaysAgo = now.subtract(const Duration(days: 2));
+      start = DateTime(twoDaysAgo.year, twoDaysAgo.month, twoDaysAgo.day);
       end = now;
     }
 

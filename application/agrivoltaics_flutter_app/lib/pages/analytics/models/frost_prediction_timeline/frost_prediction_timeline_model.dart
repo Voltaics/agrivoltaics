@@ -50,8 +50,8 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
     );
 
     final now = DateTime.now();
-    final sevenDaysAgo = now.subtract(const Duration(days: 7));
-    _dateRange = PickerDateRange(sevenDaysAgo, now);
+    final twoDaysAgo = now.subtract(const Duration(days: 2));
+    _dateRange = PickerDateRange(twoDaysAgo, now);
 
     _trackballBehavior = TrackballBehavior(
       enable: true,
