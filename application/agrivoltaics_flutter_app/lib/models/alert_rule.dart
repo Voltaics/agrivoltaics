@@ -1,6 +1,42 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Supported comparison operators for alert rule conditions.
+/// High-level alert rule types.
+enum AlertRuleType {
+  threshold,
+  frostWarning,
+}
+
+extension AlertRuleTypeExtension on AlertRuleType {
+  String get value {
+    switch (this) {
+      case AlertRuleType.threshold:
+        return 'threshold';
+      case AlertRuleType.frostWarning:
+        return 'frost_warning';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case AlertRuleType.threshold:
+        return 'Threshold';
+      case AlertRuleType.frostWarning:
+        return 'Frost Warning';
+    }
+  }
+
+  static AlertRuleType fromString(String? s) {
+    switch (s) {
+      case 'frost_warning':
+        return AlertRuleType.frostWarning;
+      case 'threshold':
+      default:
+        return AlertRuleType.threshold;
+    }
+  }
+}
+
+/// Supported comparison operators for threshold alert rule conditions.
 enum AlertOperator { gt, lt, gte, lte, eq }
 
 extension AlertOperatorExtension on AlertOperator {
@@ -19,9 +55,7 @@ extension AlertOperatorExtension on AlertOperator {
     }
   }
 
-  String get value {
-    return name; // 'gt', 'lt', 'gte', 'lte', 'eq'
-  }
+  String get value => name;
 
   static AlertOperator fromString(String s) {
     return AlertOperator.values.firstWhere(
@@ -33,46 +67,63 @@ extension AlertOperatorExtension on AlertOperator {
 
 /// An alert rule stored under organizations/{orgId}/alertRules/{ruleId}.
 ///
-/// A rule watches a specific sensor reading field and sends FCM push
-/// notifications to [notifyUserIds] when the condition
-/// ([fieldAlias] [operator] [threshold]) is met.
-///
-/// Optional [activeRangeStart] / [activeRangeEnd] restrict the rule to a
-/// seasonal date window in "MM/dd" format (e.g. "11/01" → "03/15" for
-/// frost season). Handles year wrap-around. Both null = always active.
-///
-/// [cooldownMinutes] prevents repeated alerts within the given window.
+/// Supports:
+/// - threshold rules: one field/operator/threshold
+/// - frost warning rules: compound condition stored in [frostConfig]
 class AlertRule {
   final String id;
   final String name;
+
+  /// Rule kind.
+  final AlertRuleType ruleType;
+
+  /// Used for threshold rules. Can be blank for non-threshold rules.
   final String fieldAlias;
-  final AlertOperator operator;
-  final double threshold;
+
+  /// Used for threshold rules only.
+  final AlertOperator? operator;
+
+  /// Used for threshold rules only.
+  final double? threshold;
+
+  /// Used for frost warning rules.
+  ///
+  /// Suggested keys:
+  /// - tempDropRateFPerHour
+  /// - humidityMin
+  /// - airTempMaxF
+  /// - soilTempMaxF
+  /// - lightMax
+  /// - requireLowLight
+  final Map<String, dynamic>? frostConfig;
+
   final bool enabled;
   final List<String> notifyUserIds;
 
-  /// Seasonal start date "MM/dd" (e.g. "11/01"). Null = no restriction.
+  /// Seasonal start date "MM/dd". Null = no restriction.
   final String? activeRangeStart;
 
-  /// Seasonal end date "MM/dd" (e.g. "03/15"). Null = no restriction.
+  /// Seasonal end date "MM/dd". Null = no restriction.
   final String? activeRangeEnd;
 
-  /// Minimum minutes between repeated alerts for this rule. 0 = no cooldown.
+  /// Minimum minutes between repeated alerts for this rule.
   final int cooldownMinutes;
 
-  /// When this rule last fired (set by the backend). Used for cooldown checks.
+  /// When this rule last fired (set by backend).
   final DateTime? lastFiredAt;
 
   final DateTime createdAt;
   final DateTime updatedAt;
   final String createdBy;
 
-  AlertRule({
+  const AlertRule({
     required this.id,
     required this.name,
+    required this.ruleType,
     required this.fieldAlias,
-    required this.operator,
-    required this.threshold,
+    this.operator,
+    this.threshold,
+    this.frostConfig,
     required this.enabled,
     required this.notifyUserIds,
     this.activeRangeStart,
@@ -84,14 +135,23 @@ class AlertRule {
     required this.createdBy,
   });
 
+  bool get isThresholdRule => ruleType == AlertRuleType.threshold;
+  bool get isFrostWarningRule => ruleType == AlertRuleType.frostWarning;
+
   factory AlertRule.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return AlertRule(
       id: doc.id,
       name: data['name'] ?? '',
+      ruleType: AlertRuleTypeExtension.fromString(data['ruleType'] as String?),
       fieldAlias: data['fieldAlias'] ?? '',
-      operator: AlertOperatorExtension.fromString(data['operator'] ?? 'gt'),
-      threshold: (data['threshold'] as num?)?.toDouble() ?? 0.0,
+      operator: data['operator'] != null
+          ? AlertOperatorExtension.fromString(data['operator'])
+          : null,
+      threshold: (data['threshold'] as num?)?.toDouble(),
+      frostConfig: data['frostConfig'] != null
+          ? Map<String, dynamic>.from(data['frostConfig'])
+          : null,
       enabled: data['enabled'] ?? true,
       notifyUserIds: List<String>.from(data['notifyUserIds'] ?? []),
       activeRangeStart: data['activeRangeStart'] as String?,
@@ -107,14 +167,18 @@ class AlertRule {
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
+      'ruleType': ruleType.value,
       'fieldAlias': fieldAlias,
-      'operator': operator.value,
+      'operator': operator?.value,
       'threshold': threshold,
+      'frostConfig': frostConfig,
       'enabled': enabled,
       'notifyUserIds': notifyUserIds,
       'activeRangeStart': activeRangeStart,
       'activeRangeEnd': activeRangeEnd,
       'cooldownMinutes': cooldownMinutes,
+      'lastFiredAt':
+          lastFiredAt != null ? Timestamp.fromDate(lastFiredAt!) : null,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'createdBy': createdBy,
@@ -123,21 +187,28 @@ class AlertRule {
 
   AlertRule copyWith({
     String? name,
+    AlertRuleType? ruleType,
     String? fieldAlias,
-    AlertOperator? operator,
-    double? threshold,
+    Object? operator = _sentinel,
+    Object? threshold = _sentinel,
+    Object? frostConfig = _sentinel,
     bool? enabled,
     List<String>? notifyUserIds,
     int? cooldownMinutes,
     Object? activeRangeStart = _sentinel,
     Object? activeRangeEnd = _sentinel,
+    Object? lastFiredAt = _sentinel,
   }) {
     return AlertRule(
       id: id,
       name: name ?? this.name,
+      ruleType: ruleType ?? this.ruleType,
       fieldAlias: fieldAlias ?? this.fieldAlias,
-      operator: operator ?? this.operator,
-      threshold: threshold ?? this.threshold,
+      operator: operator == _sentinel ? this.operator : operator as AlertOperator?,
+      threshold: threshold == _sentinel ? this.threshold : threshold as double?,
+      frostConfig: frostConfig == _sentinel
+          ? this.frostConfig
+          : frostConfig as Map<String, dynamic>?,
       enabled: enabled ?? this.enabled,
       notifyUserIds: notifyUserIds ?? this.notifyUserIds,
       cooldownMinutes: cooldownMinutes ?? this.cooldownMinutes,
@@ -147,7 +218,9 @@ class AlertRule {
       activeRangeEnd: activeRangeEnd == _sentinel
           ? this.activeRangeEnd
           : activeRangeEnd as String?,
-      lastFiredAt: lastFiredAt,
+      lastFiredAt: lastFiredAt == _sentinel
+          ? this.lastFiredAt
+          : lastFiredAt as DateTime?,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
       createdBy: createdBy,
@@ -155,5 +228,4 @@ class AlertRule {
   }
 }
 
-// Private sentinel for copyWith nullable fields.
 const Object _sentinel = Object();
