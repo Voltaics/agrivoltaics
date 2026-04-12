@@ -74,6 +74,8 @@ jobs:
             INFLUXDB_BUCKET=${{ vars.INFLUXDB_BUCKET }}
             INFLUXDB_DEBUG=${{ vars.INFLUXDB_DEBUG }}
             AUTHORIZED_EMAILS=${{ vars.AUTHORIZED_EMAILS }}
+            PLANT_DISEASE_API_BASE=${{ vars.PLANT_DISEASE_API_BASE }}
+            PLANT_DISEASE_PREDICT_URL=${{ vars.PLANT_DISEASE_PREDICT_URL }}
 
   app-deploy-cloud-run:
     needs: app-build-and-push

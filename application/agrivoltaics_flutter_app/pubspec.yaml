@@ -57,6 +57,7 @@ dependencies:
   timezone: '>=0.10.1'
   flutter_native_timezone: '>=2.0.0'
   http: '>=1.2.2'
+  image_picker: '>=1.1.2'
   timer_builder: '>=2.0.0'
   g_recaptcha_v3: '>=1.0.0'
   cloud_firestore: '>=5.4.4'

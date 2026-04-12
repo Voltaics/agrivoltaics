@@ -47,5 +47,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Allow camera access to capture plant images for disease analysis.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Allow photo library access to select plant images for disease analysis.</string>
 </dict>
 </plist>

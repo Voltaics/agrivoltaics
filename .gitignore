@@ -23,3 +23,6 @@ application/pi_code/test_inference.py
 application/pi_code/__pycache__/align_images.cpython-312.pyc
 application/pi_code/__pycache__/process_images_new.cpython-312.pyc
 application/pi_code/__pycache__/run_inference.cpython-312.pyc
+
+docker_app/backend/model/*.safetensors
+docker_app/model/*.safetensors
