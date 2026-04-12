@@ -39,6 +39,21 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
   late final TextEditingController _lightMaxCtrl;
   late bool _requireLowLight;
 
+  // mold specific controllers
+  late final TextEditingController _moldHumidityMinCtrl;
+  late final TextEditingController _moldTempMinCtrl;
+  late final TextEditingController _moldTempMaxCtrl;
+  late final TextEditingController _moldLightMaxCtrl;
+  late final TextEditingController _moldSoilMoistureMinCtrl;
+  late final TextEditingController _moldDurationHoursCtrl;
+
+  // black rot specific controllers
+  late final TextEditingController _blackRotHumidityMinCtrl;
+  late final TextEditingController _blackRotTempMinCtrl;
+  late final TextEditingController _blackRotTempMaxCtrl;
+  late final TextEditingController _blackRotSoilMoistureJumpCtrl;
+  late final TextEditingController _blackRotFollowupHoursCtrl;
+
   late AlertRuleType _ruleType;
   late AlertOperator _operator;
   late String? _fieldAlias;
@@ -53,6 +68,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
   bool get _isEdit => widget.existingRule != null;
   bool get _isThresholdRule => _ruleType == AlertRuleType.threshold;
   bool get _isFrostRule => _ruleType == AlertRuleType.frostWarning;
+  bool get _isMoldRule => _ruleType == AlertRuleType.moldRisk;
+  bool get _isBlackRotRule => _ruleType == AlertRuleType.blackRotRisk;
 
   @override
   void initState() {
@@ -69,7 +86,9 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
       text: rule?.cooldownMinutes.toString() ?? '60',
     );
 
-    final frost = rule?.frostConfig;
+    final config = rule?.ruleConfig;
+
+    final frost = rule?.ruleType == AlertRuleType.frostWarning ? config : null;
     _tempDropRateCtrl = TextEditingController(
       text: (frost?['tempDropRateFPerHour'] ?? 2.0).toString(),
     );
@@ -87,6 +106,43 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
     );
     _requireLowLight = (frost?['requireLowLight'] ?? true) == true;
 
+    final mold = rule?.ruleType == AlertRuleType.moldRisk ? config : null;
+    _moldHumidityMinCtrl = TextEditingController(
+      text: (mold?['humidityMin'] ?? 85.0).toString(),
+    );
+    _moldTempMinCtrl = TextEditingController(
+      text: (mold?['tempMinF'] ?? 68.0).toString(),
+    );
+    _moldTempMaxCtrl = TextEditingController(
+      text: (mold?['tempMaxF'] ?? 86.0).toString(),
+    );
+    _moldLightMaxCtrl = TextEditingController(
+      text: (mold?['lightMax'] ?? 5.0).toString(),
+    );
+    _moldSoilMoistureMinCtrl = TextEditingController(
+      text: (mold?['soilMoistureMin'] ?? 40.0).toString(),
+    );
+    _moldDurationHoursCtrl = TextEditingController(
+      text: (mold?['durationHours'] ?? 6.0).toString(),
+    );
+
+    final blackRot = rule?.ruleType == AlertRuleType.blackRotRisk ? config : null;
+    _blackRotHumidityMinCtrl = TextEditingController(
+      text: (blackRot?['humidityMin'] ?? 90.0).toString(),
+    );
+    _blackRotTempMinCtrl = TextEditingController(
+      text: (blackRot?['tempMinF'] ?? 70.0).toString(),
+    );
+    _blackRotTempMaxCtrl = TextEditingController(
+      text: (blackRot?['tempMaxF'] ?? 85.0).toString(),
+    );
+    _blackRotSoilMoistureJumpCtrl = TextEditingController(
+      text: (blackRot?['soilMoistureJump'] ?? 8.0).toString(),
+    );
+    _blackRotFollowupHoursCtrl = TextEditingController(
+      text: (blackRot?['followupHours'] ?? 48.0).toString(),
+    );
+
     _ruleType = rule?.ruleType ?? AlertRuleType.threshold;
     _operator = rule?.operator ?? AlertOperator.gt;
     _fieldAlias = rule?.fieldAlias.isNotEmpty == true ? rule!.fieldAlias : null;
@@ -98,8 +154,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
       _selectedUserIds.addAll(rule.notifyUserIds);
     }
 
-    // Good default for frost season
-    if (!_isEdit && _ruleType == AlertRuleType.threshold) {
+    // Good default spring season for new alert rules
+    if (!_isEdit) {
       _dateStartCtrl.text = '04/01';
       _dateEndCtrl.text = '05/31';
     }
@@ -114,11 +170,26 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
     _dateStartCtrl.dispose();
     _dateEndCtrl.dispose();
     _cooldownCtrl.dispose();
+
     _tempDropRateCtrl.dispose();
     _humidityMinCtrl.dispose();
     _airTempMaxCtrl.dispose();
     _soilTempMaxCtrl.dispose();
     _lightMaxCtrl.dispose();
+
+    _moldHumidityMinCtrl.dispose();
+    _moldTempMinCtrl.dispose();
+    _moldTempMaxCtrl.dispose();
+    _moldLightMaxCtrl.dispose();
+    _moldSoilMoistureMinCtrl.dispose();
+    _moldDurationHoursCtrl.dispose();
+
+    _blackRotHumidityMinCtrl.dispose();
+    _blackRotTempMinCtrl.dispose();
+    _blackRotTempMaxCtrl.dispose();
+    _blackRotSoilMoistureJumpCtrl.dispose();
+    _blackRotFollowupHoursCtrl.dispose();
+
     super.dispose();
   }
 
@@ -152,7 +223,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
     }
   }
 
-  Future<void> _save() async {
+    Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _saving = true);
@@ -179,6 +250,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
           'fieldAlias': _fieldAlias!,
           'operator': _operator.value,
           'threshold': threshold,
+          'ruleConfig': null,
           'frostConfig': null,
           'enabled': _enabled,
           'notifyUserIds': _selectedUserIds.toList(),
@@ -186,13 +258,22 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
           'activeRangeEnd': timeEnd,
           'cooldownMinutes': cooldown,
         };
-      } else {
+      } else if (_isFrostRule) {
         payload = {
           'name': _nameCtrl.text.trim(),
           'ruleType': AlertRuleType.frostWarning.value,
           'fieldAlias': '',
           'operator': null,
           'threshold': null,
+          'ruleConfig': {
+            'tempDropRateFPerHour': double.parse(_tempDropRateCtrl.text.trim()),
+            'humidityMin': double.parse(_humidityMinCtrl.text.trim()),
+            'airTempMaxF': double.parse(_airTempMaxCtrl.text.trim()),
+            'soilTempMaxF': double.parse(_soilTempMaxCtrl.text.trim()),
+            'lightMax': double.parse(_lightMaxCtrl.text.trim()),
+            'requireLowLight': _requireLowLight,
+          },
+          // keep for backward compatibility if other code still reads frostConfig
           'frostConfig': {
             'tempDropRateFPerHour': double.parse(_tempDropRateCtrl.text.trim()),
             'humidityMin': double.parse(_humidityMinCtrl.text.trim()),
@@ -207,6 +288,51 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
           'activeRangeEnd': timeEnd,
           'cooldownMinutes': cooldown,
         };
+      } else if (_isMoldRule) {
+        payload = {
+          'name': _nameCtrl.text.trim(),
+          'ruleType': AlertRuleType.moldRisk.value,
+          'fieldAlias': '',
+          'operator': null,
+          'threshold': null,
+          'ruleConfig': {
+            'humidityMin': double.parse(_moldHumidityMinCtrl.text.trim()),
+            'tempMinF': double.parse(_moldTempMinCtrl.text.trim()),
+            'tempMaxF': double.parse(_moldTempMaxCtrl.text.trim()),
+            'lightMax': double.parse(_moldLightMaxCtrl.text.trim()),
+            'soilMoistureMin': double.parse(_moldSoilMoistureMinCtrl.text.trim()),
+            'durationHours': double.parse(_moldDurationHoursCtrl.text.trim()),
+          },
+          'frostConfig': null,
+          'enabled': _enabled,
+          'notifyUserIds': _selectedUserIds.toList(),
+          'activeRangeStart': timeStart,
+          'activeRangeEnd': timeEnd,
+          'cooldownMinutes': cooldown,
+        };
+      } else if (_isBlackRotRule) {
+        payload = {
+          'name': _nameCtrl.text.trim(),
+          'ruleType': AlertRuleType.blackRotRisk.value,
+          'fieldAlias': '',
+          'operator': null,
+          'threshold': null,
+          'ruleConfig': {
+            'humidityMin': double.parse(_blackRotHumidityMinCtrl.text.trim()),
+            'tempMinF': double.parse(_blackRotTempMinCtrl.text.trim()),
+            'tempMaxF': double.parse(_blackRotTempMaxCtrl.text.trim()),
+            'soilMoistureJump': double.parse(_blackRotSoilMoistureJumpCtrl.text.trim()),
+            'followupHours': double.parse(_blackRotFollowupHoursCtrl.text.trim()),
+          },
+          'frostConfig': null,
+          'enabled': _enabled,
+          'notifyUserIds': _selectedUserIds.toList(),
+          'activeRangeStart': timeStart,
+          'activeRangeEnd': timeEnd,
+          'cooldownMinutes': cooldown,
+        };
+      } else {
+        throw Exception('Unsupported alert rule type.');
       }
 
       if (_isEdit) {
@@ -315,9 +441,20 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                                   if (value == null) return;
                                   setState(() {
                                     _ruleType = value;
-                                    if (_ruleType == AlertRuleType.frostWarning &&
-                                        _nameCtrl.text.trim().isEmpty) {
-                                      _nameCtrl.text = 'Frost Warning';
+
+                                    if (_nameCtrl.text.trim().isEmpty) {
+                                      if (_ruleType == AlertRuleType.frostWarning) {
+                                        _nameCtrl.text = 'Frost Warning';
+                                      } else if (_ruleType == AlertRuleType.moldRisk) {
+                                        _nameCtrl.text = 'Mold Risk';
+                                      } else if (_ruleType == AlertRuleType.blackRotRisk) {
+                                        _nameCtrl.text = 'Black Rot Risk';
+                                      }
+                                    }
+
+                                    if (_ruleType == AlertRuleType.frostWarning ||
+                                        _ruleType == AlertRuleType.moldRisk ||
+                                        _ruleType == AlertRuleType.blackRotRisk) {
                                       _useTimeWindow = true;
                                       _dateStartCtrl.text = '04/01';
                                       _dateEndCtrl.text = '05/31';
@@ -486,7 +623,151 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                             contentPadding: EdgeInsets.zero,
                           ),
                         ],
+                        
+                        if (_isMoldRule) ...[
+                          const Text(
+                            'Mold Risk Rule',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textOnLight,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Triggers when temperature is warm, humidity stays high for several hours, light is low, and soil moisture remains elevated.',
+                            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _moldHumidityMinCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Minimum humidity (%)',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _moldTempMinCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Minimum air temperature (°F)',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _moldTempMaxCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Maximum air temperature (°F)',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _moldLightMaxCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Maximum light threshold',
+                              border: OutlineInputBorder(),
+                              helperText: 'Used as a proxy for low light / shade inside canopy',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _moldSoilMoistureMinCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Minimum soil moisture',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _moldDurationHoursCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Required duration (hours)',
+                              border: OutlineInputBorder(),
+                              helperText: 'How long conditions must persist before alerting',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                        ],
 
+                        if (_isBlackRotRule) ...[
+                          const Text(
+                            'Black Rot Risk Rule',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textOnLight,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Triggers when soil moisture jumps, humidity is high, air temperature is warm, and those conditions continue during the follow-up window.',
+                            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _blackRotHumidityMinCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Minimum humidity (%)',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _blackRotTempMinCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Minimum air temperature (°F)',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _blackRotTempMaxCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Maximum air temperature (°F)',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _blackRotSoilMoistureJumpCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Minimum soil moisture jump',
+                              border: OutlineInputBorder(),
+                              helperText: 'Increase required to count as a wetting / rain-like event',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _blackRotFollowupHoursCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Follow-up window (hours)',
+                              border: OutlineInputBorder(),
+                              helperText: 'How long warm/humid conditions must continue after the wet event',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                        ],
+                        
                         const SizedBox(height: 16),
                         SwitchListTile(
                           value: _useTimeWindow,

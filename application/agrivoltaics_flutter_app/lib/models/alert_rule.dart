@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 enum AlertRuleType {
   threshold,
   frostWarning,
+  moldRisk,
+  blackRotRisk,
 }
 
 extension AlertRuleTypeExtension on AlertRuleType {
@@ -13,6 +15,10 @@ extension AlertRuleTypeExtension on AlertRuleType {
         return 'threshold';
       case AlertRuleType.frostWarning:
         return 'frost_warning';
+      case AlertRuleType.moldRisk:
+        return 'mold_risk';
+      case AlertRuleType.blackRotRisk:
+        return 'black_rot_risk';
     }
   }
 
@@ -22,6 +28,10 @@ extension AlertRuleTypeExtension on AlertRuleType {
         return 'Threshold';
       case AlertRuleType.frostWarning:
         return 'Frost Warning';
+      case AlertRuleType.moldRisk:
+        return 'Mold Risk';
+      case AlertRuleType.blackRotRisk:
+        return 'Black Rot Risk';
     }
   }
 
@@ -29,6 +39,10 @@ extension AlertRuleTypeExtension on AlertRuleType {
     switch (s) {
       case 'frost_warning':
         return AlertRuleType.frostWarning;
+      case 'mold_risk':
+        return AlertRuleType.moldRisk;
+      case 'black_rot_risk':
+        return AlertRuleType.blackRotRisk;
       case 'threshold':
       default:
         return AlertRuleType.threshold;
@@ -69,7 +83,7 @@ extension AlertOperatorExtension on AlertOperator {
 ///
 /// Supports:
 /// - threshold rules: one field/operator/threshold
-/// - frost warning rules: compound condition stored in [frostConfig]
+/// - frost warning rules: compound condition stored in [ruleConfig]
 class AlertRule {
   final String id;
   final String name;
@@ -95,7 +109,7 @@ class AlertRule {
   /// - soilTempMaxF
   /// - lightMax
   /// - requireLowLight
-  final Map<String, dynamic>? frostConfig;
+  final Map<String, dynamic>? ruleConfig;
 
   final bool enabled;
   final List<String> notifyUserIds;
@@ -123,7 +137,7 @@ class AlertRule {
     required this.fieldAlias,
     this.operator,
     this.threshold,
-    this.frostConfig,
+    this.ruleConfig,
     required this.enabled,
     required this.notifyUserIds,
     this.activeRangeStart,
@@ -149,8 +163,8 @@ class AlertRule {
           ? AlertOperatorExtension.fromString(data['operator'])
           : null,
       threshold: (data['threshold'] as num?)?.toDouble(),
-      frostConfig: data['frostConfig'] != null
-          ? Map<String, dynamic>.from(data['frostConfig'])
+      ruleConfig: data['ruleConfig'] != null
+          ? Map<String, dynamic>.from(data['ruleConfig'])
           : null,
       enabled: data['enabled'] ?? true,
       notifyUserIds: List<String>.from(data['notifyUserIds'] ?? []),
@@ -171,7 +185,7 @@ class AlertRule {
       'fieldAlias': fieldAlias,
       'operator': operator?.value,
       'threshold': threshold,
-      'frostConfig': frostConfig,
+      'ruleConfig': ruleConfig,
       'enabled': enabled,
       'notifyUserIds': notifyUserIds,
       'activeRangeStart': activeRangeStart,
@@ -191,7 +205,7 @@ class AlertRule {
     String? fieldAlias,
     Object? operator = _sentinel,
     Object? threshold = _sentinel,
-    Object? frostConfig = _sentinel,
+    Object? ruleConfig = _sentinel,
     bool? enabled,
     List<String>? notifyUserIds,
     int? cooldownMinutes,
@@ -206,9 +220,9 @@ class AlertRule {
       fieldAlias: fieldAlias ?? this.fieldAlias,
       operator: operator == _sentinel ? this.operator : operator as AlertOperator?,
       threshold: threshold == _sentinel ? this.threshold : threshold as double?,
-      frostConfig: frostConfig == _sentinel
-          ? this.frostConfig
-          : frostConfig as Map<String, dynamic>?,
+      ruleConfig: ruleConfig == _sentinel
+          ? this.ruleConfig
+          : ruleConfig as Map<String, dynamic>?,
       enabled: enabled ?? this.enabled,
       notifyUserIds: notifyUserIds ?? this.notifyUserIds,
       cooldownMinutes: cooldownMinutes ?? this.cooldownMinutes,
