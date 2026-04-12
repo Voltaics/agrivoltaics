@@ -50,19 +50,35 @@ class _AlertsPageState extends State<AlertsPage> {
   }
 
   String _buildConditionLabel(AlertRule rule) {
+    final config = rule.ruleConfig ?? {};
+
     if (rule.ruleType == AlertRuleType.frostWarning) {
-      final frost = rule.frostConfig ?? {};
-      final drop = frost['tempDropRateFPerHour'] ?? 2.0;
-      final humidity = frost['humidityMin'] ?? 90.0;
-      final air = frost['airTempMaxF'] ?? 39.0;
-      final soil = frost['soilTempMaxF'] ?? 45.0;
-      return 'Frost warning: drop > $drop°F/hr, RH ≥ $humidity%, air ≤ $air°F, soil ≤ $soil°F';
+      final drop = config['tempDropRateFPerHour'] ?? 2.0;
+      final humidity = config['humidityMin'] ?? 90.0;
+      final air = config['airTempMaxF'] ?? 39.0;
+      final soil = config['soilTempMaxF'] ?? 45.0;
+      return 'Frost: drop > $drop°F/hr, RH ≥ $humidity%, air ≤ $air°F, soil ≤ $soil°F';
+    }
+
+    if (rule.ruleType == AlertRuleType.moldRisk) {
+      final humidity = config['humidityMin'] ?? 85.0;
+      final tempMin = config['tempMinF'] ?? 68.0;
+      final tempMax = config['tempMaxF'] ?? 86.0;
+      final hours = config['durationHours'] ?? 6.0;
+      return 'Mold: RH ≥ $humidity% for $hours hr, temp $tempMin–$tempMax°F';
+    }
+
+    if (rule.ruleType == AlertRuleType.blackRotRisk) {
+      final humidity = config['humidityMin'] ?? 90.0;
+      final tempMin = config['tempMinF'] ?? 70.0;
+      final tempMax = config['tempMaxF'] ?? 85.0;
+      final hours = config['followupHours'] ?? 48.0;
+      return 'Black rot: RH ≥ $humidity%, temp $tempMin–$tempMax°F, humid follow-up $hours hr';
     }
 
     final fieldName = _readingsService.getReadingName(rule.fieldAlias);
     final operatorLabel = rule.operator?.label ?? '?';
     final thresholdLabel = rule.threshold?.toString() ?? '?';
-
     return '$fieldName $operatorLabel $thresholdLabel';
   }
   

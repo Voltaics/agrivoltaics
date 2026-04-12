@@ -72,6 +72,80 @@ function toNumberOrNull(value) {
 }
 
 /**
+ * Return value unless it is null/undefined, else fallback.
+ * Compatible with older ESLint/parser configs that reject ??.
+ * @param {*} value
+ * @param {*} fallback
+ * @return {*}
+ */
+function defaultIfNull(value, fallback) {
+  return value != null ? value : fallback;
+}
+
+/**
+ * Group BigQuery reading rows by exact timestamp and field.
+ * Returns timestamps sorted ascending plus a row map.
+ *
+ * @param {Array<Object>} rows
+ * @return {{timestamps: string[], byTimestamp: Object}}
+ */
+function groupRowsByTimestamp(rows) {
+  const byTimestamp = {};
+
+  for (const row of rows) {
+    const ts = new Date(row.timestamp.value || row.timestamp).toISOString();
+    if (!byTimestamp[ts]) byTimestamp[ts] = {};
+
+    byTimestamp[ts][row.field] = {
+      value: toNumberOrNull(row.value),
+      unit: row.unit || '',
+      sensorId: row.sensorId || null,
+      timestamp: ts,
+      primarySensor: !!row.primarySensor,
+    };
+  }
+
+  const timestamps = Object.keys(byTimestamp).sort();
+  return {timestamps, byTimestamp};
+}
+
+/**
+ * Pick latest entry for a field from grouped context.
+ * @param {{timestamps: string[], byTimestamp: Object}} grouped
+ * @param {string} field
+ * @return {Object|null}
+ */
+function getLatestFieldEntry(grouped, field) {
+  for (let i = grouped.timestamps.length - 1; i >= 0; i--) {
+    const ts = grouped.timestamps[i];
+    const entry = grouped.byTimestamp[ts][field];
+    if (entry && entry.value != null) return entry;
+  }
+  return null;
+}
+
+/**
+ * Compute average numeric value for field across grouped rows.
+ * @param {{timestamps: string[], byTimestamp: Object}} grouped
+ * @param {string} field
+ * @return {number|null}
+ */
+function getAverageFieldValue(grouped, field) {
+  let sum = 0;
+  let count = 0;
+
+  for (const ts of grouped.timestamps) {
+    const entry = grouped.byTimestamp[ts][field];
+    if (entry && entry.value != null) {
+      sum += entry.value;
+      count++;
+    }
+  }
+
+  return count > 0 ? sum / count : null;
+}
+
+/**
  * Build an alert summary string for a threshold rule.
  * @param {Object} rule
  * @param {Object} fieldEntry
@@ -103,6 +177,45 @@ function buildFrostAlertMessage(rule, details) {
     `soil temp ${details.soilTempF}°F, ` +
     `temp drop ${details.tempDropRateFPerHour.toFixed(1)}°F/hr` +
     (details.light != null ? `, light ${details.light}` : '');
+
+  return {title, body};
+}
+
+/**
+ * Build an alert summary string for a mold risk rule.
+ * @param {Object} rule
+ * @param {Object} details
+ * @return {{title: string, body: string}}
+ */
+function buildMoldAlertMessage(rule, details) {
+  const title = `Alert: ${rule.name}`;
+  const body =
+    `Mold risk conditions detected: ` +
+    `qualifying duration ${details.qualifyingHours.toFixed(1)} hr, ` +
+    `avg humidity ${details.avgHumidity.toFixed(1)}%, ` +
+    `avg temp ${details.avgTempF.toFixed(1)}°F` +
+    (details.avgLight != null ? `, avg light ${details.avgLight.toFixed(1)}` : '') +
+    (details.avgSoilMoisture != null ?
+      `, avg soil moisture ${details.avgSoilMoisture.toFixed(1)}` :
+      '');
+
+  return {title, body};
+}
+
+/**
+ * Build an alert summary string for a black rot risk rule.
+ * @param {Object} rule
+ * @param {Object} details
+ * @return {{title: string, body: string}}
+ */
+function buildBlackRotAlertMessage(rule, details) {
+  const title = `Alert: ${rule.name}`;
+  const body =
+    `Black rot risk conditions detected: ` +
+    `soil moisture jump ${details.soilMoistureJump.toFixed(1)}, ` +
+    `event humidity ${details.eventHumidity.toFixed(1)}%, ` +
+    `event temp ${details.eventTempF.toFixed(1)}°F, ` +
+    `follow-up warm/humid coverage ${(details.followupCoverage * 100).toFixed(0)}%`;
 
   return {title, body};
 }
@@ -243,6 +356,110 @@ async function fetchRecentFrostContext({organizationId, siteId, zoneId, now}) {
 }
 
 /**
+ * Query recent BigQuery readings for fields needed by mold risk.
+ *
+ * @param {Object} args
+ * @param {string} args.organizationId
+ * @param {string} args.siteId
+ * @param {string} args.zoneId
+ * @param {Date} args.now
+ * @param {number} args.durationHours
+ * @return {Promise<Object>}
+ */
+async function fetchRecentMoldContext({
+  organizationId,
+  siteId,
+  zoneId,
+  now,
+  durationHours,
+}) {
+  const windowHours = durationHours + 2;
+  const endIso = now.toISOString();
+  const startIso = new Date(now.getTime() - windowHours * 60 * 60 * 1000)
+      .toISOString();
+
+  const query = `
+    SELECT
+      field,
+      value,
+      unit,
+      sensorId,
+      timestamp,
+      primarySensor
+    FROM \`${bigquery.projectId}.sensor_data.readings\`
+    WHERE organizationId = @organizationId
+      AND siteId = @siteId
+      AND zoneId = @zoneId
+      AND field IN ('temperature', 'humidity', 'light', 'soilMoisture')
+      AND timestamp BETWEEN TIMESTAMP(@startIso) AND TIMESTAMP(@endIso)
+    ORDER BY timestamp ASC
+  `;
+
+  const [rows] = await bigquery.query({
+    query,
+    params: {
+      organizationId,
+      siteId,
+      zoneId,
+      startIso,
+      endIso,
+    },
+  });
+
+  return groupRowsByTimestamp(rows);
+}
+
+/**
+ * Query recent BigQuery readings for fields needed by black rot risk.
+ *
+ * @param {Object} args
+ * @param {string} args.organizationId
+ * @param {string} args.siteId
+ * @param {string} args.zoneId
+ * @param {Date} args.now
+ * @return {Promise<Object>}
+ */
+async function fetchRecentBlackRotContext({
+  organizationId,
+  siteId,
+  zoneId,
+  now,
+}) {
+  const endIso = now.toISOString();
+  const startIso = new Date(now.getTime() - 72 * 60 * 60 * 1000).toISOString();
+
+  const query = `
+    SELECT
+      field,
+      value,
+      unit,
+      sensorId,
+      timestamp,
+      primarySensor
+    FROM \`${bigquery.projectId}.sensor_data.readings\`
+    WHERE organizationId = @organizationId
+      AND siteId = @siteId
+      AND zoneId = @zoneId
+      AND field IN ('temperature', 'humidity', 'soilMoisture')
+      AND timestamp BETWEEN TIMESTAMP(@startIso) AND TIMESTAMP(@endIso)
+    ORDER BY timestamp ASC
+  `;
+
+  const [rows] = await bigquery.query({
+    query,
+    params: {
+      organizationId,
+      siteId,
+      zoneId,
+      startIso,
+      endIso,
+    },
+  });
+
+  return groupRowsByTimestamp(rows);
+}
+
+/**
  * Evaluate a frost warning rule.
  *
  * Default thresholds come from your PDF guidance:
@@ -257,7 +474,7 @@ async function fetchRecentFrostContext({organizationId, siteId, zoneId, now}) {
  * @return {{matched: boolean, details: (Object|null|undefined), fieldEntry: (Object|null|undefined)}}
  */
 function evaluateFrostWarning(rule, frostContext) {
-  const config = rule.frostConfig || {};
+  const config = rule.ruleConfig || {};
 
   const tempDropRateThresholdRaw = toNumberOrNull(config.tempDropRateFPerHour);
   const humidityMinRaw = toNumberOrNull(config.humidityMin);
@@ -343,6 +560,220 @@ function evaluateFrostWarning(rule, frostContext) {
 }
 
 /**
+ * Evaluate a mold risk rule.
+ *
+ * Practical first pass:
+ * - recent warm/humid readings over a configured duration
+ * - low light (average or current)
+ * - elevated average soil moisture
+ *
+ * @param {Object} rule
+ * @param {Object} moldContext
+ * @return {Object}
+ */
+function evaluateMoldRisk(rule, moldContext) {
+  const config = rule.ruleConfig || {};
+  const humidityMin = defaultIfNull(toNumberOrNull(config.humidityMin), 85.0);
+  const tempMinF = defaultIfNull(toNumberOrNull(config.tempMinF), 68.0);
+  const tempMaxF = defaultIfNull(toNumberOrNull(config.tempMaxF), 86.0);
+  const lightMax = defaultIfNull(toNumberOrNull(config.lightMax), 5.0);
+  const soilMoistureMin = defaultIfNull(
+      toNumberOrNull(config.soilMoistureMin),
+      40.0,
+  );
+  const durationHours = defaultIfNull(
+      toNumberOrNull(config.durationHours),
+      6.0,
+  );
+
+  let qualifyingCount = 0;
+  let humiditySum = 0;
+  let humidityCount = 0;
+  let tempSum = 0;
+  let tempCount = 0;
+
+  for (const ts of moldContext.timestamps) {
+    const bucket = moldContext.byTimestamp[ts];
+    const tempEntry = bucket.temperature;
+    const humidityEntry = bucket.humidity;
+
+    if (humidityEntry && humidityEntry.value != null) {
+      humiditySum += humidityEntry.value;
+      humidityCount++;
+    }
+
+    if (tempEntry && tempEntry.value != null) {
+      tempSum += tempEntry.value;
+      tempCount++;
+    }
+
+    if (!tempEntry || !humidityEntry) continue;
+    if (tempEntry.value == null || humidityEntry.value == null) continue;
+
+    const tempOk = tempEntry.value >= tempMinF && tempEntry.value <= tempMaxF;
+    const humidityOk = humidityEntry.value >= humidityMin;
+
+    if (tempOk && humidityOk) {
+      qualifyingCount++;
+    }
+  }
+
+  const qualifyingHours = qualifyingCount * 0.25;
+  if (qualifyingHours < durationHours) {
+    return {matched: false};
+  }
+
+  const avgLight = getAverageFieldValue(moldContext, 'light');
+  const currentLight = getLatestFieldEntry(moldContext, 'light');
+  const lowLightOk =
+    (avgLight != null && avgLight <= lightMax) ||
+    (currentLight && currentLight.value != null && currentLight.value <= lightMax);
+
+  if (!lowLightOk) {
+    return {matched: false};
+  }
+
+  const avgSoilMoisture = getAverageFieldValue(moldContext, 'soilMoisture');
+  if (avgSoilMoisture == null || avgSoilMoisture < soilMoistureMin) {
+    return {matched: false};
+  }
+
+  const avgHumidity = humidityCount > 0 ? humiditySum / humidityCount : humidityMin;
+  const avgTempF = tempCount > 0 ? tempSum / tempCount : tempMinF;
+
+  const latestTemp = getLatestFieldEntry(moldContext, 'temperature');
+  const fieldEntry = latestTemp || {
+    value: avgTempF,
+    unit: '°F',
+    sensorId: '',
+    timestamp: moldContext.timestamps.length > 0 ?
+      moldContext.timestamps[moldContext.timestamps.length - 1] :
+      new Date().toISOString(),
+    primarySensor: false,
+  };
+
+  const details = {
+    qualifyingHours,
+    avgHumidity,
+    avgTempF,
+    avgLight,
+    avgSoilMoisture,
+  };
+
+  return {matched: true, details, fieldEntry};
+}
+
+/**
+ * Evaluate a black rot risk rule.
+ *
+ * Practical first pass:
+ * - detect a soil moisture jump event
+ * - confirm event humidity and temperature conditions
+ * - confirm continued warm/humid follow-up coverage
+ *
+ * @param {Object} rule
+ * @param {Object} blackRotContext
+ * @return {Object}
+ */
+function evaluateBlackRotRisk(rule, blackRotContext) {
+  const config = rule.ruleConfig || {};
+  const humidityMin = defaultIfNull(toNumberOrNull(config.humidityMin), 90.0);
+  const tempMinF = defaultIfNull(toNumberOrNull(config.tempMinF), 70.0);
+  const tempMaxF = defaultIfNull(toNumberOrNull(config.tempMaxF), 85.0);
+  const soilMoistureJumpMin = defaultIfNull(
+      toNumberOrNull(config.soilMoistureJump),
+      8.0,
+  );
+  const followupHours = defaultIfNull(
+      toNumberOrNull(config.followupHours),
+      48.0,
+  );
+
+  const timestamps = blackRotContext.timestamps;
+  const byTimestamp = blackRotContext.byTimestamp;
+
+  for (let i = 1; i < timestamps.length; i++) {
+    const prevBucket = byTimestamp[timestamps[i - 1]];
+    const currBucket = byTimestamp[timestamps[i]];
+
+    const prevSoil = prevBucket.soilMoisture;
+    const currSoil = currBucket.soilMoisture;
+    const currHumidity = currBucket.humidity;
+    const currTemp = currBucket.temperature;
+
+    if (!prevSoil || !currSoil || !currHumidity || !currTemp) continue;
+    if (
+      prevSoil.value == null ||
+      currSoil.value == null ||
+      currHumidity.value == null ||
+      currTemp.value == null
+    ) {
+      continue;
+    }
+
+    const soilJump = currSoil.value - prevSoil.value;
+    const eventHumidityOk = currHumidity.value >= humidityMin;
+    const eventTempOk = currTemp.value >= tempMinF && currTemp.value <= tempMaxF;
+
+    if (soilJump < soilMoistureJumpMin || !eventHumidityOk || !eventTempOk) {
+      continue;
+    }
+
+    const maxFollowupBuckets = Math.floor(followupHours * 4);
+    let followupTotal = 0;
+    let followupWarmHumid = 0;
+
+    for (let j = i; j < timestamps.length && followupTotal < maxFollowupBuckets; j++) {
+      const bucket = byTimestamp[timestamps[j]];
+      const humidityEntry = bucket.humidity;
+      const tempEntry = bucket.temperature;
+
+      if (!humidityEntry || !tempEntry) continue;
+      if (humidityEntry.value == null || tempEntry.value == null) continue;
+
+      followupTotal++;
+      if (
+        humidityEntry.value >= humidityMin &&
+        tempEntry.value >= tempMinF &&
+        tempEntry.value <= tempMaxF
+      ) {
+        followupWarmHumid++;
+      }
+    }
+
+    if (followupTotal === 0) continue;
+
+    const followupCoverage = followupWarmHumid / followupTotal;
+
+    // Require at least half the follow-up samples to remain warm/humid.
+    if (followupCoverage < 0.5) {
+      continue;
+    }
+
+    const fieldEntry = {
+      value: currTemp.value,
+      unit: currTemp.unit || '°F',
+      sensorId: currTemp.sensorId || '',
+      timestamp: currTemp.timestamp,
+      primarySensor: currTemp.primarySensor || false,
+    };
+
+    const details = {
+      soilMoistureJump: soilJump,
+      eventHumidity: currHumidity.value,
+      eventTempF: currTemp.value,
+      followupCoverage,
+      followupWarmHumidCount: followupWarmHumid,
+      followupTotalCount: followupTotal,
+    };
+
+    return {matched: true, details, fieldEntry};
+  }
+
+  return {matched: false};
+}
+
+/**
  * Fire notifications for a triggered alert rule.
  *
  * @param {Object} args
@@ -373,6 +804,10 @@ async function dispatchAlertNotifications({
   let messageParts;
   if (rule.ruleType === 'frost_warning') {
     messageParts = buildFrostAlertMessage(rule, ruleMatchDetails || {});
+  } else if (rule.ruleType === 'mold_risk') {
+    messageParts = buildMoldAlertMessage(rule, ruleMatchDetails || {});
+  } else if (rule.ruleType === 'black_rot_risk') {
+    messageParts = buildBlackRotAlertMessage(rule, ruleMatchDetails || {});
   } else {
     messageParts = buildThresholdAlertMessage(rule, fieldEntry);
   }
@@ -545,9 +980,15 @@ async function runAlertChecks({organizationId, siteId, zoneId, bqRows, now}) {
     }
   }
 
-  // Only fetch frost context if at least one enabled frost rule exists.
+  // Only fetch context if at least one enabled rule of given typeexists.
   const hasFrostRules = rulesSnap.docs.some(
       (doc) => (doc.data().ruleType || 'threshold') === 'frost_warning',
+  );
+  const hasMoldRules = rulesSnap.docs.some(
+      (doc) => (doc.data().ruleType || 'threshold') === 'mold_risk',
+  );
+  const hasBlackRotRules = rulesSnap.docs.some(
+      (doc) => (doc.data().ruleType || 'threshold') === 'black_rot_risk',
   );
 
   let frostContext = null;
@@ -561,6 +1002,36 @@ async function runAlertChecks({organizationId, siteId, zoneId, bqRows, now}) {
       });
     } catch (err) {
       console.error('runAlertChecks: failed to fetch frost context:', err.message);
+    }
+  }
+
+  let moldContext = null;
+  if (hasMoldRules) {
+    try {
+      // Fetch enough history for the common default duration window.
+      moldContext = await fetchRecentMoldContext({
+        organizationId,
+        siteId,
+        zoneId,
+        now,
+        durationHours: 6,
+      });
+    } catch (err) {
+      console.error('runAlertChecks: failed to fetch mold context:', err.message);
+    }
+  }
+
+  let blackRotContext = null;
+  if (hasBlackRotRules) {
+    try {
+      blackRotContext = await fetchRecentBlackRotContext({
+        organizationId,
+        siteId,
+        zoneId,
+        now,
+      });
+    } catch (err) {
+      console.error('runAlertChecks: failed to fetch black rot context:', err.message);
     }
   }
 
@@ -607,6 +1078,68 @@ async function runAlertChecks({organizationId, siteId, zoneId, bqRows, now}) {
       continue;
     }
 
+    if (ruleType === 'mold_risk') {
+      // Re-fetch if this specific rule wants a longer window than the default fetch.
+      const moldDurationHours = defaultIfNull(
+          toNumberOrNull((rule.ruleConfig || {}).durationHours),
+          6.0,
+      );
+
+      let effectiveMoldContext = moldContext;
+      if (moldDurationHours > 6) {
+        try {
+          effectiveMoldContext = await fetchRecentMoldContext({
+            organizationId,
+            siteId,
+            zoneId,
+            now,
+            durationHours: moldDurationHours,
+          });
+        } catch (err) {
+          console.error('runAlertChecks: failed to refresh mold context:', err.message);
+          continue;
+        }
+      }
+
+      if (!effectiveMoldContext) continue;
+
+      const result = evaluateMoldRisk(rule, effectiveMoldContext);
+      if (!result.matched) continue;
+
+      await dispatchAlertNotifications({
+        ruleDoc,
+        rule,
+        organizationId,
+        siteId,
+        zoneId,
+        fieldEntry: result.fieldEntry,
+        now,
+        isTest: false,
+        ruleMatchDetails: result.details,
+      });
+      continue;
+    }
+
+    if (ruleType === 'black_rot_risk') {
+      if (!blackRotContext) continue;
+
+      const result = evaluateBlackRotRisk(rule, blackRotContext);
+      if (!result.matched) continue;
+
+      await dispatchAlertNotifications({
+        ruleDoc,
+        rule,
+        organizationId,
+        siteId,
+        zoneId,
+        fieldEntry: result.fieldEntry,
+        now,
+        isTest: false,
+        ruleMatchDetails: result.details,
+      });
+      continue;
+    }
+
     const fieldEntry = fieldValueMap[rule.fieldAlias];
     if (!fieldEntry) continue;
 
@@ -633,4 +1166,8 @@ module.exports = {
   dispatchAlertNotifications,
   evaluateFrostWarning,
   fetchRecentFrostContext,
+  evaluateMoldRisk,
+  fetchRecentMoldContext,
+  evaluateBlackRotRisk,
+  fetchRecentBlackRotContext,
 };
