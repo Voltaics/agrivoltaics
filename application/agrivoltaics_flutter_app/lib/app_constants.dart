@@ -1,6 +1,7 @@
 abstract class AppConstants {
   static const double desktopMinWidth = 1280;
   
+  static const String helpPdfUrl = '/help/help.pdf';
 
   static const String influxdbUrl = String.fromEnvironment(
     'INFLUXDB_URL',

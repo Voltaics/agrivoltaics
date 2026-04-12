@@ -1,9 +1,11 @@
 import 'package:agrivoltaics_flutter_app/app_colors.dart';
+import 'package:agrivoltaics_flutter_app/app_constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'notifications.dart';
 import '../stationary_dashboard/stationary_dashboard.dart';
@@ -53,6 +55,68 @@ class HomePage extends State<HomeState> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  Future<void> _openHelpPdf() async {
+    final uri = Uri.parse(AppConstants.helpPdfUrl);
+
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open help PDF.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleOverflowMenuSelection(String value) async {
+    switch (value) {
+      case 'help':
+        await _openHelpPdf();
+        break;
+      case 'logout':
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (BuildContext context) => const SignOutDialog(),
+        );
+        break;
+    }
+  }
+
+  Widget _buildOverflowMenuButton({
+    Color iconColor = AppColors.textPrimary,
+    VisualDensity? visualDensity,
+  }) {
+    return PopupMenuButton<String>(
+      tooltip: 'Menu',
+      icon: Icon(Icons.menu, color: iconColor),
+      onSelected: _handleOverflowMenuSelection,
+      itemBuilder: (context) => const [
+        PopupMenuItem<String>(
+          value: 'help',
+          child: Row(
+            children: [
+              Icon(Icons.help_outline),
+              SizedBox(width: 12),
+              Text('Help'),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'logout',
+          child: Row(
+            children: [
+              Icon(Icons.logout),
+              SizedBox(width: 12),
+              Text('Logout'),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   void _showOrganizationMenu(BuildContext context) {
@@ -203,17 +267,11 @@ class HomePage extends State<HomeState> {
                     ),
                   ),
 
-                  // Sign Out button at the bottom
+                  // Overflow menu at the bottom
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: IconButton(
-                      icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) => const SignOutDialog(),
-                        );
-                      },
+                    child: _buildOverflowMenuButton(
+                      iconColor: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -305,15 +363,8 @@ class HomePage extends State<HomeState> {
                 child: _buildMobileOrganizationSelector(context),
               ),
               const NotificationsButton(iconColor: AppColors.textPrimary),
-              IconButton(
-                icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) => const SignOutDialog(),
-                  );
-                },
-                tooltip: 'Logout',
+              _buildOverflowMenuButton(
+                iconColor: AppColors.textPrimary,
               ),
             ],
           ),
@@ -350,16 +401,11 @@ class HomePage extends State<HomeState> {
                   ),
                 ),
                 const NotificationsButton(iconColor: AppColors.textPrimary),
-                IconButton(
-                  icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) => const SignOutDialog(),
-                    );
-                  },
-                  tooltip: 'Logout',
-                  visualDensity: compactRail ? VisualDensity.compact : VisualDensity.standard,
+                _buildOverflowMenuButton(
+                  iconColor: AppColors.textPrimary,
+                  visualDensity: compactRail
+                      ? VisualDensity.compact
+                      : VisualDensity.standard,
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
