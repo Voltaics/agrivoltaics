@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../app_constants.dart';
 import '../models/organization.dart';
 import '../models/member.dart';
 
@@ -50,7 +51,15 @@ class OrganizationService {
     String? description,
     String? logoUrl,
   }) async {
-    final userId = _auth.currentUser!.uid;
+    final user = _auth.currentUser;
+    if (!AppConstants.canCreateOrganizationForUser(
+      uid: user?.uid,
+      email: user?.email,
+    )) {
+      throw Exception('You are not authorized to create organizations.');
+    }
+
+    final userId = user!.uid;
     final orgRef = _firestore.collection('organizations').doc();
     
     final org = Organization(

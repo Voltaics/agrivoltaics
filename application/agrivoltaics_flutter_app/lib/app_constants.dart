@@ -1,5 +1,20 @@
 abstract class AppConstants {
   static const double desktopMinWidth = 1280;
+  static const String organizationCreationAllowedUid =
+      '2qeg0hRKEPbJX4mIwtjZcsEVWFx2';
+  static const String organizationCreationAllowedEmail = 'mahsenr2@gmail.com';
+
+  static bool canCreateOrganizationForUser({String? uid, String? email}) {
+    if (uid != organizationCreationAllowedUid) {
+      return false;
+    }
+
+    if (email == null || email.trim().isEmpty) {
+      return true;
+    }
+
+    return email.trim().toLowerCase() == organizationCreationAllowedEmail;
+  }
   
 
   static const String influxdbUrl = String.fromEnvironment(
