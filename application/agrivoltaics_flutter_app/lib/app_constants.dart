@@ -16,6 +16,7 @@ abstract class AppConstants {
     return email.trim().toLowerCase() == organizationCreationAllowedEmail;
   }
   
+  static const String helpPdfUrl = '/help/help.pdf';
 
   static const String influxdbUrl = String.fromEnvironment(
     'INFLUXDB_URL',

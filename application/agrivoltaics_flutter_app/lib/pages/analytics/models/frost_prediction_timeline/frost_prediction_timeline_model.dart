@@ -14,8 +14,6 @@ import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
-enum _LoadState { idle, loading, success, error }
-
 class FrostPredictionTimelineModel extends StatefulWidget {
   const FrostPredictionTimelineModel({super.key});
 
@@ -28,15 +26,8 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
   final ZoneService _zoneService = ZoneService();
   late final FrostPredictionSeriesService _service;
 
-  models.Site? _selectedSite;
-  Zone? _selectedZone;
-  PickerDateRange? _dateRange;
   Stream<List<Zone>>? _zoneStream;
   String? _zoneStreamSiteId;
-
-  _LoadState _state = _LoadState.idle;
-  String? _error;
-  FrostTimelineResponse? _response;
 
   late final TrackballBehavior _trackballBehavior;
   int? _lastSelectedDataPointIndex;
@@ -49,9 +40,14 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
       endpointUrl: AppConstants.frostPredictionSeriesEndpoint,
     );
 
-    final now = DateTime.now();
-    final sevenDaysAgo = now.subtract(const Duration(days: 7));
-    _dateRange = PickerDateRange(sevenDaysAgo, now);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appState = context.read<AppState>();
+      if (appState.frostTimelineDateRange == null) {
+        final now = DateTime.now();
+        final twoDaysAgo = now.subtract(const Duration(days: 2));
+        appState.setFrostTimelineDateRange(PickerDateRange(twoDaysAgo, now));
+      }
+    });
 
     _trackballBehavior = TrackballBehavior(
       enable: true,
@@ -78,47 +74,34 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
   Future<void> _loadTimeline() async {
     final appState = context.read<AppState>();
     final org = appState.selectedOrganization;
+    final selectedSite = appState.frostTimelineSelectedSite;
+    final selectedZone = appState.frostTimelineSelectedZone;
+    final dateRange = appState.frostTimelineDateRange;
 
     if (org == null) {
-      setState(() {
-        _state = _LoadState.error;
-        _error = 'Select an organization first.';
-      });
+      appState.setFrostTimelineError('Select an organization first.');
       return;
     }
 
-    if (_selectedSite == null) {
-      setState(() {
-        _state = _LoadState.error;
-        _error = 'Select a site.';
-      });
+    if (selectedSite == null) {
+      appState.setFrostTimelineError('Select a site.');
       return;
     }
 
-    if (_selectedZone == null) {
-      setState(() {
-        _state = _LoadState.error;
-        _error = 'Select a zone.';
-      });
+    if (selectedZone == null) {
+      appState.setFrostTimelineError('Select a zone.');
       return;
     }
 
-    final start = _dateRange?.startDate;
-    final end = _dateRange?.endDate;
+    final start = dateRange?.startDate;
+    final end = dateRange?.endDate;
 
     if (start == null || end == null) {
-      setState(() {
-        _state = _LoadState.error;
-        _error = 'Select a valid date range.';
-      });
+      appState.setFrostTimelineError('Select a valid date range.');
       return;
     }
 
-    setState(() {
-      _state = _LoadState.loading;
-      _error = null;
-      _response = null;
-    });
+    appState.startFrostTimelineLoad();
 
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -126,27 +109,19 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
 
       final response = await _service.fetchTimeline(
         organizationId: org.id,
-        siteId: _selectedSite!.id,
-        zoneId: _selectedZone!.id,
+        siteId: selectedSite.id,
+        zoneId: selectedZone.id,
         start: start,
         end: end,
-        timezone: _selectedSite!.timezone,
+        timezone: selectedSite.timezone,
         idToken: idToken,
       );
 
       if (!mounted) return;
-
-      setState(() {
-        _state = _LoadState.success;
-        _response = response;
-      });
+      appState.setFrostTimelineResponse(response);
     } catch (e) {
       if (!mounted) return;
-
-      setState(() {
-        _state = _LoadState.error;
-        _error = e.toString();
-      });
+      appState.setFrostTimelineError(e.toString());
     }
   }
 
@@ -293,11 +268,20 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
   }
 
   Widget _buildFilters(BuildContext context, List<models.Site> sites, String orgId) {
+    final appState = context.watch<AppState>();
+    final selectedSite = appState.frostTimelineSelectedSite;
+    final selectedZone = appState.frostTimelineSelectedZone;
+    final dateRange = appState.frostTimelineDateRange ??
+        PickerDateRange(
+          DateTime.now().subtract(const Duration(days: 2)),
+          DateTime.now(),
+        );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
-          initialValue: _selectedSite?.id,
+          initialValue: selectedSite?.id,
           decoration: const InputDecoration(
             labelText: 'Site',
             border: OutlineInputBorder(),
@@ -312,23 +296,19 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
               .toList(),
           onChanged: (siteId) {
             final site = sites.where((s) => s.id == siteId).firstOrNull;
+            appState.setFrostTimelineSelectedSite(site);
             setState(() {
-              _selectedSite = site;
-              _selectedZone = null;
-              _response = null;
-              _state = _LoadState.idle;
-              _error = null;
               _zoneStream = null;
               _zoneStreamSiteId = null;
             });
           },
         ),
         const SizedBox(height: 12),
-        if (_selectedSite == null)
+        if (selectedSite == null)
           const Text('Choose a site to load zones.')
         else
           StreamBuilder<List<Zone>>(
-            stream: _getZoneStream(orgId, _selectedSite!.id),
+            stream: _getZoneStream(orgId, selectedSite.id),
             builder: (context, zoneSnapshot) {
               if (zoneSnapshot.connectionState == ConnectionState.waiting) {
                 return const Padding(
@@ -349,18 +329,18 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                 return const Text('No enabled zones available for this site.');
               }
 
-              final selectedZoneStillExists = zones.any((z) => z.id == _selectedZone?.id);
-              if (!selectedZoneStillExists && _selectedZone != null) {
+              final selectedZoneStillExists =
+                  zones.any((z) => z.id == selectedZone?.id);
+
+              if (!selectedZoneStillExists && selectedZone != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!mounted) return;
-                  setState(() {
-                    _selectedZone = null;
-                  });
+                  appState.setFrostTimelineSelectedZone(null);
                 });
               }
 
               return DropdownButtonFormField<String>(
-                initialValue: selectedZoneStillExists ? _selectedZone?.id : null,
+                initialValue: selectedZoneStillExists ? selectedZone?.id : null,
                 decoration: const InputDecoration(
                   labelText: 'Zone',
                   border: OutlineInputBorder(),
@@ -375,43 +355,32 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                     .toList(),
                 onChanged: (zoneId) {
                   final zone = zones.where((z) => z.id == zoneId).firstOrNull;
-                  setState(() {
-                    _selectedZone = zone;
-                    _response = null;
-                    _state = _LoadState.idle;
-                    _error = null;
-                  });
+                  appState.setFrostTimelineSelectedZone(zone);
                 },
               );
             },
           ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          onPressed: _selectedSite == null
+          onPressed: selectedSite == null
               ? null
               : () {
                   showDateRangePickerDialog(
                     context,
-                    initialRange:
-                        _dateRange ?? PickerDateRange(DateTime.now(), DateTime.now()),
+                    initialRange: dateRange,
                     onApplied: (range) {
-                      setState(() {
-                        _dateRange = range;
-                        _response = null;
-                        _state = _LoadState.idle;
-                        _error = null;
-                      });
+                      appState.setFrostTimelineDateRange(range);
                     },
                   );
                 },
           icon: const Icon(Icons.date_range),
-          label: Text(_formatRange(_dateRange!)),
+          label: Text(_formatRange(dateRange)),
         ),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: _state == _LoadState.loading ? null : _loadTimeline,
+            onPressed: appState.frostTimelineIsLoading ? null : _loadTimeline,
             icon: const Icon(Icons.show_chart),
             label: const Text('Load frost timeline'),
           ),
@@ -421,135 +390,155 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
   }
 
   Widget _buildResults(BuildContext context, AppViewportInfo viewportInfo) {
-    switch (_state) {
-      case _LoadState.idle:
-        return const _InfoCard(
-          child: Text('Choose a site, zone, and date range, then load the frost timeline.'),
+    final appState = context.watch<AppState>();
+    final response = appState.frostTimelineResponse;
+    final isLoading = appState.frostTimelineIsLoading;
+    final error = appState.frostTimelineErrorMessage;
+        if (response == null && isLoading) {
+      return const _InfoCard(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Row(
+            children: [
+              SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+              SizedBox(width: 10),
+              Text('Loading frost timeline...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (response == null && error != null) {
+      return _InfoCard(
+        child: Text(error),
+      );
+    }
+
+    if (response == null) {
+      return const _InfoCard(
+        child: Text('Choose a site, zone, and date range, then load the frost timeline.'),
+      );
+    }
+
+    if (response.points.isEmpty) {
+      return const _InfoCard(
+        child: Text('No frost timeline data available in this range.'),
+      );
+    }
+
+    final dateRange = appState.frostTimelineDateRange ??
+        PickerDateRange(
+          DateTime.now().subtract(const Duration(days: 2)),
+          DateTime.now(),
         );
-      case _LoadState.loading:
-        return const _InfoCard(
-          child: Padding(
-            padding: EdgeInsets.all(12),
-            child: Row(
-              children: [
-                SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-                SizedBox(width: 10),
-                Text('Loading frost timeline...'),
-              ],
+    final axisConfig = _getAxisConfig(dateRange);
+    final chartHeight = viewportInfo.isDesktop
+        ? 430.0
+        : viewportInfo.isMobileLandscape
+            ? 300.0
+            : 260.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: LinearProgressIndicator(),
+          ),
+        Text(
+          'Interval: ${response.interval}',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 8),
+            child: Text(error),
+          ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: chartHeight,
+          child: TapRegion(
+            onTapOutside: (_) {
+              _trackballDismissedByOutsideTap = true;
+              _lastSelectedDataPointIndex = null;
+              _trackballBehavior.hide();
+            },
+            child: MouseRegion(
+              onExit: (_) {
+                final index = _lastSelectedDataPointIndex;
+                if (index == null || _trackballDismissedByOutsideTap) return;
+                Future<void>.delayed(Duration.zero, () {
+                  if (!mounted || _trackballDismissedByOutsideTap) return;
+                  _trackballBehavior.showByIndex(index);
+                });
+              },
+              child: SfCartesianChart(
+                onTrackballPositionChanging: (TrackballArgs args) {
+                  final pointIndex = args.chartPointInfo.dataPointIndex;
+                  if (pointIndex != null) {
+                    _trackballDismissedByOutsideTap = false;
+                    _lastSelectedDataPointIndex = pointIndex;
+                  }
+                },
+                legend: const Legend(
+                  isVisible: true,
+                  position: LegendPosition.bottom,
+                  overflowMode: LegendItemOverflowMode.wrap,
+                ),
+                trackballBehavior: _trackballBehavior,
+                primaryXAxis: DateTimeAxis(
+                  minimum: dateRange.startDate,
+                  maximum: dateRange.endDate,
+                  edgeLabelPlacement: EdgeLabelPlacement.shift,
+                  intervalType: axisConfig.intervalType,
+                  interval: axisConfig.axisInterval,
+                  axisLabelFormatter: (AxisLabelRenderDetails details) {
+                    final dt = DateTime.fromMillisecondsSinceEpoch(details.value.toInt());
+                    return ChartAxisLabel(
+                      axisConfig.labelDateFormat.format(dt),
+                      details.textStyle,
+                    );
+                  },
+                ),
+                primaryYAxis: const NumericAxis(
+                  majorGridLines: MajorGridLines(width: 0.5),
+                ),
+                series: [
+                  LineSeries<FrostTimelinePoint, DateTime>(
+                    name: 'Temperature',
+                    dataSource: response.points.where((p) => p.temperature != null).toList(),
+                    xValueMapper: (p, _) => p.time,
+                    yValueMapper: (p, _) => p.temperature!,
+                  ),
+                  LineSeries<FrostTimelinePoint, DateTime>(
+                    name: 'Humidity',
+                    dataSource: response.points.where((p) => p.humidity != null).toList(),
+                    xValueMapper: (p, _) => p.time,
+                    yValueMapper: (p, _) => p.humidity!,
+                  ),
+                  LineSeries<FrostTimelinePoint, DateTime>(
+                    name: 'Soil Temp',
+                    dataSource: response.points.where((p) => p.soilTemperature != null).toList(),
+                    xValueMapper: (p, _) => p.time,
+                    yValueMapper: (p, _) => p.soilTemperature!,
+                  ),
+                  LineSeries<FrostTimelinePoint, DateTime>(
+                    name: 'Frost Chance (%)',
+                    dataSource: response.points,
+                    xValueMapper: (p, _) => p.time,
+                    yValueMapper: (p, _) => p.predictedChance,
+                  ),
+                ],
+              ),
             ),
           ),
-        );
-      case _LoadState.error:
-        return _InfoCard(
-          child: Text(_error ?? 'Unknown error'),
-        );
-      case _LoadState.success:
-        final response = _response;
-        if (response == null || response.points.isEmpty) {
-          return const _InfoCard(
-            child: Text('No frost timeline data available in this range.'),
-          );
-        }
-
-        final dateRange = _dateRange!;
-        final axisConfig = _getAxisConfig(dateRange);
-        final chartHeight = viewportInfo.isDesktop
-            ? 430.0
-            : viewportInfo.isMobileLandscape
-                ? 300.0
-                : 260.0;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Interval: ${response.interval}',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: chartHeight,
-              child: TapRegion(
-                onTapOutside: (_) {
-                  _trackballDismissedByOutsideTap = true;
-                  _lastSelectedDataPointIndex = null;
-                  _trackballBehavior.hide();
-                },
-                child: MouseRegion(
-                  onExit: (_) {
-                    final index = _lastSelectedDataPointIndex;
-                    if (index == null || _trackballDismissedByOutsideTap) return;
-                    Future<void>.delayed(Duration.zero, () {
-                      if (!mounted || _trackballDismissedByOutsideTap) return;
-                      _trackballBehavior.showByIndex(index);
-                    });
-                  },
-                  child: SfCartesianChart(
-                    onTrackballPositionChanging: (TrackballArgs args) {
-                      final pointIndex = args.chartPointInfo.dataPointIndex;
-                      if (pointIndex != null) {
-                        _trackballDismissedByOutsideTap = false;
-                        _lastSelectedDataPointIndex = pointIndex;
-                      }
-                    },
-                    legend: const Legend(
-                      isVisible: true,
-                      position: LegendPosition.bottom,
-                      overflowMode: LegendItemOverflowMode.wrap,
-                    ),
-                    trackballBehavior: _trackballBehavior,
-                    primaryXAxis: DateTimeAxis(
-                      minimum: dateRange.startDate,
-                      maximum: dateRange.endDate,
-                      edgeLabelPlacement: EdgeLabelPlacement.shift,
-                      intervalType: axisConfig.intervalType,
-                      interval: axisConfig.axisInterval,
-                      axisLabelFormatter: (AxisLabelRenderDetails details) {
-                        final dt = DateTime.fromMillisecondsSinceEpoch(details.value.toInt());
-                        return ChartAxisLabel(
-                          axisConfig.labelDateFormat.format(dt),
-                          details.textStyle,
-                        );
-                      },
-                    ),
-                    primaryYAxis: const NumericAxis(
-                      majorGridLines: MajorGridLines(width: 0.5),
-                    ),
-                    series: [
-                      LineSeries<FrostTimelinePoint, DateTime>(
-                        name: 'Temperature',
-                        dataSource: response.points.where((p) => p.temperature != null).toList(),
-                        xValueMapper: (p, _) => p.time,
-                        yValueMapper: (p, _) => p.temperature!,
-                      ),
-                      LineSeries<FrostTimelinePoint, DateTime>(
-                        name: 'Humidity',
-                        dataSource: response.points.where((p) => p.humidity != null).toList(),
-                        xValueMapper: (p, _) => p.time,
-                        yValueMapper: (p, _) => p.humidity!,
-                      ),
-                      LineSeries<FrostTimelinePoint, DateTime>(
-                        name: 'Soil Temp',
-                        dataSource: response.points.where((p) => p.soilTemperature != null).toList(),
-                        xValueMapper: (p, _) => p.time,
-                        yValueMapper: (p, _) => p.soilTemperature!,
-                      ),
-                      LineSeries<FrostTimelinePoint, DateTime>(
-                        name: 'Frost Chance (%)',
-                        dataSource: response.points,
-                        xValueMapper: (p, _) => p.time,
-                        yValueMapper: (p, _) => p.predictedChance,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-    }
+        ),
+      ],
+    );
   }
 }
 
