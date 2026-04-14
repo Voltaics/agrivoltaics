@@ -59,7 +59,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
     });
 
     try {
-      await _organizationService.addMember(
+      final outcome = await _organizationService.addMember(
         orgId: widget.organization.id,
         userEmail: email,
         role: _selectedRole,
@@ -76,7 +76,11 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Added $email as $_selectedRole'),
+          content: Text(
+            outcome == AddMemberOutcome.added
+                ? 'Added $email as $_selectedRole'
+                : 'Invitation created for $email ($_selectedRole). They will join after first login.',
+          ),
           backgroundColor: AppColors.success,
         ),
       );
