@@ -42,6 +42,14 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
     'Pacific/Honolulu',
   ];
 
+  List<String> get _availableTimezones {
+    final currentTimezone = widget.site.timezone.trim();
+    if (currentTimezone.isNotEmpty && !_timezones.contains(currentTimezone)) {
+      return [currentTimezone, ..._timezones];
+    }
+    return _timezones;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -62,7 +70,12 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
       _longitudeController = TextEditingController();
     }
     
-    _selectedTimezone = widget.site.timezone;
+    final siteTimezone = widget.site.timezone.trim();
+    if (siteTimezone.isNotEmpty) {
+      _selectedTimezone = siteTimezone;
+    } else {
+      _selectedTimezone = _timezones.first;
+    }
   }
 
   @override
@@ -125,7 +138,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Site updated successfully'),
-            backgroundColor: AppColors.error,
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -212,7 +225,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
           appState.setSelectedSite(newSelectedSite);
         } else {
           // No sites left, clear selection
-          appState.setSelectedSite(null as dynamic);
+          appState.clearSelectedSite();
         }
       }
 
@@ -316,12 +329,12 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedTimezone,
+                  value: _selectedTimezone,
                   decoration: const InputDecoration(
                     labelText: 'Timezone',
                     border: OutlineInputBorder(),
                   ),
-                  items: _timezones.map((String timezone) {
+                  items: _availableTimezones.map((String timezone) {
                     return DropdownMenuItem<String>(
                       value: timezone,
                       child: Text(timezone),

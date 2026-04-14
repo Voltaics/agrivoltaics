@@ -313,6 +313,12 @@ class AppState with ChangeNotifier {
     notifyListeners();
   }
 
+  void clearSelectedSite() {
+    selectedSite = null;
+    selectedZone = null;
+    notifyListeners();
+  }
+
   void setSelectedZone(models.Zone zone) {
     selectedZone = zone;
     notifyListeners();
