@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'widgets/app_overflow_menu_button.dart';
 
 import 'notifications.dart';
 import '../stationary_dashboard/stationary_dashboard.dart';
@@ -13,7 +14,6 @@ import '../alerts/alerts_page.dart';
 import '../analytics/analytics_dashboard.dart';
 import 'widgets/organization_menu_sheet.dart';
 import 'widgets/organization_selector.dart';
-import 'widgets/sign_out_dialog.dart';
 import '../../app_state.dart';
 import '../../services/fcm_service.dart';
 import '../../responsive/app_viewport.dart';
@@ -38,11 +38,11 @@ class HomePage extends State<HomeState> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    StationaryDashboardPage(),  // Stationary Sensors
-    HistoricalDashboardPage(),        // Historical Trends
-    MobileDashboardPage(),            // Mobile Sensors
-    AnalyticsDashboardPage(),         // Analytics
-    AlertsPage(),                     // Alert Rules
+    StationaryDashboardPage(key: PageStorageKey('stationary-dashboard')),
+    HistoricalDashboardPage(key: PageStorageKey('historical-dashboard')),
+    MobileDashboardPage(key: PageStorageKey('mobile-dashboard')),
+    AnalyticsDashboardPage(key: PageStorageKey('analytics-dashboard')),
+    AlertsPage(key: PageStorageKey('alerts-page')),
   ];
 
   // FCM token status for in-app banner
@@ -53,6 +53,13 @@ class HomePage extends State<HomeState> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  Widget _buildCurrentPage() {
+    return IndexedStack(
+      index: _selectedIndex,
+      children: _pages,
+    );
   }
 
   void _showOrganizationMenu(BuildContext context) {
@@ -203,17 +210,11 @@ class HomePage extends State<HomeState> {
                     ),
                   ),
 
-                  // Sign Out button at the bottom
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: IconButton(
-                      icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) => const SignOutDialog(),
-                        );
-                      },
+                  // Overflow menu at the bottom
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: AppOverflowMenuButton(
+                      iconColor: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -226,7 +227,7 @@ class HomePage extends State<HomeState> {
                     children: [
                       _buildMobileTopBar(context),
                       Expanded(
-                        child: _pages[_selectedIndex],
+                        child: _buildCurrentPage(),
                       ),
                     ],
                   )
@@ -235,11 +236,11 @@ class HomePage extends State<HomeState> {
                         children: [
                           _buildMobileLandscapeSidebar(context),
                           Expanded(
-                            child: _pages[_selectedIndex],
+                            child: _buildCurrentPage(),
                           ),
                         ],
                       )
-                    : _pages[_selectedIndex],
+                    : _buildCurrentPage(),
           ),
         ],
             ),
@@ -305,15 +306,8 @@ class HomePage extends State<HomeState> {
                 child: _buildMobileOrganizationSelector(context),
               ),
               const NotificationsButton(iconColor: AppColors.textPrimary),
-              IconButton(
-                icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) => const SignOutDialog(),
-                  );
-                },
-                tooltip: 'Logout',
+              const AppOverflowMenuButton(
+                iconColor: AppColors.textPrimary,
               ),
             ],
           ),
@@ -350,16 +344,12 @@ class HomePage extends State<HomeState> {
                   ),
                 ),
                 const NotificationsButton(iconColor: AppColors.textPrimary),
-                IconButton(
-                  icon: Icon(MdiIcons.logout, color: AppColors.textPrimary),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) => const SignOutDialog(),
-                    );
-                  },
-                  tooltip: 'Logout',
-                  visualDensity: compactRail ? VisualDensity.compact : VisualDensity.standard,
+                AppOverflowMenuButton(
+                  iconColor: AppColors.textPrimary,
+                  padding: compactRail
+                      ? const EdgeInsets.all(4)
+                      : const EdgeInsets.all(8),
+                  iconSize: compactRail ? 22 : null,
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
