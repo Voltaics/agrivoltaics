@@ -4,9 +4,16 @@ import '../app_constants.dart';
 import '../models/organization.dart';
 import '../models/member.dart';
 
+enum AddMemberOutcome { added, invited }
+
 class OrganizationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  String _inviteDocIdForEmail(String normalizedEmail) {
+    // Firestore document IDs cannot contain '/'.
+    return normalizedEmail.replaceAll('/', '_');
+  }
 
   // Get user's organizations
   Stream<List<Organization>> getUserOrganizations() {
@@ -139,22 +146,61 @@ class OrganizationService {
   }
 
   // Add a member to an organization
-  Future<void> addMember({
+  Future<AddMemberOutcome> addMember({
     required String orgId,
     required String userEmail,
     String role = 'viewer',
   }) async {
     final currentUserId = _auth.currentUser!.uid;
+    final normalizedEmail = userEmail.trim().toLowerCase();
+    final inviteDocId = _inviteDocIdForEmail(normalizedEmail);
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+    if (normalizedEmail.isEmpty) {
+      throw Exception('Email is required');
+    }
+
+    if (!emailRegex.hasMatch(normalizedEmail)) {
+      throw Exception('Please provide a valid email address.');
+    }
+
+    final existingByEmail = await _firestore
+        .collection('organizations/$orgId/members')
+        .where('email', isEqualTo: normalizedEmail)
+        .limit(1)
+        .get();
+
+    if (existingByEmail.docs.isNotEmpty) {
+      throw Exception('User is already a member of this organization');
+    }
     
     // Find user by email
     final userQuery = await _firestore
         .collection('users')
-        .where('email', isEqualTo: userEmail.toLowerCase().trim())
+        .where('email', isEqualTo: normalizedEmail)
         .limit(1)
         .get();
-    
+
+    final permissions = MemberPermissions.forRole(role);
+
     if (userQuery.docs.isEmpty) {
-      throw Exception('User with email $userEmail not found');
+      final inviteRef = _firestore.doc(
+        'organizations/$orgId/pendingInvites/$inviteDocId',
+      );
+
+      await inviteRef.set({
+        'orgId': orgId,
+        'email': normalizedEmail,
+        'emailOriginal': userEmail.trim(),
+        'role': role,
+        'permissions': permissions.toMap(),
+        'status': 'pending',
+        'invitedBy': currentUserId,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      return AddMemberOutcome.invited;
     }
     
     final userId = userQuery.docs.first.id;
@@ -167,17 +213,21 @@ class OrganizationService {
     if (memberDoc.exists) {
       throw Exception('User is already a member of this organization');
     }
-    
-    // Add member with permissions based on role
-    final permissions = MemberPermissions.forRole(role);
+
+    await _firestore
+        .doc('organizations/$orgId/pendingInvites/$inviteDocId')
+        .delete();
     
     await _firestore.doc('organizations/$orgId/members/$userId').set({
+      'email': normalizedEmail,
       'role': role,
       'permissions': permissions.toMap(),
       'joinedAt': FieldValue.serverTimestamp(),
       'invitedBy': currentUserId,
       'lastActive': null,
     });
+
+    return AddMemberOutcome.added;
   }
 
   // Remove a member from an organization
