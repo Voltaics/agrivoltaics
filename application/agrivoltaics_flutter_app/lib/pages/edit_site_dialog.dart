@@ -398,7 +398,6 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
           ),
           child: const Text('Delete'),
         ),
-        const Spacer(),
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
