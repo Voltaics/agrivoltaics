@@ -1,6 +1,7 @@
 import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../app_constants.dart';
 import '../models/organization.dart';
 import '../services/organization_service.dart';
