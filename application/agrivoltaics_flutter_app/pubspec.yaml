@@ -42,6 +42,7 @@ dependencies:
   google_sign_in: '>=6.2.1'
   webview_flutter: '>=4.9.0'
   flutter_inappwebview: '>=6.1.5'
+  url_launcher: ^6.3.0
   syncfusion_flutter_charts: ^31.2.12
   syncfusion_flutter_datepicker: ^31.2.12
   time_range: '>=1.1.0'
@@ -56,6 +57,7 @@ dependencies:
   timezone: '>=0.10.1'
   flutter_native_timezone: '>=2.0.0'
   http: '>=1.2.2'
+  image_picker: '>=1.1.2'
   timer_builder: '>=2.0.0'
   g_recaptcha_v3: '>=1.0.0'
   cloud_firestore: '>=5.4.4'

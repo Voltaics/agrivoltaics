@@ -89,7 +89,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
         const SnackBar(
           content: Text('Organization updated successfully!'),
           backgroundColor: AppColors.success,
-          duration: const Duration(seconds: 2),
+          duration: Duration(seconds: 2),
         ),
       );
     } catch (e) {
@@ -114,7 +114,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            const Icon(Icons.warning, color: AppColors.warning),
+            Icon(Icons.warning, color: AppColors.warning),
             SizedBox(width: 12),
             Text('Delete Organization?'),
           ],
@@ -130,7 +130,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
             const SizedBox(height: 12),
             const Text(
               'This action cannot be undone. All sites, sensors, and data associated with this organization will be permanently deleted.',
-              style: const TextStyle(color: AppColors.error),
+              style: TextStyle(color: AppColors.error),
             ),
           ],
         ),
@@ -229,21 +229,37 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final isDesktop = media.size.width >= 1280;
+    final maxDialogWidth = media.size.width * 0.95;
+    final preferredWidth = isDesktop ? 600.0 : 560.0;
+    final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
+    final contentMaxHeight = media.size.height * (isDesktop ? 0.64 : 0.78);
+
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+      contentPadding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       title: const Row(
         children: [
           Icon(Icons.edit, color: AppColors.primary),
           SizedBox(width: 12),
-          Text('Edit Organization'),
+          Expanded(child: Text('Edit Organization')),
         ],
       ),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+      content: SizedBox(
+        width: dialogWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: contentMaxHeight),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+              const SizedBox(height: 6),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -299,7 +315,9 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
                   foregroundColor: AppColors.error,
                 ),
               ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),

@@ -27,6 +27,7 @@ class _AlertsPageState extends State<AlertsPage> {
   final AlertService _alertService = AlertService();
   final FcmService _fcmService = FcmService();
   final ReadingsService _readingsService = ReadingsService();
+  
 
   bool _fcmGranted = false;
   bool _fcmChecked = false;
@@ -48,6 +49,39 @@ class _AlertsPageState extends State<AlertsPage> {
     }
   }
 
+  String _buildConditionLabel(AlertRule rule) {
+    final config = rule.ruleConfig ?? {};
+
+    if (rule.ruleType == AlertRuleType.frostWarning) {
+      final drop = config['tempDropRateFPerHour'] ?? 2.0;
+      final humidity = config['humidityMin'] ?? 90.0;
+      final air = config['airTempMaxF'] ?? 39.0;
+      final soil = config['soilTempMaxF'] ?? 45.0;
+      return 'Frost: drop > $drop°F/hr, RH ≥ $humidity%, air ≤ $air°F, soil ≤ $soil°F';
+    }
+
+    if (rule.ruleType == AlertRuleType.moldRisk) {
+      final humidity = config['humidityMin'] ?? 85.0;
+      final tempMin = config['tempMinF'] ?? 68.0;
+      final tempMax = config['tempMaxF'] ?? 86.0;
+      final hours = config['durationHours'] ?? 6.0;
+      return 'Mold: RH ≥ $humidity% for $hours hr, temp $tempMin\u2013$tempMax°F';
+    }
+
+    if (rule.ruleType == AlertRuleType.blackRotRisk) {
+      final humidity = config['humidityMin'] ?? 90.0;
+      final tempMin = config['tempMinF'] ?? 70.0;
+      final tempMax = config['tempMaxF'] ?? 85.0;
+      final hours = config['followupHours'] ?? 48.0;
+      return 'Black rot: RH ≥ $humidity%, temp $tempMin\u2013$tempMax°F, humid follow-up $hours hr';
+    }
+
+    final fieldName = _readingsService.getReadingName(rule.fieldAlias);
+    final operatorLabel = rule.operator?.label ?? '?';
+    final thresholdLabel = rule.threshold?.toString() ?? '?';
+    return '$fieldName $operatorLabel $thresholdLabel';
+  }
+  
   Future<void> _registerFcm() async {
     final granted = await _fcmService.requestPermissionAndSaveToken();
     if (mounted) {
@@ -74,13 +108,13 @@ class _AlertsPageState extends State<AlertsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // â”€â”€ Header bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        //  Header bar 
         _buildHeader(context, org?.id),
 
-        // â”€â”€ FCM registration banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        //  FCM registration banner 
         if (_fcmChecked && !_fcmGranted) _buildFcmBanner(),
 
-        // â”€â”€ Alert rules list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        //  Alert rules list 
         Expanded(
           child: org == null
               ? _buildNoOrgState()
@@ -91,6 +125,8 @@ class _AlertsPageState extends State<AlertsPage> {
   }
 
   Widget _buildHeader(BuildContext context, String? orgId) {
+    final isCompact = MediaQuery.of(context).size.width < 640;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: const BoxDecoration(
@@ -103,27 +139,55 @@ class _AlertsPageState extends State<AlertsPage> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.notifications_active, color: AppColors.primary),
-          const SizedBox(width: 12),
-          const Text(
-            'Alert Rules',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textOnLight,
+      child: isCompact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.notifications_active, color: AppColors.primary),
+                    SizedBox(width: 12),
+                    Text(
+                      'Alert Rules',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textOnLight,
+                      ),
+                    ),
+                  ],
+                ),
+                if (orgId != null) ...[
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () => _openCreateDialog(context, orgId),
+                    icon: const Icon(Icons.add),
+                    label: const Text('New Alert'),
+                  ),
+                ],
+              ],
+            )
+          : Row(
+              children: [
+                const Icon(Icons.notifications_active, color: AppColors.primary),
+                const SizedBox(width: 12),
+                const Text(
+                  'Alert Rules',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textOnLight,
+                  ),
+                ),
+                const Spacer(),
+                if (orgId != null)
+                  FilledButton.icon(
+                    onPressed: () => _openCreateDialog(context, orgId),
+                    icon: const Icon(Icons.add),
+                    label: const Text('New Alert'),
+                  ),
+              ],
             ),
-          ),
-          const Spacer(),
-          if (orgId != null)
-            FilledButton.icon(
-              onPressed: () => _openCreateDialog(context, orgId),
-              icon: const Icon(Icons.add),
-              label: const Text('New Alert'),
-            ),
-        ],
-      ),
     );
   }
 
@@ -170,6 +234,9 @@ class _AlertsPageState extends State<AlertsPage> {
   }
 
   Widget _buildRulesList(String orgId) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final useDesktopGrid = screenWidth >= 1280;
+
     return StreamBuilder<List<AlertRule>>(
       stream: _alertService.getAlertRules(orgId),
       builder: (context, snapshot) {
@@ -212,9 +279,24 @@ class _AlertsPageState extends State<AlertsPage> {
           );
         }
 
-        return ListView.builder(
+        if (!useDesktopGrid) {
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: rules.length,
+            itemBuilder: (context, index) =>
+                _buildRuleCard(context, orgId, rules[index]),
+          );
+        }
+
+        return GridView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: rules.length,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 560,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.45,
+          ),
           itemBuilder: (context, index) =>
               _buildRuleCard(context, orgId, rules[index]),
         );
@@ -224,7 +306,7 @@ class _AlertsPageState extends State<AlertsPage> {
 
   Widget _buildRuleCard(
       BuildContext context, String orgId, AlertRule rule) {
-    final fieldName = _readingsService.getReadingName(rule.fieldAlias);
+    final conditionLabel = _buildConditionLabel(rule);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -233,7 +315,7 @@ class _AlertsPageState extends State<AlertsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // â”€â”€ Title row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //  Title row 
             Row(
               children: [
                 Expanded(
@@ -270,20 +352,16 @@ class _AlertsPageState extends State<AlertsPage> {
             ),
             const SizedBox(height: 8),
 
-            // â”€â”€ Condition summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Wrap(
               spacing: 8,
               runSpacing: 4,
               children: [
-                _chip(
-                  Icons.sensors,
-                  '$fieldName ${rule.operator.label} ${rule.threshold}',
-                ),
+                _chip(Icons.rule, conditionLabel),
                 if (rule.activeRangeStart != null &&
                     rule.activeRangeEnd != null)
                   _chip(
                     Icons.schedule,
-                    '${rule.activeRangeStart} â€“ ${rule.activeRangeEnd}',
+                    '${rule.activeRangeStart} \u2013 ${rule.activeRangeEnd}',
                   ),
                 _chip(
                   Icons.people_outline,
@@ -294,7 +372,7 @@ class _AlertsPageState extends State<AlertsPage> {
             ),
             const SizedBox(height: 8),
 
-            // â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            //  Actions 
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [

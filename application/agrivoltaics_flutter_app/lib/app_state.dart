@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:http/http.dart' as http;
+import 'package:agrivoltaics_flutter_app/services/historical_series_service.dart';
+import 'package:agrivoltaics_flutter_app/services/frost_prediction_series_service.dart';
 
 // Legacy class for old MongoDB settings - will be removed after migration
 class LegacyZone {
@@ -113,17 +115,206 @@ class AppState with ChangeNotifier {
   // Current User
   AppUser? currentUser;
 
+  // Historical dashboard persistent state
+  models.Site? historicalSelectedSite;
+  PickerDateRange? historicalDateRange;
+  final Set<String> historicalSelectedZoneIds = <String>{};
+  final Set<String> historicalSelectedReadings = <String>{};
+  String historicalSelectedAggregation = 'avg';
+
+  // Analytics dashboard persistent state
+  String? analyticsSelectedModelId;
+  int analyticsModelSession = 0;
+
+  // Frost timeline persistent state
+  models.Site? frostTimelineSelectedSite;
+  models.Zone? frostTimelineSelectedZone;
+  PickerDateRange? frostTimelineDateRange;
+
+  // Historical dashboard loaded result state
+  HistoricalResponse? historicalResponse;
+  bool historicalIsLoading = false;
+  String? historicalErrorMessage;
+
+  // Frost timeline loaded result state
+  FrostTimelineResponse? frostTimelineResponse;
+  bool frostTimelineIsLoading = false;
+  String? frostTimelineErrorMessage;
+
+  void setHistoricalSelectedSite(models.Site? site) {
+    historicalSelectedSite = site;
+    notifyListeners();
+  }
+
+  void setHistoricalDateRange(PickerDateRange range) {
+    historicalDateRange = range;
+    notifyListeners();
+  }
+
+  void setHistoricalSelectedZoneIds(Set<String> zoneIds) {
+    historicalSelectedZoneIds
+      ..clear()
+      ..addAll(zoneIds);
+    notifyListeners();
+  }
+
+  void setHistoricalSelectedReadings(Set<String> readings) {
+    historicalSelectedReadings
+      ..clear()
+      ..addAll(readings);
+    notifyListeners();
+  }
+
+  void setHistoricalSelectedAggregation(String aggregation) {
+    historicalSelectedAggregation = aggregation;
+    notifyListeners();
+  }
+
+  void clearHistoricalDashboardState() {
+    historicalSelectedSite = null;
+    historicalDateRange = null;
+    historicalSelectedZoneIds.clear();
+    historicalSelectedReadings.clear();
+    historicalSelectedAggregation = 'avg';
+
+    historicalResponse = null;
+    historicalIsLoading = false;
+    historicalErrorMessage = null;
+
+    notifyListeners();
+  }
+
+  void setAnalyticsSelectedModelId(String? modelId) {
+    analyticsSelectedModelId = modelId;
+    analyticsModelSession++;
+    notifyListeners();
+  }
+
+  void clearAnalyticsDashboardState() {
+    analyticsSelectedModelId = null;
+    analyticsModelSession = 0;
+    notifyListeners();
+  }
+
+  void setFrostTimelineSelectedSite(models.Site? site) {
+    frostTimelineSelectedSite = site;
+    frostTimelineSelectedZone = null;
+    frostTimelineResponse = null;
+    frostTimelineIsLoading = false;
+    frostTimelineErrorMessage = null;
+    notifyListeners();
+  }
+
+  void setFrostTimelineSelectedZone(models.Zone? zone) {
+    frostTimelineSelectedZone = zone;
+    frostTimelineResponse = null;
+    frostTimelineIsLoading = false;
+    frostTimelineErrorMessage = null;
+    notifyListeners();
+  }
+
+  void setFrostTimelineDateRange(PickerDateRange range) {
+    frostTimelineDateRange = range;
+    frostTimelineResponse = null;
+    frostTimelineIsLoading = false;
+    frostTimelineErrorMessage = null;
+    notifyListeners();
+  }
+
+  void clearFrostTimelineState() {
+    frostTimelineSelectedSite = null;
+    frostTimelineSelectedZone = null;
+    frostTimelineDateRange = null;
+
+    frostTimelineResponse = null;
+    frostTimelineIsLoading = false;
+    frostTimelineErrorMessage = null;
+
+    notifyListeners();
+  }
+
+  void startHistoricalLoad() {
+    historicalIsLoading = true;
+    historicalErrorMessage = null;
+    notifyListeners();
+  }
+
+  void setHistoricalResponse(HistoricalResponse response) {
+    historicalResponse = response;
+    historicalIsLoading = false;
+    historicalErrorMessage = null;
+    notifyListeners();
+  }
+
+  void setHistoricalError(String message) {
+    historicalIsLoading = false;
+    historicalErrorMessage = message;
+    notifyListeners();
+  }
+
+  void clearHistoricalResults() {
+    historicalResponse = null;
+    historicalIsLoading = false;
+    historicalErrorMessage = null;
+    notifyListeners();
+  }
+
+  void startFrostTimelineLoad() {
+    frostTimelineIsLoading = true;
+    frostTimelineErrorMessage = null;
+    notifyListeners();
+  }
+
+  void setFrostTimelineResponse(FrostTimelineResponse response) {
+    frostTimelineResponse = response;
+    frostTimelineIsLoading = false;
+    frostTimelineErrorMessage = null;
+    notifyListeners();
+  }
+
+  void setFrostTimelineError(String message) {
+    frostTimelineIsLoading = false;
+    frostTimelineErrorMessage = message;
+    notifyListeners();
+  }
+
+  void clearFrostTimelineResults() {
+    frostTimelineResponse = null;
+    frostTimelineIsLoading = false;
+    frostTimelineErrorMessage = null;
+    notifyListeners();
+  }
+
   void setSelectedOrganization(Organization org) {
     selectedOrganization = org;
-    // Clear site and zone when org changes
     selectedSite = null;
     selectedZone = null;
+
+    historicalSelectedSite = null;
+    historicalDateRange = null;
+    historicalSelectedZoneIds.clear();
+    historicalSelectedReadings.clear();
+    historicalSelectedAggregation = 'avg';
+
+    analyticsSelectedModelId = null;
+    analyticsModelSession = 0;
+
+    frostTimelineSelectedSite = null;
+    frostTimelineSelectedZone = null;
+    frostTimelineDateRange = null;
+
     notifyListeners();
   }
 
   void setSelectedSite(models.Site site) {
     selectedSite = site;
     // Clear zone when site changes
+    selectedZone = null;
+    notifyListeners();
+  }
+
+  void clearSelectedSite() {
+    selectedSite = null;
     selectedZone = null;
     notifyListeners();
   }
@@ -148,6 +339,20 @@ class AppState with ChangeNotifier {
     selectedOrganization = null;
     selectedSite = null;
     selectedZone = null;
+
+    historicalSelectedSite = null;
+    historicalDateRange = null;
+    historicalSelectedZoneIds.clear();
+    historicalSelectedReadings.clear();
+    historicalSelectedAggregation = 'avg';
+
+    analyticsSelectedModelId = null;
+    analyticsModelSession = 0;
+
+    frostTimelineSelectedSite = null;
+    frostTimelineSelectedZone = null;
+    frostTimelineDateRange = null;
+
     notifyListeners();
   }
 

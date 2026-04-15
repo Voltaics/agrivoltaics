@@ -2,13 +2,14 @@ import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../app_constants.dart';
 import '../models/organization.dart';
 import '../services/organization_service.dart';
 import '../app_state.dart';
 import 'home/home.dart';
 import 'create_organization_dialog.dart';
 import 'edit_organization_dialog.dart';
-import 'login.dart';
+import 'home/widgets/app_overflow_menu_button.dart';
 
 class OrganizationSelectionPage extends StatefulWidget {
   const OrganizationSelectionPage({super.key});
@@ -20,20 +21,11 @@ class OrganizationSelectionPage extends StatefulWidget {
 class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
   final OrganizationService _orgService = OrganizationService();
 
-  Future<void> _logout() async {
-    final appState = Provider.of<AppState>(context, listen: false);
-    
-    // Sign out from Firebase
-    await FirebaseAuth.instance.signOut();
-    
-    // Clear app state (this also clears selectedOrganization)
-    appState.clearCurrentUser();
-    
-    if (!mounted) return;
-    
-    // Navigate to login page
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const LoginPage()),
+  bool get _canCreateOrganization {
+    final user = FirebaseAuth.instance.currentUser;
+    return AppConstants.canCreateOrganizationForUser(
+      uid: user?.uid,
+      email: user?.email,
     );
   }
 
@@ -43,11 +35,9 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
       appBar: AppBar(
         title: const Text('Select Organization'),
         automaticallyImplyLeading: false, // Remove back button
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _logout(),
-            tooltip: 'Logout',
+        actions: const [
+          AppOverflowMenuButton(
+            iconColor: AppColors.textOnLight,
           ),
         ],
       ),
@@ -107,14 +97,16 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => const CreateOrganizationDialog(
-                    autoNavigate: true,
-                  ),
-                );
-              },
+              onPressed: _canCreateOrganization
+                  ? () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const CreateOrganizationDialog(
+                          autoNavigate: true,
+                        ),
+                      );
+                    }
+                  : null,
               icon: const Icon(Icons.add),
               label: const Text('Create Organization'),
               style: ElevatedButton.styleFrom(
@@ -203,14 +195,16 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: OutlinedButton.icon(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => const CreateOrganizationDialog(
-                  autoNavigate: true,
-                ),
-              );
-            },
+            onPressed: _canCreateOrganization
+                ? () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const CreateOrganizationDialog(
+                        autoNavigate: true,
+                      ),
+                    );
+                  }
+                : null,
             icon: const Icon(Icons.add),
             label: const Text('Create New Organization'),
             style: OutlinedButton.styleFrom(

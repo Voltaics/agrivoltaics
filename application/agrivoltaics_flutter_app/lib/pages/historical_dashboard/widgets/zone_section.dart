@@ -32,9 +32,11 @@ class ZoneSectionWidget extends StatefulWidget {
   /// Returns the set of available reading keys for the provided zones.
   final Set<String> Function(List<Zone> zones) availableReadings;
 
-  final Future<HistoricalResponse>? futureResponse;
+  final HistoricalResponse? response;
+  final bool isLoading;
   final String? errorMessage;
-  final bool isWideScreen;
+  final bool isDesktop;
+  final bool isMobileLandscape;
   final PickerDateRange dateRange;
 
   const ZoneSectionWidget({
@@ -51,9 +53,11 @@ class ZoneSectionWidget extends StatefulWidget {
     required this.onAggregationChanged,
     required this.onZonesLoaded,
     required this.availableReadings,
-    required this.futureResponse,
+    required this.response,
+    required this.isLoading,
     required this.errorMessage,
-    required this.isWideScreen,
+    required this.isDesktop,
+    required this.isMobileLandscape,
     required this.dateRange,
   });
 
@@ -82,40 +86,75 @@ class _ZoneSectionWidgetState extends State<ZoneSectionWidget> {
         final zones = snapshot.data ?? [];
 
         // Only sync selections and auto-query when the site changes.
-        if (_lastSyncedSiteId != widget.selectedSite.id) {
+        final siteChanged = _lastSyncedSiteId != widget.selectedSite.id;
+        if (siteChanged) {
           _lastSyncedSiteId = widget.selectedSite.id;
-          widget.onZonesLoaded(zones);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) widget.onApplyFilters();
-          });
+
+          final needsInitialSync =
+              widget.selectedZoneIds.isEmpty || widget.selectedReadings.isEmpty;
+
+          if (needsInitialSync) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              widget.onZonesLoaded(zones);
+              widget.onApplyFilters();
+            });
+          }
+        }
+
+        final filterCard = FilterCardWidget(
+          zones: zones,
+          selectedZoneIds: widget.selectedZoneIds,
+          selectedReadings: widget.selectedReadings,
+          onApplyFilters: widget.onApplyFilters,
+          onZoneSelected: widget.onZoneSelected,
+          onReadingSelected: widget.onReadingSelected,
+          availableReadings: widget.availableReadings(zones),
+          selectedAggregation: widget.selectedAggregation,
+          onAggregationChanged: widget.onAggregationChanged,
+        );
+
+        final resultsSection = ResultsSectionWidget(
+          response: widget.response,
+          isLoading: widget.isLoading,
+          errorMessage: widget.errorMessage,
+          selectedZoneIds: widget.selectedZoneIds,
+          selectedReadings: widget.selectedReadings,
+          zoneLookup: {
+            for (final zone in zones) zone.id: zone.name,
+          },
+          isDesktop: widget.isDesktop,
+          isMobileLandscape: widget.isMobileLandscape,
+          dateRange: widget.dateRange,
+        );
+
+        if (widget.isDesktop) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 340,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16, bottom: 24),
+                  child: filterCard,
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8, bottom: 24),
+                  child: resultsSection,
+                ),
+              ),
+            ],
+          );
         }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            FilterCardWidget(
-              zones: zones,
-              selectedZoneIds: widget.selectedZoneIds,
-              selectedReadings: widget.selectedReadings,
-              onApplyFilters: widget.onApplyFilters,
-              onZoneSelected: widget.onZoneSelected,
-              onReadingSelected: widget.onReadingSelected,
-              availableReadings: widget.availableReadings(zones),
-              selectedAggregation: widget.selectedAggregation,
-              onAggregationChanged: widget.onAggregationChanged,
-            ),
+            filterCard,
             const SizedBox(height: 16),
-            ResultsSectionWidget(
-              futureResponse: widget.futureResponse,
-              errorMessage: widget.errorMessage,
-              selectedZoneIds: widget.selectedZoneIds,
-              selectedReadings: widget.selectedReadings,
-              zoneLookup: {
-                for (final zone in zones) zone.id: zone.name,
-              },
-              isWideScreen: widget.isWideScreen,
-              dateRange: widget.dateRange,
-            ),
+            resultsSection,
           ],
         );
       },

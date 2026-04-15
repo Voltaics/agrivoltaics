@@ -86,7 +86,12 @@ Future<void> markNotificationRead(String notificationId) async {
 
 /// Bell icon with a red unread-count badge. Place in the sidebar above Sign Out.
 class NotificationsButton extends StatelessWidget {
-  const NotificationsButton({super.key});
+  final Color iconColor;
+
+  const NotificationsButton({
+    super.key,
+    this.iconColor = AppColors.textPrimary,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -107,8 +112,7 @@ class NotificationsButton extends StatelessWidget {
           children: [
             IconButton(
               tooltip: 'Notifications',
-              icon: const Icon(Icons.notifications,
-                  color: AppColors.textPrimary),
+              icon: Icon(Icons.notifications, color: iconColor),
               onPressed: () => showDialog<void>(
                 context: context,
                 builder: (_) =>
@@ -153,12 +157,16 @@ class NotificationsDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Dialog(
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12)),
       child: ConstrainedBox(
-        constraints:
-            const BoxConstraints(maxWidth: 480, maxHeight: 600),
+        constraints: BoxConstraints(
+          maxWidth: screenSize.width < 520 ? screenSize.width * 0.92 : 480,
+          maxHeight: screenSize.height * 0.82,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

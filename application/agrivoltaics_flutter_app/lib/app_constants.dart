@@ -1,4 +1,23 @@
 abstract class AppConstants {
+  static const double desktopMinWidth = 1280;
+  static const String organizationCreationAllowedUid =
+      '2qeg0hRKEPbJX4mIwtjZcsEVWFx2';
+  static const String organizationCreationAllowedEmail = 'mahsenr2@gmail.com';
+
+  static bool canCreateOrganizationForUser({String? uid, String? email}) {
+    if (uid != organizationCreationAllowedUid) {
+      return false;
+    }
+
+    if (email == null || email.trim().isEmpty) {
+      return true;
+    }
+
+    return email.trim().toLowerCase() == organizationCreationAllowedEmail;
+  }
+  
+  static const String helpPdfUrl = '/help/help.pdf';
+
   static const String influxdbUrl = String.fromEnvironment(
     'INFLUXDB_URL',
     defaultValue: ''
@@ -39,7 +58,13 @@ abstract class AppConstants {
     defaultValue:
         'https://us-central1-agrivoltaics-flutter-firebase.cloudfunctions.net/getHistoricalSeries'
   );
-  
+
+  static const String frostPredictionSeriesEndpoint = String.fromEnvironment(
+    'FROST_PREDICTION_SERIES_ENDPOINT',
+    defaultValue:
+        'https://us-central1-agrivoltaics-flutter-firebase.cloudfunctions.net/getFrostPredictionSeries'
+  );
+
   static const int numSites = 1;
   static const int numZones = 4;
 

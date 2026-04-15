@@ -92,6 +92,7 @@ class SiteZoneBreadcrumb extends StatelessWidget {
       context: context,
       backgroundColor: AppColors.surface,
       isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -126,13 +127,14 @@ class SiteZoneSelectorSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final currentOrg = appState.selectedOrganization;
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
 
     if (currentOrg == null) return const SizedBox.shrink();
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
+      initialChildSize: isLandscape ? 0.9 : 0.6,
+      minChildSize: isLandscape ? 0.75 : 0.4,
+      maxChildSize: isLandscape ? 0.98 : 0.9,
       expand: false,
       builder: (context, scrollController) {
         return Column(

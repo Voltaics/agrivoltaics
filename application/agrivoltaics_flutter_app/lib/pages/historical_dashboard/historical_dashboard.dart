@@ -16,6 +16,7 @@ import 'widgets/no_site_placeholder.dart';
 import 'widgets/page_header.dart';
 import 'widgets/site_selector.dart';
 import 'widgets/zone_section.dart';
+import '../../responsive/app_viewport.dart';
 
 class HistoricalDashboardPage extends StatefulWidget {
   const HistoricalDashboardPage({super.key});
@@ -29,11 +30,6 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
   final SiteService _siteService = SiteService();
   late final HistoricalSeriesService _seriesService;
 
-  String? _lastSiteId;
-  String? _lastOrgId;
-  models.Site? _selectedSite;
-
-  late PickerDateRange _dateRange;
   final ScrollController _scrollController = ScrollController();
 
   // Cached zone stream — only recreated when the site changes so that
@@ -61,12 +57,6 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
     return _siteStream!;
   }
 
-  final Set<String> _selectedZoneIds = <String>{};
-  final Set<String> _selectedReadings = <String>{};
-  String _selectedAggregation = 'avg';
-
-  Future<HistoricalResponse>? _futureResponse;
-  String? _errorMessage;
 
   static const Map<String, String> _readingLabels = {
     'temperature': 'Temperature',
@@ -85,10 +75,15 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       endpointUrl: AppConstants.historicalSeriesEndpoint,
     );
     
-    // Initialize date range: exactly 7 days (168 hours) ago to now
-    final now = DateTime.now();
-    final sevenDaysAgo = now.subtract(const Duration(days: 7));
-    _dateRange = PickerDateRange(sevenDaysAgo, now);
+    // Initialize date range: exactly 2 days (48 hours) ago to now
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appState = context.read<AppState>();
+      if (appState.historicalDateRange == null) {
+        final now = DateTime.now();
+        final twoDaysAgo = now.subtract(const Duration(days: 2));
+        appState.setHistoricalDateRange(PickerDateRange(twoDaysAgo, now));
+      }
+    });
   }
 
   @override
@@ -106,41 +101,176 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final selectedOrg = appState.selectedOrganization;
-    final selectedSite = _selectedSite;
+    final selectedSite = appState.historicalSelectedSite;
+    final dateRange = appState.historicalDateRange ??
+        PickerDateRange(
+          DateTime.now().subtract(const Duration(days: 2)),
+          DateTime.now(),
+        );
+    final selectedZoneIds = appState.historicalSelectedZoneIds;
+    final selectedReadings = appState.historicalSelectedReadings;
+    final selectedAggregation = appState.historicalSelectedAggregation;
+    final historicalResponse = appState.historicalResponse;
+    final historicalIsLoading = appState.historicalIsLoading;
+    final historicalErrorMessage = appState.historicalErrorMessage;
 
-    _refreshOnOrgChange(selectedOrg?.id);
-    _refreshOnSiteChange(selectedSite?.id);
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final isWideScreen = screenWidth >= 1280 || screenHeight < screenWidth;
+    final viewportInfo = AppViewportInfo.fromMediaQuery(MediaQuery.of(context));
 
     if (selectedOrg == null) {
-      return const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 8),
-          HistoricalDashboardHeader(),
-          NoOrgPlaceholderWidget(),
-        ],
+      if (viewportInfo.isDesktop) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    HistoricalDashboardHeader(),
+                    SizedBox(height: 12),
+                    NoOrgPlaceholderWidget(),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      }
+
+      return const SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 8),
+            HistoricalDashboardHeader(),
+            NoOrgPlaceholderWidget(),
+          ],
+        ),
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        const HistoricalDashboardHeader(),
-        Expanded(
-          child: SingleChildScrollView(
+    if (viewportInfo.isDesktop) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                StreamBuilder<List<models.Site>>(
-                  stream: _getSiteStream(selectedOrg.id),
-                  builder: (context, snapshot) {
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const HistoricalDashboardHeader(),
+                  StreamBuilder<List<models.Site>>(
+              stream: _getSiteStream(selectedOrg.id),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Text('Error loading sites: ${snapshot.error}'),
+                    ),
+                  );
+                }
+
+                final sites = snapshot.data ?? [];
+
+                return SiteSelectorWidget(
+                  orgId: selectedOrg.id,
+                  sites: sites,
+                  selectedSite: selectedSite,
+                  dateRange: dateRange,
+                  onSiteChanged: (site) {
+                    appState.setHistoricalSelectedSite(site);
+                    appState.setHistoricalSelectedZoneIds(<String>{});
+                    appState.setHistoricalSelectedReadings(<String>{});
+                    appState.clearHistoricalResults();
+                  },
+                  onDateRangePressed: () {
+                    showDateRangePickerDialog(
+                      context,
+                      initialRange: dateRange,
+                      onApplied: (range) {
+                        appState.setHistoricalDateRange(range);
+                        _applyFilters(newDateRange: range);
+                      },
+                    );
+                  },
+                  isLoading: false,
+                );
+              },
+            ),
+                  const SizedBox(height: 12),
+                  if (selectedSite != null)
+                    ZoneSectionWidget(
+                orgId: selectedOrg.id,
+                selectedSite: selectedSite,
+                zoneStream: _getZoneStream(selectedOrg.id, selectedSite.id),
+                selectedZoneIds: selectedZoneIds,
+                selectedReadings: selectedReadings,
+                selectedAggregation: selectedAggregation,
+                onApplyFilters: _applyFilters,
+                onZoneSelected: (zoneId, selected) {
+                  final next = Set<String>.from(appState.historicalSelectedZoneIds);
+                  if (selected) {
+                    next.add(zoneId);
+                  } else {
+                    next.remove(zoneId);
+                  }
+                  appState.setHistoricalSelectedZoneIds(next);
+                },
+                onReadingSelected: (reading, selected) {
+                  final next = Set<String>.from(appState.historicalSelectedReadings);
+                  if (selected) {
+                    next.add(reading);
+                  } else {
+                    next.remove(reading);
+                  }
+                  appState.setHistoricalSelectedReadings(next);
+                },
+                onAggregationChanged: (agg) {
+                  appState.setHistoricalSelectedAggregation(agg);
+                },
+                onZonesLoaded: _syncSelections,
+                availableReadings: _availableReadings,
+                response: historicalResponse,
+                isLoading: historicalIsLoading,
+                errorMessage: historicalErrorMessage,
+                isDesktop: viewportInfo.isDesktop,
+                isMobileLandscape: viewportInfo.isMobileLandscape,
+                dateRange: dateRange,
+              )
+                  else
+                    const NoSitePlaceholderWidget(),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return SingleChildScrollView(
+      controller: _scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const HistoricalDashboardHeader(),
+          StreamBuilder<List<models.Site>>(
+            stream: _getSiteStream(selectedOrg.id),
+            builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
@@ -153,102 +283,108 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
 
                     final sites = snapshot.data ?? [];
 
-                    return SiteSelectorWidget(
-                      orgId: selectedOrg.id,
-                      sites: sites,
-                      selectedSite: _selectedSite,
-                      dateRange: _dateRange,
-                      onSiteChanged: (site) {
-                        setState(() {
-                          _selectedSite = site;
-                          _selectedZoneIds.clear();
-                          _selectedReadings.clear();
-                        });
-                      },
-                      onDateRangePressed: () {
-                        showDateRangePickerDialog(
-                          context,
-                          initialRange: _dateRange,
-                          onApplied: (range) {
-                            _applyFilters(newDateRange: range);
-                          },
-                        );
-                      },
-                      isLoading: false,
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                if (selectedSite != null)
-                  ZoneSectionWidget(
-                    orgId: selectedOrg.id,
-                    selectedSite: selectedSite,
-                    zoneStream: _getZoneStream(selectedOrg.id, selectedSite.id),
-                    selectedZoneIds: _selectedZoneIds,
-                    selectedReadings: _selectedReadings,
-                    selectedAggregation: _selectedAggregation,
-                    onApplyFilters: _applyFilters,
-                    onZoneSelected: (zoneId, selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedZoneIds.add(zoneId);
-                        } else {
-                          _selectedZoneIds.remove(zoneId);
-                        }
-                      });
+              return SiteSelectorWidget(
+                orgId: selectedOrg.id,
+                sites: sites,
+                selectedSite: selectedSite,
+                dateRange: dateRange,
+                onSiteChanged: (site) {
+                  appState.setHistoricalSelectedSite(site);
+                  appState.setHistoricalSelectedZoneIds(<String>{});
+                  appState.setHistoricalSelectedReadings(<String>{});
+                  appState.clearHistoricalResults();
+                },
+                onDateRangePressed: () {
+                  showDateRangePickerDialog(
+                    context,
+                    initialRange: dateRange,
+                    onApplied: (range) {
+                      appState.setHistoricalDateRange(range);
+                      _applyFilters(newDateRange: range);
                     },
-                    onReadingSelected: (reading, selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedReadings.add(reading);
-                        } else {
-                          _selectedReadings.remove(reading);
-                        }
-                      });
-                    },
-                    onAggregationChanged: (agg) {
-                      setState(() {
-                        _selectedAggregation = agg;
-                      });
-                    },
-                    onZonesLoaded: _syncSelections,
-                    availableReadings: _availableReadings,
-                    futureResponse: _futureResponse,
-                    errorMessage: _errorMessage,
-                    isWideScreen: isWideScreen,
-                    dateRange: _dateRange,
-                  )
-                else
-                  const NoSitePlaceholderWidget(),
-              ],
-            ),
+                  );
+                },
+                isLoading: false,
+              );
+            },
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          if (selectedSite != null)
+            ZoneSectionWidget(
+              orgId: selectedOrg.id,
+              selectedSite: selectedSite,
+              zoneStream: _getZoneStream(selectedOrg.id, selectedSite.id),
+              selectedZoneIds: selectedZoneIds,
+              selectedReadings: selectedReadings,
+              selectedAggregation: selectedAggregation,
+              onApplyFilters: _applyFilters,
+              onZoneSelected: (zoneId, selected) {
+                final next = Set<String>.from(appState.historicalSelectedZoneIds);
+                if (selected) {
+                  next.add(zoneId);
+                } else {
+                  next.remove(zoneId);
+                }
+                appState.setHistoricalSelectedZoneIds(next);
+              },
+              onReadingSelected: (reading, selected) {
+                final next = Set<String>.from(appState.historicalSelectedReadings);
+                if (selected) {
+                  next.add(reading);
+                } else {
+                  next.remove(reading);
+                }
+                appState.setHistoricalSelectedReadings(next);
+              },
+              onAggregationChanged: (agg) {
+                appState.setHistoricalSelectedAggregation(agg);
+              },
+              onZonesLoaded: _syncSelections,
+              availableReadings: _availableReadings,
+              response: historicalResponse,
+              isLoading: historicalIsLoading,
+              errorMessage: historicalErrorMessage,
+              isDesktop: viewportInfo.isDesktop,
+              isMobileLandscape: viewportInfo.isMobileLandscape,
+              dateRange: dateRange,
+            )
+          else
+            const NoSitePlaceholderWidget(),
+        ],
+      ),
     );
   }
 
   void _syncSelections(List<Zone> zones) {
-    final availableZoneIds = zones.where((zone) => zone.zoneChecked).map((zone) => zone.id).toSet();
+    final appState = context.read<AppState>();
 
-    if (_selectedZoneIds.isEmpty) {
-      _selectedZoneIds.addAll(availableZoneIds);
+    final availableZoneIds = zones
+        .where((zone) => zone.zoneChecked)
+        .map((zone) => zone.id)
+        .toSet();
+
+    final nextZoneIds = Set<String>.from(appState.historicalSelectedZoneIds);
+    if (nextZoneIds.isEmpty) {
+      nextZoneIds.addAll(availableZoneIds);
     } else {
-      _selectedZoneIds.removeWhere((id) => !availableZoneIds.contains(id));
-      if (_selectedZoneIds.isEmpty) {
-        _selectedZoneIds.addAll(availableZoneIds);
+      nextZoneIds.removeWhere((id) => !availableZoneIds.contains(id));
+      if (nextZoneIds.isEmpty) {
+        nextZoneIds.addAll(availableZoneIds);
       }
     }
+    appState.setHistoricalSelectedZoneIds(nextZoneIds);
 
     final availableReadings = _availableReadings(zones);
-    if (_selectedReadings.isEmpty) {
-      _selectedReadings.addAll(availableReadings);
+    final nextReadings = Set<String>.from(appState.historicalSelectedReadings);
+    if (nextReadings.isEmpty) {
+      nextReadings.addAll(availableReadings);
     } else {
-      _selectedReadings.removeWhere((reading) => !availableReadings.contains(reading));
-      if (_selectedReadings.isEmpty) {
-        _selectedReadings.addAll(availableReadings);
+      nextReadings.removeWhere((reading) => !availableReadings.contains(reading));
+      if (nextReadings.isEmpty) {
+        nextReadings.addAll(availableReadings);
       }
     }
+    appState.setHistoricalSelectedReadings(nextReadings);
   }
 
   Set<String> _availableReadings(List<Zone> zones) {
@@ -266,53 +402,61 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
   }
 
   void _applyFilters({PickerDateRange? newDateRange}) {
+    _applyFiltersAsync(newDateRange: newDateRange);
+  }
+
+  Future<void> _applyFiltersAsync({PickerDateRange? newDateRange}) async {
     final appState = context.read<AppState>();
     final selectedOrg = appState.selectedOrganization;
-    final selectedSite = _selectedSite;
+    final selectedSite = appState.historicalSelectedSite;
+    final selectedZoneIds = appState.historicalSelectedZoneIds;
+    final selectedReadings = appState.historicalSelectedReadings;
+    final selectedAggregation = appState.historicalSelectedAggregation;
 
     if (selectedOrg == null || selectedSite == null) {
       return;
     }
 
-    if (_selectedZoneIds.isEmpty || _selectedReadings.isEmpty) {
-      setState(() {
-        _errorMessage = 'Select at least one zone and reading.';
-      });
+    if (selectedZoneIds.isEmpty || selectedReadings.isEmpty) {
+      appState.setHistoricalError('Select at least one zone and reading.');
       return;
     }
 
-    // Use the incoming range if provided, otherwise fall back to current state.
-    final effectiveRange = newDateRange ?? _dateRange;
-    final DateTime start;
-    final DateTime end;
-    
-    if (effectiveRange.startDate != null && effectiveRange.endDate != null) {
-      start = effectiveRange.startDate!;
-      end = effectiveRange.endDate!;
-    } else {
-      // Fallback: 7 days ago at 00:00:00 to now
-      final now = DateTime.now();
-      final sevenDaysAgo = now.subtract(const Duration(days: 7));
-      start = DateTime(sevenDaysAgo.year, sevenDaysAgo.month, sevenDaysAgo.day);
-      end = now;
+    final effectiveRange = newDateRange ?? appState.historicalDateRange;
+    if (effectiveRange == null ||
+        effectiveRange.startDate == null ||
+        effectiveRange.endDate == null) {
+      appState.setHistoricalError('Select a valid date range.');
+      return;
     }
 
-    // Single setState: _dateRange and _futureResponse always update together
-    // so there is never a frame where axis config and data are mismatched.
-    setState(() {
-      if (newDateRange != null) _dateRange = newDateRange;
-      _errorMessage = null;
-      _futureResponse = _fetchHistoricalSeries(
+    final start = effectiveRange.startDate!;
+    final end = effectiveRange.endDate!;
+
+    if (newDateRange != null) {
+      appState.setHistoricalDateRange(newDateRange);
+    }
+
+    appState.startHistoricalLoad();
+
+    try {
+      final response = await _fetchHistoricalSeries(
         organizationId: selectedOrg.id,
         siteId: selectedSite.id,
-        zoneIds: _selectedZoneIds.toList(),
-        readings: _selectedReadings.toList(),
+        zoneIds: selectedZoneIds.toList(),
+        readings: selectedReadings.toList(),
         start: start,
         end: end,
         timezone: selectedSite.timezone,
-        aggregation: _selectedAggregation,
+        aggregation: selectedAggregation,
       );
-    });
+
+      if (!mounted) return;
+      appState.setHistoricalResponse(response);
+    } catch (e) {
+      if (!mounted) return;
+      appState.setHistoricalError('Failed to load data: $e');
+    }
   }
 
   Future<HistoricalResponse> _fetchHistoricalSeries({
@@ -339,54 +483,5 @@ class _HistoricalDashboardPageState extends State<HistoricalDashboardPage> {
       aggregation: aggregation,
       idToken: idToken,
     );
-  }
-
-  void _refreshOnOrgChange(String? orgId) {
-    if (_lastOrgId == orgId) {
-      return;
-    }
-
-    _lastOrgId = orgId;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-      setState(() {
-        // Clear all org-scoped state so stale site/zone references
-        // from the previous org can never reach Firestore or the chart.
-        _selectedSite = null;
-        _lastSiteId = null;
-        _selectedZoneIds.clear();
-        _selectedReadings.clear();
-        _futureResponse = null;
-        _errorMessage = null;
-        // Invalidate cached streams so they rebuild under the new org.
-        _siteStream = null;
-        _siteStreamOrgId = null;
-        _zoneStream = null;
-        _zoneStreamSiteId = null;
-      });
-    });
-  }
-
-  void _refreshOnSiteChange(String? siteId) {
-    if (_lastSiteId == siteId) {
-      return;
-    }
-
-    _lastSiteId = siteId;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-      setState(() {
-        _futureResponse = null;
-        _errorMessage = null;
-      });
-
-      if (siteId != null) {
-        _applyFilters();
-      }
-    });
   }
 }

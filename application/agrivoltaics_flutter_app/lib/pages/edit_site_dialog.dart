@@ -42,6 +42,14 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
     'Pacific/Honolulu',
   ];
 
+  List<String> get _availableTimezones {
+    final currentTimezone = widget.site.timezone.trim();
+    if (currentTimezone.isNotEmpty && !_timezones.contains(currentTimezone)) {
+      return [currentTimezone, ..._timezones];
+    }
+    return _timezones;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -62,7 +70,12 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
       _longitudeController = TextEditingController();
     }
     
-    _selectedTimezone = widget.site.timezone;
+    final siteTimezone = widget.site.timezone.trim();
+    if (siteTimezone.isNotEmpty) {
+      _selectedTimezone = siteTimezone;
+    } else {
+      _selectedTimezone = _timezones.first;
+    }
   }
 
   @override
@@ -125,7 +138,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Site updated successfully'),
-            backgroundColor: AppColors.error,
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -212,7 +225,7 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
           appState.setSelectedSite(newSelectedSite);
         } else {
           // No sites left, clear selection
-          appState.setSelectedSite(null as dynamic);
+          appState.clearSelectedSite();
         }
       }
 
@@ -245,6 +258,13 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final isDesktop = media.size.width >= 1280;
+    final maxDialogWidth = media.size.width * 0.95;
+    final preferredWidth = isDesktop ? 620.0 : 500.0;
+    final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
+    final contentMaxHeight = media.size.height * (isDesktop ? 0.62 : 0.72);
+
     return AlertDialog(
       title: Row(
         children: [
@@ -258,14 +278,16 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
         ],
       ),
       content: SizedBox(
-        width: 500,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        width: dialogWidth,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: contentMaxHeight),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -307,12 +329,12 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedTimezone,
+                  value: _selectedTimezone,
                   decoration: const InputDecoration(
                     labelText: 'Timezone',
                     border: OutlineInputBorder(),
                   ),
-                  items: _timezones.map((String timezone) {
+                  items: _availableTimezones.map((String timezone) {
                     return DropdownMenuItem<String>(
                       value: timezone,
                       child: Text(timezone),
@@ -361,7 +383,8 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
                 ),
                 const SizedBox(height: 16),
 
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -375,7 +398,6 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
           ),
           child: const Text('Delete'),
         ),
-        const Spacer(),
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
           child: const Text('Cancel'),

@@ -5,52 +5,41 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "agrivoltaics_flutter_app",
+            "name": "agrivoltaics_flutter_app (mobile portrait)",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
             "cwd": "${workspaceFolder}/application/agrivoltaics_flutter_app",
             "deviceId": "chrome",
-            "args": [
-                "--dart-define=INFLUXDB_URL=https://us-east-1-1.aws.cloud2.influxdata.com",
-                "--dart-define=INFLUXDB_TOKEN=5ML2JenjyVxPEv7ioyy8jU7Xlit4Lw_LpSt53IouvVWIIro88qkIDAeJ00rR15NkQAcd0WdPl7Cyn5-vywwlJg==",
-                "--dart-define=INFLUXDB_ORG=65831f5e68f42d85",
-                "--dart-define=INFLUXDB_BUCKET=esp32_testing",
-                "--dart-define=INFLUXDB_DEBUG=true",
+            "toolArgs": [
+                "--web-browser-flag=--new-window",
+                "--web-browser-flag=--window-size=390,844",
                 "--dart-define=AUTHORIZED_EMAILS=rindler.eli@gmail.com,nguye2cy@mail.uc.edu,voltaicstestuser1@gmail.com"
             ]
         },
         {
-            "name": "agrivoltaics_flutter_app (profile mode)",
+            "name": "agrivoltaics_flutter_app (mobile landscape)",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
             "cwd": "${workspaceFolder}/application/agrivoltaics_flutter_app",
             "deviceId": "chrome",
-            "flutterMode": "profile",
-            "args": [
-                "--dart-define=INFLUXDB_URL=https://us-east-1-1.aws.cloud2.influxdata.com",
-                "--dart-define=INFLUXDB_TOKEN=5ML2JenjyVxPEv7ioyy8jU7Xlit4Lw_LpSt53IouvVWIIro88qkIDAeJ00rR15NkQAcd0WdPl7Cyn5-vywwlJg==",
-                "--dart-define=INFLUXDB_ORG=65831f5e68f42d85",
-                "--dart-define=INFLUXDB_BUCKET=esp32_testing",
-                "--dart-define=INFLUXDB_DEBUG=true",
+            "toolArgs": [
+                "--web-browser-flag=--new-window",
+                "--web-browser-flag=--window-size=844,390",
                 "--dart-define=AUTHORIZED_EMAILS=rindler.eli@gmail.com,nguye2cy@mail.uc.edu,voltaicstestuser1@gmail.com"
             ]
         },
         {
-            "name": "agrivoltaics_flutter_app (release mode)",
+            "name": "agrivoltaics_flutter_app (desktop)",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
             "cwd": "${workspaceFolder}/application/agrivoltaics_flutter_app",
             "deviceId": "chrome",
-            "flutterMode": "release",
-            "args": [
-                "--dart-define=INFLUXDB_URL=https://us-east-1-1.aws.cloud2.influxdata.com",
-                "--dart-define=INFLUXDB_TOKEN=5ML2JenjyVxPEv7ioyy8jU7Xlit4Lw_LpSt53IouvVWIIro88qkIDAeJ00rR15NkQAcd0WdPl7Cyn5-vywwlJg==",
-                "--dart-define=INFLUXDB_ORG=65831f5e68f42d85",
-                "--dart-define=INFLUXDB_BUCKET=esp32_testing",
-                "--dart-define=INFLUXDB_DEBUG=true",
+            "toolArgs": [
+                "--web-browser-flag=--new-window",
+                "--web-browser-flag=--window-size=1440,900",
                 "--dart-define=AUTHORIZED_EMAILS=rindler.eli@gmail.com,nguye2cy@mail.uc.edu,voltaicstestuser1@gmail.com"
             ]
         }

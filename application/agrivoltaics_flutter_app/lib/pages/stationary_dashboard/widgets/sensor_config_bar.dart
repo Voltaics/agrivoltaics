@@ -40,7 +40,7 @@ class SensorConfigBar extends StatelessWidget {
               if (appState.selectedZone == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Please select a zone to configure sensors'),
+                    content: Text('To edit sensor parameters, you must first select a specific Zone using the drop-down menu below for the site shown.'),
                   ),
                 );
               } else {

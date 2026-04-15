@@ -59,7 +59,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
     });
 
     try {
-      await _organizationService.addMember(
+      final outcome = await _organizationService.addMember(
         orgId: widget.organization.id,
         userEmail: email,
         role: _selectedRole,
@@ -76,7 +76,11 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Added $email as $_selectedRole'),
+          content: Text(
+            outcome == AddMemberOutcome.added
+                ? 'Added $email as $_selectedRole'
+                : 'Invitation created for $email ($_selectedRole). They will join after first login.',
+          ),
           backgroundColor: AppColors.success,
         ),
       );
@@ -98,12 +102,24 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final isLandscape = media.orientation == Orientation.landscape;
+    final isDesktop = media.size.width >= 1280;
+    final dialogWidth = isLandscape
+      ? (isDesktop ? 900.0 : media.size.width * 0.9)
+        : 600.0;
+    final maxDialogWidth = media.size.width * 0.95;
+    final effectiveWidth = dialogWidth > maxDialogWidth ? maxDialogWidth : dialogWidth;
+    final dialogMaxHeight = media.size.height * (isDesktop ? 0.84 : 0.9);
+
     return Dialog(
       child: Container(
-        width: 600,
-        constraints: const BoxConstraints(maxHeight: 700),
+        width: effectiveWidth,
+        constraints: BoxConstraints(
+          maxHeight: dialogMaxHeight,
+          minHeight: isLandscape ? 460 : 420,
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
             // Header
             Container(
@@ -149,145 +165,174 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
               ),
             ),
             
-            // Member List
-            Flexible(
-              child: StreamBuilder<List<Member>>(
-                stream: _organizationService.getOrganizationMembers(widget.organization.id),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final useTwoColumns = isLandscape;
 
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(
-                          'Error loading members: ${snapshot.error}',
-                          style: const TextStyle(color: AppColors.error),
-                        ),
-                      ),
+                  if (!useTwoColumns) {
+                    return Column(
+                      children: [
+                        Expanded(child: _buildMemberList()),
+                        _buildAddMemberPanel(compact: true),
+                      ],
                     );
                   }
 
-                  final members = snapshot.data ?? [];
-
-                  if (members.isEmpty) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Text('No members found'),
+                  return Row(
+                    children: [
+                      SizedBox(
+                        width: 300,
+                        child: _buildAddMemberPanel(compact: false),
                       ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: members.length,
-                    itemBuilder: (context, index) {
-                      final member = members[index];
-                      return MemberListItem(
-                        member: member,
-                        organization: widget.organization,
-                      );
-                    },
+                      const VerticalDivider(
+                        width: 1,
+                        thickness: 1,
+                        color: AppColors.scaffoldBackground,
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: _buildMemberList(),
+                      ),
+                    ],
                   );
                 },
               ),
             ),
-
-            // Footer with Add Member button
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.scaffoldBackground,
-                border: Border(
-                  top: BorderSide(color: AppColors.scaffoldBackground),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'Add New Member',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Email field - full width
-                  TextField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email Address',
-                      hintText: 'user@example.com',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.email),
-                      isDense: true,
-                    ),
-                    enabled: !_isAddingMember,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _addMember(),
-                  ),
-                  const SizedBox(height: 12),
-                  // Role selector and Add button - side by side
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _selectedRole,
-                          decoration: const InputDecoration(
-                            labelText: 'Role',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 'owner', child: Text('Owner')),
-                            DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                            DropdownMenuItem(value: 'member', child: Text('Member')),
-                            DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
-                          ],
-                          onChanged: _isAddingMember
-                              ? null
-                              : (value) {
-                                  if (value != null) {
-                                    _selectedRole = value;
-                                  }
-                                },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        onPressed: _isAddingMember ? null : _addMember,
-                        icon: _isAddingMember
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
-                              ),
-                            )
-                            : const Icon(Icons.add),
-                        label: Text(_isAddingMember ? 'Adding...' : 'Add'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: AppColors.textPrimary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 18,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMemberList() {
+    return StreamBuilder<List<Member>>(
+      stream: _organizationService.getOrganizationMembers(widget.organization.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text(
+                'Error loading members: ${snapshot.error}',
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ),
+          );
+        }
+
+        final members = snapshot.data ?? [];
+
+        if (members.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text('No members found'),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: members.length,
+          itemBuilder: (context, index) {
+            final member = members[index];
+            return MemberListItem(
+              member: member,
+              organization: widget.organization,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAddMemberPanel({required bool compact}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.scaffoldBackground,
+        border: compact
+            ? const Border(top: BorderSide(color: AppColors.scaffoldBackground))
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Add New Member',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _emailController,
+            decoration: const InputDecoration(
+              labelText: 'Email Address',
+              hintText: 'user@example.com',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.email),
+              isDense: true,
+            ),
+            enabled: !_isAddingMember,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _addMember(),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: _selectedRole,
+            decoration: const InputDecoration(
+              labelText: 'Role',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: const [
+              DropdownMenuItem(value: 'owner', child: Text('Owner')),
+              DropdownMenuItem(value: 'admin', child: Text('Admin')),
+              DropdownMenuItem(value: 'member', child: Text('Member')),
+              DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
+            ],
+            onChanged: _isAddingMember
+                ? null
+                : (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedRole = value;
+                      });
+                    }
+                  },
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isAddingMember ? null : _addMember,
+              icon: _isAddingMember
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
+                      ),
+                    )
+                  : const Icon(Icons.add),
+              label: Text(_isAddingMember ? 'Adding...' : 'Add Member'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.textPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -317,7 +362,7 @@ class _MemberListItemState extends State<MemberListItem> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            const Icon(Icons.warning, color: AppColors.warning),
+            Icon(Icons.warning, color: AppColors.warning),
             SizedBox(width: 12),
             Text('Remove Member?'),
           ],
@@ -338,7 +383,7 @@ class _MemberListItemState extends State<MemberListItem> {
                 ),
                 if (userEmail.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(userEmail, style: TextStyle(color: AppColors.textMuted)),
+                  Text(userEmail, style: const TextStyle(color: AppColors.textMuted)),
                 ],
                 const SizedBox(height: 12),
                 const Text(
@@ -436,7 +481,7 @@ class _MemberListItemState extends State<MemberListItem> {
               if (email.isNotEmpty)
                 Text(
                   email,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textMuted,
                   ),
@@ -469,7 +514,7 @@ class _MemberListItemState extends State<MemberListItem> {
                   tooltip: 'Remove member',
                 )
               else
-                Tooltip(
+                const Tooltip(
                   message: 'You cannot remove yourself',
                   child: Icon(
                     Icons.person,
