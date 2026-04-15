@@ -174,8 +174,9 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
             ),
             const SizedBox(height: 8),
             Text(
-              'Upload or capture a plant image and run inference against the FastAPI /predict service '
-              '(see dart-define PLANT_DISEASE_API_BASE in plant_disease_api_config.dart).',
+              'Upload or capture plant image and then tap on Analyze Plant to start calculations '
+              '(it might take a few minutes to finish). Currently, the AI model detects following '
+              'diseases: Black Rot, Black Measles, Leaf Blight, Downey Mildew, Powdery Mildew',
               style: TextStyle(color: onVar),
             ),
             const SizedBox(height: 16),
@@ -283,7 +284,7 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
             SizedBox(
               width: double.infinity,
               child: _PrimaryBtn(
-                label: _isLoading ? 'Analysing…' : 'Analyse Plant',
+                label: _isLoading ? 'Analyzing...' : 'Analyze Plant',
                 icon: _isLoading ? null : Icons.biotech_rounded,
                 loading: _isLoading,
                 onTap: _isLoading ? null : _analyzeImage,
@@ -618,7 +619,7 @@ class _LoadingState extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               const Text(
-                'Analysing plant health…',
+                'Analyzing plant health...',
                 style: TextStyle(
                   color: AppColors.textMuted,
                   fontSize: 14,
