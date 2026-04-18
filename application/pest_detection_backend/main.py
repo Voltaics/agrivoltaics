@@ -7,10 +7,19 @@ import torchvision.transforms as transforms
 import torchvision.models as models
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title = "OMID Pest Detection API")
 DEVICE = torch.device("cpu")
 MODEL_PATH = "pest_presence_resnet.pth"
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"],
+)
 
 CLASS_NAMES = [
     "Adult Spotted Laternfly",
