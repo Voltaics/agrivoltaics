@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'models/frost_prediction_timeline/frost_prediction_timeline_model.dart';
 import 'models/irrigation_need_example/irrigation_need_example_model.dart';
+import 'models/plant_disease_detection/plant_disease_detection_model.dart';
 import 'models/yield_proxy_example/yield_proxy_example_model.dart';
 
 class AnalyticsModelDefinition {
@@ -24,6 +25,11 @@ final List<AnalyticsModelDefinition> analyticsModelDefinitions = [
     id: 'frost_prediction_timeline',
     displayName: 'Frost Prediction Timeline',
     builder: (_) => const FrostPredictionTimelineModel(),
+  ),
+  AnalyticsModelDefinition(
+    id: 'plant_disease_detection',
+    displayName: 'Plant Disease Detection',
+    builder: (_) => const PlantDiseaseDetectionModel(),
   ),
   AnalyticsModelDefinition(
     id: 'irrigation_need_example',
