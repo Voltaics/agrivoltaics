@@ -26,6 +26,11 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
   final ZoneService _zoneService = ZoneService();
   late final FrostPredictionSeriesService _service;
 
+  static const Duration _forecastWindow = Duration(hours: 6);
+  static const Color _frostChanceColor = Color(0xFFFFB300);
+
+  final DateFormat _trackballHeaderFormat = DateFormat('MMM d, h:mm a');
+
   Stream<List<Zone>>? _zoneStream;
   String? _zoneStreamSiteId;
 
@@ -183,6 +188,148 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
       axisInterval: 7.0,
       labelDateFormat: DateFormat('MM/dd'),
     );
+  }
+
+  List<_ShiftedChancePoint> _buildShiftedChancePoints(
+    List<FrostTimelinePoint> rawPoints,
+    DateTime visibleStart,
+    DateTime visibleEnd,
+  ) {
+    final shifted = rawPoints
+        .map(
+          (p) => _ShiftedChancePoint(
+            sourceTime: p.time,
+            time: p.time.add(_forecastWindow),
+            value: p.predictedChance,
+          ),
+        )
+        .where(
+          (p) =>
+              !p.time.isBefore(visibleStart) &&
+              !p.time.isAfter(visibleEnd),
+        )
+        .toList()
+      ..sort((a, b) => a.time.compareTo(b.time));
+
+    return shifted;
+  }
+
+  ({List<_ShiftedChancePoint> solid, List<_ShiftedChancePoint> dashed})
+  _splitShiftedChancePointsAtNow(
+    List<_ShiftedChancePoint> points,
+    DateTime now,
+  ) {
+    if (points.isEmpty) {
+      return (solid: <_ShiftedChancePoint>[], dashed: <_ShiftedChancePoint>[]);
+    }
+
+    final solid = <_ShiftedChancePoint>[];
+    final dashed = <_ShiftedChancePoint>[];
+
+    void addUnique(List<_ShiftedChancePoint> target, _ShiftedChancePoint point) {
+      if (target.isEmpty ||
+          target.last.time != point.time ||
+          target.last.value != point.value) {
+        target.add(point);
+      }
+    }
+
+    if (points.length == 1) {
+      if (points.first.time.isAfter(now)) {
+        dashed.add(points.first);
+      } else {
+        solid.add(points.first);
+      }
+      return (solid: solid, dashed: dashed);
+    }
+
+    for (var i = 0; i < points.length - 1; i++) {
+      final current = points[i];
+      final next = points[i + 1];
+
+      final currentAtOrBeforeNow =
+          current.time.isBefore(now) || current.time.isAtSameMomentAs(now);
+      final nextAtOrBeforeNow =
+          next.time.isBefore(now) || next.time.isAtSameMomentAs(now);
+
+      if (currentAtOrBeforeNow && nextAtOrBeforeNow) {
+        addUnique(solid, current);
+        addUnique(solid, next);
+        continue;
+      }
+
+      if (!currentAtOrBeforeNow && !nextAtOrBeforeNow) {
+        addUnique(dashed, current);
+        addUnique(dashed, next);
+        continue;
+      }
+
+      final totalMillis = next.time.difference(current.time).inMilliseconds;
+      if (totalMillis <= 0) continue;
+
+      final elapsedMillis = now.difference(current.time).inMilliseconds;
+      final t = elapsedMillis / totalMillis;
+      final interpolatedValue = current.value + ((next.value - current.value) * t);
+
+      final boundaryPoint = _ShiftedChancePoint(
+        sourceTime: current.sourceTime,
+        time: now,
+        value: interpolatedValue,
+      );
+
+      if (currentAtOrBeforeNow) {
+        addUnique(solid, current);
+        addUnique(solid, boundaryPoint);
+        addUnique(dashed, boundaryPoint);
+        addUnique(dashed, next);
+      } else {
+        addUnique(dashed, current);
+        addUnique(dashed, boundaryPoint);
+        addUnique(solid, boundaryPoint);
+        addUnique(solid, next);
+      }
+    }
+
+    return (solid: solid, dashed: dashed);
+  }
+
+  DateTime? _trackballTimeForSeriesPoint({
+    required int? seriesIndex,
+    required int? pointIndex,
+    required List<FrostTimelinePoint> temperaturePoints,
+    required List<FrostTimelinePoint> humidityPoints,
+    required List<FrostTimelinePoint> soilTempPoints,
+    required List<_ShiftedChancePoint> solidChancePoints,
+    required List<_ShiftedChancePoint> dashedChancePoints,
+  }) {
+    if (seriesIndex == null || pointIndex == null || pointIndex < 0) {
+      return null;
+    }
+
+    switch (seriesIndex) {
+      case 0:
+        return pointIndex < temperaturePoints.length
+            ? temperaturePoints[pointIndex].time
+            : null;
+      case 1:
+        return pointIndex < humidityPoints.length
+            ? humidityPoints[pointIndex].time
+            : null;
+      case 2:
+        return pointIndex < soilTempPoints.length
+            ? soilTempPoints[pointIndex].time
+            : null;
+      case 3:
+        return pointIndex < solidChancePoints.length
+            ? solidChancePoints[pointIndex].time
+            : null;
+      case 4:
+        return pointIndex < dashedChancePoints.length
+            ? dashedChancePoints[pointIndex].time
+            : null;
+      default:
+        return null;
+    }
   }
 
   @override
@@ -433,11 +580,63 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
           DateTime.now(),
         );
     final axisConfig = _getAxisConfig(dateRange);
+    final now = DateTime.now();
+    final visibleStart = dateRange.startDate ?? now.subtract(const Duration(days: 2));
+    final visibleEnd = dateRange.endDate ?? now;
+
+    final shiftedChancePoints = _buildShiftedChancePoints(
+      response.points,
+      visibleStart,
+      visibleEnd.add(_forecastWindow),
+    );
+
+    final splitChancePoints = _splitShiftedChancePointsAtNow(
+      shiftedChancePoints,
+      now,
+    );
+
+    final shouldExtendForFutureForecast =
+        !visibleEnd.isBefore(now.subtract(_forecastWindow));
+
+    final shiftedAxisEnd =
+        shiftedChancePoints.isNotEmpty ? shiftedChancePoints.last.time : visibleEnd;
+
+    final axisMaximum = shouldExtendForFutureForecast &&
+            shiftedAxisEnd.isAfter(visibleEnd)
+        ? shiftedAxisEnd
+        : visibleEnd;
     final chartHeight = viewportInfo.isDesktop
         ? 430.0
         : viewportInfo.isMobileLandscape
             ? 300.0
             : 260.0;
+
+    final temperaturePoints = response.points
+        .where(
+          (p) =>
+              p.temperature != null &&
+              !p.time.isBefore(visibleStart) &&
+              !p.time.isAfter(visibleEnd),
+        )
+        .toList();
+
+    final humidityPoints = response.points
+        .where(
+          (p) =>
+              p.humidity != null &&
+              !p.time.isBefore(visibleStart) &&
+              !p.time.isAfter(visibleEnd),
+        )
+        .toList();
+
+    final soilTempPoints = response.points
+        .where(
+          (p) =>
+              p.soilTemperature != null &&
+              !p.time.isBefore(visibleStart) &&
+              !p.time.isAfter(visibleEnd),
+        )
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -477,11 +676,27 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                 });
               },
               child: SfCartesianChart(
-                onTrackballPositionChanging: (TrackballArgs args) {
+                  onTrackballPositionChanging: (TrackballArgs args) {
                   final pointIndex = args.chartPointInfo.dataPointIndex;
+                  final seriesIndex = args.chartPointInfo.seriesIndex;
+
                   if (pointIndex != null) {
                     _trackballDismissedByOutsideTap = false;
                     _lastSelectedDataPointIndex = pointIndex;
+                  }
+
+                  final time = _trackballTimeForSeriesPoint(
+                    seriesIndex: seriesIndex,
+                    pointIndex: pointIndex,
+                    temperaturePoints: temperaturePoints,
+                    humidityPoints: humidityPoints,
+                    soilTempPoints: soilTempPoints,
+                    solidChancePoints: splitChancePoints.solid,
+                    dashedChancePoints: splitChancePoints.dashed,
+                  );
+
+                  if (time != null) {
+                    args.chartPointInfo.header = _trackballHeaderFormat.format(time);
                   }
                 },
                 legend: const Legend(
@@ -491,8 +706,8 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                 ),
                 trackballBehavior: _trackballBehavior,
                 primaryXAxis: DateTimeAxis(
-                  minimum: dateRange.startDate,
-                  maximum: dateRange.endDate,
+                  minimum: visibleStart,
+                  maximum: axisMaximum,
                   edgeLabelPlacement: EdgeLabelPlacement.shift,
                   intervalType: axisConfig.intervalType,
                   interval: axisConfig.axisInterval,
@@ -510,27 +725,39 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                 series: [
                   LineSeries<FrostTimelinePoint, DateTime>(
                     name: 'Temperature',
-                    dataSource: response.points.where((p) => p.temperature != null).toList(),
+                    dataSource: temperaturePoints,
                     xValueMapper: (p, _) => p.time,
                     yValueMapper: (p, _) => p.temperature!,
                   ),
                   LineSeries<FrostTimelinePoint, DateTime>(
                     name: 'Humidity',
-                    dataSource: response.points.where((p) => p.humidity != null).toList(),
+                    dataSource: humidityPoints,
                     xValueMapper: (p, _) => p.time,
                     yValueMapper: (p, _) => p.humidity!,
                   ),
                   LineSeries<FrostTimelinePoint, DateTime>(
                     name: 'Soil Temp',
-                    dataSource: response.points.where((p) => p.soilTemperature != null).toList(),
+                    dataSource: soilTempPoints,
                     xValueMapper: (p, _) => p.time,
                     yValueMapper: (p, _) => p.soilTemperature!,
                   ),
-                  LineSeries<FrostTimelinePoint, DateTime>(
-                    name: 'Frost Chance (%)',
-                    dataSource: response.points,
+                  LineSeries<_ShiftedChancePoint, DateTime>(
+                    name: 'Frost Chance (%) - next 6h',
+                    color: _frostChanceColor,
+                    dataSource: splitChancePoints.solid,
                     xValueMapper: (p, _) => p.time,
-                    yValueMapper: (p, _) => p.predictedChance,
+                    yValueMapper: (p, _) => p.value,
+                    width: 2.5,
+                  ),
+                  LineSeries<_ShiftedChancePoint, DateTime>(
+                    name: 'Frost Chance (%) - next 6h (Predicted)',
+                    color: _frostChanceColor,
+                    dataSource: splitChancePoints.dashed,
+                    xValueMapper: (p, _) => p.time,
+                    yValueMapper: (p, _) => p.value,
+                    width: 2.5,
+                    dashArray: const <double>[8, 4],
+                    isVisibleInLegend: false,
                   ),
                 ],
               ),
@@ -557,4 +784,16 @@ class _InfoCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ShiftedChancePoint {
+  const _ShiftedChancePoint({
+    required this.sourceTime,
+    required this.time,
+    required this.value,
+  });
+
+  final DateTime sourceTime;
+  final DateTime time;
+  final double value;
 }
