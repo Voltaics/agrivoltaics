@@ -10,7 +10,7 @@ The `load_mock_data.py` script generates realistic sensor data for testing the h
 
 - Generates semi-random sensor readings with configurable point-to-point correlation
 - Bulk-inserts data directly to BigQuery (fast and cost-effective)
-- Posts the final timestamp to the `ingestData` endpoint to sync Firestore state
+- Posts a final payload to the `ingestSensorData` endpoint to sync Firestore current sensor state
 - Simulates all 4 Arduino sensors (DHT22, VEML7700, Soil, SGP30) with 8 reading fields
 
 ### Installation
@@ -105,7 +105,7 @@ python load_mock_data.py \
 | `--site-id` | No | `5LvgyAAaFpAmlfcUrpTU` | Site ID |
 | `--zone-id` | No | `7aZzv6juGouqsbicdC8J` | Zone ID |
 | `--project-id` | No | `agrivoltaics-flutter-firebase` | GCP project ID |
-| `--ingest-endpoint` | No | Production URL | ingestData cloud function endpoint |
+| `--ingest-endpoint` | No | Production URL | ingestSensorData cloud function endpoint |
 | `--skip-firestore` | No | False | Skip posting last data point to Firestore |
 
 ### Generated Sensor Data
@@ -272,7 +272,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
 - BigQuery Data Editor
 - BigQuery Job User
 
-#### ingestData Endpoint 400 Error
+#### ingestSensorData Endpoint 400 Error
 
 **Possible causes**:
 - Sensor documents don't exist in Firestore

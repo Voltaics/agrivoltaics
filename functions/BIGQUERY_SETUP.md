@@ -1,5 +1,10 @@
 # BigQuery Setup Guide
 
+## Status
+
+This guide has been updated for the current Cloud Functions implementation.
+For full operational context, use docs/Developer-Handoff.md as the canonical handoff reference.
+
 ## Overview
 
 Your sensor data now streams to **BigQuery** for fast, scalable analytics. This replaces the CSV append bottleneck with a proper time-series database.
@@ -31,7 +36,7 @@ Or enable it manually:
 3. Navigate to "APIs & Services" → "Enable APIs and Services"
 4. Search for "BigQuery API" and enable it
 
-### 2. Create Dataset and Table
+### 2. Create Dataset and Tables
 
 Deploy the setup function and call it once:
 
@@ -40,7 +45,7 @@ Deploy the setup function and call it once:
 cd functions
 npm run deploy
 
-# Call the setup function to create dataset and table
+# Call the setup function to create/verify dataset and tables
 curl -X POST https://[REGION]-[PROJECT-ID].cloudfunctions.net/setupBigQuery
 ```
 
@@ -53,11 +58,11 @@ Invoke-RestMethod -Uri "https://us-central1-[PROJECT-ID].cloudfunctions.net/setu
 ```json
 {
   "success": true,
-  "message": "BigQuery setup completed",
   "dataset": "sensor_data",
-  "table": "readings",
-  "partitioning": "DAY on timestamp field",
-  "clustering": "sensorId, field"
+  "tables": {
+    "readings": "created_or_exists",
+    "alerts": "created_or_exists"
+  }
 }
 ```
 
@@ -66,7 +71,7 @@ Invoke-RestMethod -Uri "https://us-central1-[PROJECT-ID].cloudfunctions.net/setu
 1. Go to [BigQuery Console](https://console.cloud.google.com/bigquery)
 2. Look for dataset `sensor_data`
 3. Check table `readings` exists
-4. Verify schema has 11 columns (timestamp, organizationId, siteId, etc.)
+4. Verify table schemas match setupBigQuery handler definitions
 
 ## Table Schema
 
@@ -77,38 +82,48 @@ CREATE TABLE sensor_data.readings (
   siteId STRING NOT NULL,
   zoneId STRING NOT NULL,
   sensorId STRING NOT NULL,
-  arduinoDeviceId STRING NOT NULL,
   sensorModel STRING,
   sensorName STRING,
-  field STRING NOT NULL,       -- 'temperature', 'humidity', etc.
+  field STRING NOT NULL,
   value FLOAT NOT NULL,
-  unit STRING NOT NULL
+  unit STRING NOT NULL,
+  primarySensor BOOL
 )
 PARTITION BY DATE(timestamp)
 CLUSTER BY sensorId, field;
 ```
 
+```sql
+CREATE TABLE sensor_data.alerts (
+  triggeredAt TIMESTAMP NOT NULL,
+  organizationId STRING NOT NULL,
+  siteId STRING,
+  zoneId STRING,
+  sensorId STRING,
+  ruleId STRING NOT NULL,
+  ruleName STRING NOT NULL,
+  fieldAlias STRING NOT NULL,
+  value FLOAT NOT NULL,
+  threshold FLOAT NOT NULL,
+  operator STRING NOT NULL,
+  severity STRING,
+  unit STRING
+)
+PARTITION BY DATE(triggeredAt)
+CLUSTER BY organizationId, ruleId;
+```
+
 ## Configuration Options
 
-### CSV Backup (Optional)
+### CSV Backup
 
-By default, CSV backups are **disabled**. To enable:
-
-```bash
-firebase functions:config:set csv.backup="true"
-firebase deploy --only functions
-```
-
-When enabled, individual CSV files are stored per reading (no append bottleneck):
-```
-sensor-data/{org}/{site}/{zone}/{sensor}/{year}/{month}/{day}/{timestamp}.csv
-```
+CSV backup settings described in older versions of this guide are not part of the current core workflow.
 
 ### Data Retention
 
 Default: Keep data forever (`expirationMs: null`)
 
-To auto-delete old data after 1 year, modify [index.js](index.js#L335):
+To auto-delete old data after 1 year, modify table options in setupBigQuery.js:
 ```javascript
 timePartitioning: {
   type: 'DAY',
@@ -304,17 +319,24 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 ### Data not appearing in BigQuery
 
 1. Check Cloud Functions logs: `firebase functions:log`
-2. Verify sensor is registered in `sensorLookup` collection
+2. Verify sensor document exists at organizations/{org}/sites/{site}/zones/{zone}/sensors/{sensorId}
 3. Test with curl:
 ```bash
 curl -X POST http://localhost:5001/[PROJECT]/us-central1/ingestSensorData \
   -H "Content-Type: application/json" \
   -d '{
-    "deviceId": "ARDUINO_001",
-    "timestamp": 1700000000,
-    "readings": {
-      "temperature": { "value": 72.5, "unit": "°F" }
-    }
+    "organizationId": "ORG",
+    "siteId": "SITE",
+    "zoneId": "ZONE",
+    "sensors": [
+      {
+        "sensorId": "SENSOR",
+        "timestamp": 1710000000,
+        "readings": {
+          "temperature": { "value": 72.5, "unit": "F" }
+        }
+      }
+    ]
   }'
 ```
 4. Query BigQuery to verify:

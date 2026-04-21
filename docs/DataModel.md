@@ -1,420 +1,301 @@
-## Collections Structure
+## Firestore Data Model (Current Implementation)
 
-### 1. **users** (Top-level Collection)
-User profiles linked to Firebase Auth. Document ID = Firebase Auth UID.
+This document reflects the collections and fields currently used by the app and Cloud Functions code.
+
+## 1) users (top-level)
+
+Document ID: Firebase Auth UID
 
 ```javascript
 users/{userId}
 {
-  // Basic Info
-  uid: string,                    // Firebase Auth UID (matches document ID)
-  email: string,                  // User email
-  displayName: string,            // Full name
-  photoUrl: string,               // Profile picture URL
-  
-  // Timestamps
+  uid: string,
+  email: string,                    // normalized lowercase
+  displayName: string,
+
   createdAt: timestamp,
   lastLogin: timestamp,
-  
-  // User Preferences (migrated from MongoDB settings)
-  preferences: {
-    theme: string,                // "light" | "dark" | "auto"
-    timezone: string,             // "America/New_York"
-    language: string,             // "en"
-    notificationsEnabled: boolean,
-    singleGraphToggle: boolean,   // From MongoDB settings
-    returnDataFilter: string,     // "max" | "min" | "mean" (from MongoDB)
-  },
-  
-  // Weather Notification Tracking (from MongoDB)
-  lastReadNotification: timestamp, // Track last read notification
+
+  // Legacy single-token path (still referenced in model/service)
+  fcmToken?: string | null,
+  fcmTokenUpdatedAt?: timestamp,
+
+  // Current multi-device token storage
+  fcmTokens?: string[],
 }
 ```
 
----
-
-### 2. **organizations** (Top-level Collection)
-Organizations/companies that own vineyard sites.
+## 2) organizations (top-level)
 
 ```javascript
 organizations/{orgId}
 {
-  // Basic Info
-  name: string,                   // "UC Vinovoltaics"
+  name: string,
   description: string,
-  logoUrl: string,
-  
-  // Timestamps
+  logoUrl?: string | null,
+
   createdAt: timestamp,
   updatedAt: timestamp,
-  createdBy: string,              // userId
-  
-  // Settings
-  settings: {
-    timezone: string,             // Default timezone for org
-    alertsEnabled: boolean,
-  }
+  createdBy: string,                // userId
 }
 ```
 
-#### **Subcollection: organizations/{orgId}/members**
-Organization members and their roles.
+### 2a) organizations/{orgId}/members
+
+Document ID: userId
 
 ```javascript
 organizations/{orgId}/members/{userId}
-{  
-  // Role & Permissions
-  role: string,                   // "owner" | "admin" | "member" | "viewer"
+{
+  email?: string,                   // normalized email (set for invited/added members)
+  role: string,                     // "owner" | "admin" | "member" | "viewer"
   permissions: {
     canManageMembers: boolean,
     canManageSites: boolean,
     canManageSensors: boolean,
-    canViewData: boolean,
-    canExportData: boolean,
   },
-  
-  // Timestamps
+
   joinedAt: timestamp,
-  invitedBy: string,              // userId
-  lastActive: timestamp,
+  invitedBy: string | null,         // userId
+  lastActive: timestamp | null,
 }
 ```
 
-#### **Subcollection: organizations/{orgId}/sites**
-Physical vineyard/farm locations.
+### 2b) organizations/{orgId}/pendingInvites
+
+Used for invite-by-email before the target user signs in.
+
+Document ID: normalized email (with '/' replaced)
+
+```javascript
+organizations/{orgId}/pendingInvites/{inviteDocId}
+{
+  orgId: string,
+  email: string,                    // normalized lowercase
+  emailOriginal: string,
+
+  role: string,
+  permissions: {
+    canManageMembers: boolean,
+    canManageSites: boolean,
+    canManageSensors: boolean,
+  },
+
+  status: string,                   // "pending" | "accepted"
+  invitedBy: string,
+  createdAt: timestamp,
+  updatedAt: timestamp,
+  acceptedAt?: timestamp,
+}
+```
+
+### 2c) organizations/{orgId}/sites
 
 ```javascript
 organizations/{orgId}/sites/{siteId}
 {
-  // Basic Info
-  name: string,                   // "Napa Valley Vineyard" ('nickName' in MongoDB)
+  name: string,
   description: string,
-  
-  // Location
-  location: geopoint,             // lat/lng
+
+  location?: geopoint,
   address: string,
-  timezone: string,               // Site-specific timezone
-  
-  // Status & Stats
-  lastDataReceived: timestamp,
-  
-  // Timestamps
+  timezone: string,
+
+  lastDataReceived?: timestamp | null,
+
   createdAt: timestamp,
   updatedAt: timestamp,
-  createdBy: string,              // userId
-  
-  // Site Settings (migrated from MongoDB)
-  siteChecked: boolean,           // From MongoDB settings
+  createdBy: string,
+
+  siteChecked: boolean,
 }
 ```
 
-#### **Subcollection: organizations/{orgId}/sites/{siteId}/zones**
-Zones within a site (must be at least 1 zone per site).
+### 2d) organizations/{orgId}/sites/{siteId}/zones
 
 ```javascript
 organizations/{orgId}/sites/{siteId}/zones/{zoneId}
 {
-  // Basic Info
-  name: string,                   // "Zone 1", "Zone 2"
+  name: string,
   description: string,
-  
-  // Location within site
-  location: geopoint,
-  
-  // Settings (migrated from MongoDB)
-  zoneChecked: boolean,           // Visibility toggle from MongoDB
-  
-  // Primary Sensor Readings (Dynamic mapping)
+  location?: geopoint,
+
+  zoneChecked: boolean,
+
+  // Dynamic map: reading field alias -> sensorId
   readings: {
-    [readingFieldName: string]: string,  // Map of reading field name -> sensorId
+    [readingFieldName: string]: string,
   },
-  
-  // Timestamps
+
   createdAt: timestamp,
   updatedAt: timestamp,
+
+  // Optional frost settings used by ingest/trigger logic
+  frostSettings?: {
+    enabled?: boolean,
+    predStart?: timestamp,
+    predEnd?: timestamp,
+    tempThresholdF?: number,
+  }
 }
 ```
 
-**Purpose:** The `readings` object is a flexible map that allows users to designate which sensor is the "primary" source for any reading type. The keys are user-defined reading field names.
-
-**Example:**
-```javascript
-readings: {
-  "temperature": "sensor-dht22-001",
-  "humidity": "sensor-dht22-001",
-  "light": "sensor-veml7700-001",
-  "soilMoisture": "sensor-soil-002",
-  "customReading1": "sensor-custom-001",  // User-defined reading name
-  "vineStress": "sensor-ndvi-001",        // Any custom field name
-}
-```
-
-**Note:** 
-- Keys can be any string (user-defined reading names)
-- Values are sensor IDs that provide that reading
-- The readings object is completely dynamic and can contain any field names
-- If no primary sensor is designated for a reading type, that key simply won't exist in the map
-```
-
-#### **Subcollection: organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors**
-Physical sensors connected to Arduino devices. Multi-output sensors (e.g., DHT22) store all readings in one document.
+### 2e) organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors
 
 ```javascript
 organizations/{orgId}/sites/{siteId}/zones/{zoneId}/sensors/{sensorId}
 {
-  // Basic Info
-  name: string,                   // "DHT22 Weather Sensor" or "Soil Sensor 1"
-  model: string,                  // "DHT22" | "VEML7700" | "DFRobot-Soil" | "SGP30"
-  
-  // Location
-  location: geopoint,
-  
-  // Sensor Fields (multi-output sensors have multiple fields)
+  name: string,
+  model: string,                    // e.g. DHT22, VEML7700, DFRobot-Soil, SGP30
+  location?: geopoint,
+
   fields: {
-    temperature: {                // Field name matches sensor type
-      currentValue: number,       // 72.5
-      unit: string,               // "°F" or "°C"
-      lastUpdated: timestamp,
-    },
-    humidity: {
-      currentValue: number,       // 65.2
-      unit: string,               // "%"
-      lastUpdated: timestamp,
-    },
-    // Other possible fields: light, soilMoisture, soilTemperature, soilEC, co2, tvoc
+    [fieldName: string]: {
+      currentValue?: number,
+      unit: string,
+      lastUpdated?: timestamp,
+    }
   },
-  
-  // Timestamps
-  lastReading: timestamp,         // Last time any data was received
+
+  lastReading?: timestamp,
   createdAt: timestamp,
   updatedAt: timestamp,
 }
 ```
 
-**Example Sensors:**
-- **DHT22:** Has `fields.temperature` and `fields.humidity`
-- **VEML7700:** Has only `fields.light`
-- **Soil Sensor:** Has `fields.soilTemperature`, `fields.soilMoisture`, and `fields.soilEC`
-- **SGP30:** Has `fields.co2` and `fields.tvoc`
+### 2f) organizations/{orgId}/alertRules
 
----
+```javascript
+organizations/{orgId}/alertRules/{ruleId}
+{
+  id: string,
+  name: string,
 
-### 7. **readings** (Top-level Collection)
-Standardized reading type definitions used across all sensors. Document ID = readingAlias.
+  ruleType: string,                 // "threshold" | "frost_warning" | "mold_risk" | "black_rot_risk"
+  fieldAlias: string,               // for threshold rules
+  operator?: string | null,         // "gt" | "lt" | "gte" | "lte" | "eq"
+  threshold?: number | null,
+
+  // Structured conditions for non-threshold rules
+  ruleConfig?: map | null,
+
+  // Backward-compat key still written by UI for frost rules
+  frostConfig?: map | null,
+
+  enabled: boolean,
+  notifyUserIds: string[],
+
+  activeRangeStart?: string | null, // "MM/dd"
+  activeRangeEnd?: string | null,   // "MM/dd"
+  cooldownMinutes: number,
+  lastFiredAt?: timestamp,
+
+  // Function-side optional knobs
+  inAppEnabled?: boolean,
+  inAppExpiresAfterHours?: number,
+
+  createdBy: string,
+  createdAt: timestamp,
+  updatedAt: timestamp,
+}
+```
+
+### 2g) organizations/{orgId}/sites/{siteId}/zones/{zoneId}/frostRunLock
+
+Internal lease document used by Cloud Functions to prevent overlapping frost runs.
+
+```javascript
+organizations/{orgId}/sites/{siteId}/zones/{zoneId}/frostRunLock/lease
+{
+  expiresAt: timestamp,
+  updatedAt: timestamp,
+}
+```
+
+## 3) readings (top-level)
+
+Document ID: reading alias (camelCase)
 
 ```javascript
 readings/{readingAlias}
 {
-  // Reading Identity
-  alias: string,                  // Unique identifier (camelCase) - e.g., "soilTemperature"
-  name: string,                   // Human-readable name - e.g., "Soil Temperature"
-  description: string,            // Detailed description of this reading
-  
-  // Units
-  validUnits: [string],           // Array of acceptable units - e.g., ["°F", "°C"]
-  defaultUnit: string,            // Preferred unit - e.g., "°F"
+  alias: string,
+  name: string,
+  description: string,
+  validUnits: string[],
+  defaultUnit: string,
 }
 ```
 
----
+## 4) sensorLookup (top-level)
 
-### 9. **sensorLookup** (Top-level Collection)
-Fast lookup table for sensor metadata. Document ID = sensorId.
+Document ID: sensorId
 
 ```javascript
 sensorLookup/{sensorId}
 {
-  // Sensor Document Path
-  sensorDocPath: string,         // Full Firestore path to sensor document
+  sensorDocPath: string,
   organizationId: string,
   siteId: string,
   zoneId: string,
-  sensorId: string,              // Matches document ID
-  
-  // Sensor Metadata
-  sensorModel: string,           // "DHT22" | "VEML7700" | "DFRobot-Soil" | "SGP30"
-  sensorName: string,            // "DHT22 Weather Sensor"
-  
-  // Field Mapping (what fields this sensor outputs)
-  fields: [                      // Array of field names this sensor provides
-    "temperature",
-    "humidity"
-  ],
-  
-  // Status
-  lastDataReceived: timestamp,
-  
-  // Timestamps
+  sensorId: string,
+
+  sensorModel: string,
+  sensorName: string,
+  fields: string[],
+
+  lastDataReceived?: timestamp,
   registeredAt: timestamp,
   updatedAt: timestamp,
 }
 ```
 
-**Purpose:** Quick lookup of sensor metadata by sensor ID.
+## 5) notifications (top-level)
 
-**Note:** This collection is automatically maintained by SensorService when sensors are created/updated/deleted. All sensor CRUD operations in SensorService automatically update the corresponding sensorLookup entry to keep them in sync.
-
----
-
-### 10. **mobileSensors** (Top-level Collection)
-Temporary/mobile sensing devices (smartphones, portable sensors).
-
-```javascript
-mobileSensors/{mobileSensorId}
-{
-  // Basic Info
-  name: string,                   // "Eli's iPhone"
-  type: string,                   // "smartphone" | "portable_device"
-  ipAddress: string,
-  
-  // Ownership
-  organizationId: string,
-  currentSiteId: string,          // Current location (nullable)
-  currentZoneId: string,          // Current zone (nullable)
-  
-  // Device Info
-  deviceInfo: {
-    platform: string,             // "iOS" | "Android" | "Web"
-    model: string,
-    osVersion: string,
-    appVersion: string,
-  },
-  
-  // Status
-  lastActivity: timestamp,
-  
-  // Current Session
-  sessionData: {
-    sessionId: string,
-    startTime: timestamp,
-    dataPointsCollected: number,
-  },
-  
-  // Timestamps
-  registeredAt: timestamp,
-  lastSyncedAt: timestamp,
-}
-```
-
----
-
-### 11. **alerts** (Top-level Collection)
-Weather alerts and sensor threshold alerts.
-
-```javascript
-alerts/{alertId}
-{
-  // Reference
-  organizationId: string,
-  siteId: string,                 // nullable for weather alerts
-  sensorId: string,               // nullable for weather alerts
-  
-  // Alert Type
-  type: string,                   // "weather" | "threshold_exceeded" | "sensor_offline" | "battery_low"
-  category: string,               // For weather: "frost" | "heat" | "storm" | etc.
-  
-  // Content (for weather alerts from MongoDB/NOAA API)
-  phenomenon: string,             // "Frost", "Blizzard", "Heat"
-  significance: string,           // "Warning" | "Watch" | "Advisory" | "Statement"
-  message: string,                // Full alert message
-  
-  // Severity
-  severity: string,               // "info" | "warning" | "critical"
-  priority: number,               // 1-5 for sorting
-  
-  // Status
-  isRead: boolean,
-  acknowledgedAt: timestamp,
-  acknowledgedBy: string,         // userId
-  resolved: boolean,
-  resolvedAt: timestamp,
-  resolvedBy: string,             // userId
-  
-  // Timestamps
-  createdAt: timestamp,
-  validFrom: timestamp,           // For weather alerts
-  validUntil: timestamp,          // For weather alerts
-  
-  // Additional Data (from MongoDB weather body)
-  metadata: map,
-}
-```
-
----
-
-### 12. **imageAnalysis** (Top-level Collection)
-ML model results for disease detection and vine presence.
-
-```javascript
-imageAnalysis/{analysisId}
-{
-  // Reference
-  organizationId: string,
-  siteId: string,
-  zoneId: string,                 // nullable
-  
-  // Upload Info
-  uploadedBy: string,             // userId or mobileSensorId
-  uploadedAt: timestamp,
-  capturedAt: timestamp,
-  location: geopoint,
-  
-  // Results: Vine Presence
-  vinePresence: {
-    detected: boolean,
-    confidence: number,           // 0-1
-  },
-  
-  // Results: Disease Detection
-  disease: {
-    detected: boolean,
-    diseaseType: string,          // "powdery_mildew" | "downy_mildew" | etc.
-    confidence: number,           // 0-1
-    affectedArea: number,         // percentage 0-100
-    severity: string,             // "low" | "medium" | "high"
-  },
-  
-  // Processing Status
-  status: string,                 // "pending" | "processing" | "completed" | "failed"
-  errorMessage: string,           // If failed
-  
-  // Timestamps
-  createdAt: timestamp,
-  processedAt: timestamp,
-}
-```
-
----
-
-### 13. **notifications** (Top-level Collection)
-User-specific notification queue (replaces MongoDB notifications + user tracking).
+In-app notification queue consumed by the app UI.
 
 ```javascript
 notifications/{notificationId}
 {
-  // Recipient
-  userId: string,                 // Who should see this
+  userId: string,
   organizationId: string,
-  
-  // Content
+
   title: string,
   body: string,
-  type: string,                   // "weather" | "alert" | "sensor" | "system"
-  
-  // Reference
-  referenceType: string,          // "alert" | "sensor" | "imageAnalysis"
-  referenceId: string,            // Document ID of the referenced item
-  
-  // Status
+  type: string,                     // "alert" | "system" | etc.
+
+  referenceType?: string,           // currently written as "alert" by functions
+  referenceId?: string | null,
+
   isRead: boolean,
-  readAt: timestamp,
-  
-  // Action
-  actionUrl: string,              // Deep link to relevant page
-  actionLabel: string,            // "View Alert", "Check Sensor"
-  
-  // Timestamps
+  readAt?: timestamp,
+
   createdAt: timestamp,
-  expiresAt: timestamp,           // Auto-delete old notifications
+  expiresAt?: timestamp | null,
 }
 ```
+
+## 6) captures (top-level)
+
+Written by Pi/mobile capture pipeline and displayed on the mobile dashboard.
+
+```javascript
+captures/{captureId}
+{
+  timestamp: timestamp,
+  url: string[],                    // storage paths or public URLs (pipeline-dependent)
+  detected_disease: boolean,
+
+  // Pipeline-dependent metadata
+  analysis?: string | number,
+  analysis_summary?: string,
+}
+```
+
+## Legacy or Planned Collections
+
+The following were documented previously but are not currently referenced by the active app/services code in this repository:
+
+- mobileSensors
+- alerts (top-level alert records are currently in BigQuery; in-app alerts are in notifications)
+- imageAnalysis
