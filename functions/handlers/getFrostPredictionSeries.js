@@ -107,10 +107,29 @@ const getFrostPredictionSeries = functions.https.onRequest(async (req, res) => {
       WITH
         params AS (
           SELECT
-            TIMESTAMP(@start) AS start_ts,
+            TIMESTAMP(@start) AS visible_start_ts,
+            TIMESTAMP_SUB(TIMESTAMP(@start), INTERVAL 6 HOUR) AS query_start_ts,
             TIMESTAMP(@end) AS end_ts,
             @zoneId AS zone_id,
             @bucketSeconds AS bucket_seconds
+        ),
+
+        timeline AS (
+          SELECT
+            bucket_ts
+          FROM params p,
+          UNNEST(
+            GENERATE_TIMESTAMP_ARRAY(
+              TIMESTAMP_SECONDS(DIV(UNIX_SECONDS(p.query_start_ts), p.bucket_seconds) * p.bucket_seconds),
+              TIMESTAMP_SECONDS(
+                DIV(
+                  UNIX_SECONDS(TIMESTAMP_SUB(p.end_ts, INTERVAL 1 SECOND)),
+                  p.bucket_seconds
+                ) * p.bucket_seconds
+              ),
+              INTERVAL p.bucket_seconds SECOND
+            )
+          ) AS bucket_ts
         ),
 
         reads AS (
@@ -122,7 +141,7 @@ const getFrostPredictionSeries = functions.https.onRequest(async (req, res) => {
           FROM \`${bigquery.projectId}.${READINGS_TABLE_DATASET_ID}.${READINGS_TABLE_ID}\` r
           CROSS JOIN params p
           WHERE
-            r.timestamp >= p.start_ts
+            r.timestamp >= p.query_start_ts
             AND r.timestamp < p.end_ts
             AND r.organizationId = @organizationId
             AND r.siteId = @siteId
@@ -139,7 +158,7 @@ const getFrostPredictionSeries = functions.https.onRequest(async (req, res) => {
           FROM \`${bigquery.projectId}.${FROST_TABLE_DATASET_ID}.${FROST_TABLE_ID}\` fp
           CROSS JOIN params p
           WHERE
-            fp.timestamp >= p.start_ts
+            fp.timestamp >= p.query_start_ts
             AND fp.timestamp < p.end_ts
             AND fp.zoneId = p.zone_id
           GROUP BY bucket_ts
@@ -147,14 +166,16 @@ const getFrostPredictionSeries = functions.https.onRequest(async (req, res) => {
 
         joined AS (
           SELECT
-            r.bucket_ts,
+            t.bucket_ts,
             r.temperature,
             r.humidity,
             r.soilTemperature,
             NULLIF(p.probability_percent, -1) AS pred_raw
-          FROM reads r
+          FROM timeline t
+          LEFT JOIN reads r
+            ON r.bucket_ts = t.bucket_ts
           LEFT JOIN preds p
-            ON p.bucket_ts = r.bucket_ts
+            ON p.bucket_ts = t.bucket_ts
         )
 
       SELECT

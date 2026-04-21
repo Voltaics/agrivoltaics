@@ -263,7 +263,10 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
     final maxDialogWidth = media.size.width * 0.95;
     final preferredWidth = isDesktop ? 620.0 : 500.0;
     final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
-    final contentMaxHeight = media.size.height * (isDesktop ? 0.62 : 0.72);
+    final keyboardInset = media.viewInsets.bottom;
+    final availableHeight =
+        (media.size.height - keyboardInset).clamp(280.0, media.size.height);
+    final contentMaxHeight = availableHeight * (isDesktop ? 0.62 : 0.72);
 
     return AlertDialog(
       title: Row(
@@ -284,12 +287,16 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(bottom: keyboardInset + 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                 TextFormField(
                   controller: _nameController,
+                  autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                  scrollPadding: const EdgeInsets.only(bottom: 140),
                   decoration: const InputDecoration(
                     labelText: 'Site Name',
                     hintText: 'e.g., North Field',
@@ -305,6 +312,8 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _descriptionController,
+                  autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                  scrollPadding: const EdgeInsets.only(bottom: 140),
                   decoration: const InputDecoration(
                     labelText: 'Description (optional)',
                     hintText: 'e.g., Main solar panel array',
@@ -315,6 +324,8 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _addressController,
+                  autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                  scrollPadding: const EdgeInsets.only(bottom: 140),
                   decoration: const InputDecoration(
                     labelText: 'Address',
                     hintText: 'e.g., 123 Farm Road, City, State',
@@ -359,6 +370,8 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _latitudeController,
+                        autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                        scrollPadding: const EdgeInsets.only(bottom: 140),
                         decoration: const InputDecoration(
                           labelText: 'Latitude',
                           hintText: 'e.g., 40.7128',
@@ -371,6 +384,8 @@ class _EditSiteDialogState extends State<EditSiteDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _longitudeController,
+                        autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                        scrollPadding: const EdgeInsets.only(bottom: 140),
                         decoration: const InputDecoration(
                           labelText: 'Longitude',
                           hintText: 'e.g., -74.0060',

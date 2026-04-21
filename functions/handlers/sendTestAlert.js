@@ -77,6 +77,9 @@ function buildFrostWarningTestPayload(rule) {
   const tempDropRateFPerHour =
     Number(defaultIfNull(config.tempDropRateFPerHour, 2.0)) + 0.5;
 
+  const anticipateSkyClearingDuringNight =
+    config.anticipateSkyClearingDuringNight === true;
+
   return {
     fieldEntry: {
       value: airTempF,
@@ -91,6 +94,9 @@ function buildFrostWarningTestPayload(rule) {
       soilTempF,
       light,
       tempDropRateFPerHour,
+      anticipateSkyClearingDuringNight,
+      preSunsetLuxDropRate: anticipateSkyClearingDuringNight ? null : 1500.0,
+      clearingLuxDropRatePerHourMin: 1000.0,
     },
   };
 }

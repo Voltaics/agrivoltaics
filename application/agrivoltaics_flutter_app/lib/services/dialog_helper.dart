@@ -182,26 +182,36 @@ class DialogHelper {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(title),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: controller,
-                  maxLength: maxLength,
-                  decoration: InputDecoration(
-                    hintText: hintText,
-                    errorText: errorText,
-                    border: const OutlineInputBorder(),
-                  ),
-                  onChanged: (_) {
-                    setState(() {
-                      errorText = null;
-                    });
-                  },
+          content: Builder(
+            builder: (context) {
+              final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+
+              return SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: EdgeInsets.only(bottom: keyboardInset + 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: controller,
+                      maxLength: maxLength,
+                      autofillHints: const [],
+                      scrollPadding: const EdgeInsets.only(bottom: 140),
+                      decoration: InputDecoration(
+                        hintText: hintText,
+                        errorText: errorText,
+                        border: const OutlineInputBorder(),
+                      ),
+                      onChanged: (_) {
+                        setState(() {
+                          errorText = null;
+                        });
+                      },
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
           actions: [
             TextButton(
