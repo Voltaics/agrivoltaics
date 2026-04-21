@@ -750,7 +750,7 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                     width: 2.5,
                   ),
                   LineSeries<_ShiftedChancePoint, DateTime>(
-                    name: 'Frost Chance (%) - predicted (future)',
+                    name: 'Frost Chance (%) - future',
                     color: _frostChanceColor,
                     dataSource: splitChancePoints.dashed,
                     xValueMapper: (p, _) => p.time,

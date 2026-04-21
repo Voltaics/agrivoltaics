@@ -234,7 +234,10 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
     final maxDialogWidth = media.size.width * 0.95;
     final preferredWidth = isDesktop ? 600.0 : 560.0;
     final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
-    final contentMaxHeight = media.size.height * (isDesktop ? 0.64 : 0.78);
+    final keyboardInset = media.viewInsets.bottom;
+    final availableHeight =
+        (media.size.height - keyboardInset).clamp(280.0, media.size.height);
+    final contentMaxHeight = availableHeight * (isDesktop ? 0.64 : 0.78);
 
     return AlertDialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -255,6 +258,8 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(bottom: keyboardInset + 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -262,6 +267,8 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
               const SizedBox(height: 6),
               TextFormField(
                 controller: _nameController,
+                autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                scrollPadding: const EdgeInsets.only(bottom: 140),
                 decoration: const InputDecoration(
                   labelText: 'Organization Name',
                   border: OutlineInputBorder(),
@@ -283,6 +290,8 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
+                autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                scrollPadding: const EdgeInsets.only(bottom: 140),
                 decoration: const InputDecoration(
                   labelText: 'Description',
                   border: OutlineInputBorder(),

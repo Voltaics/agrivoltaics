@@ -110,7 +110,10 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
         : 600.0;
     final maxDialogWidth = media.size.width * 0.95;
     final effectiveWidth = dialogWidth > maxDialogWidth ? maxDialogWidth : dialogWidth;
-    final dialogMaxHeight = media.size.height * (isDesktop ? 0.84 : 0.9);
+    final keyboardInset = media.viewInsets.bottom;
+    final availableHeight =
+        (media.size.height - keyboardInset).clamp(320.0, media.size.height);
+    final dialogMaxHeight = availableHeight * (isDesktop ? 0.84 : 0.9);
 
     return Dialog(
       child: Container(
@@ -252,8 +255,9 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
   }
 
   Widget _buildAddMemberPanel({required bool compact}) {
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + keyboardInset),
       decoration: BoxDecoration(
         color: AppColors.scaffoldBackground,
         border: compact
@@ -273,6 +277,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
           const SizedBox(height: 12),
           TextField(
             controller: _emailController,
+            scrollPadding: const EdgeInsets.only(bottom: 140),
             decoration: const InputDecoration(
               labelText: 'Email Address',
               hintText: 'user@example.com',
