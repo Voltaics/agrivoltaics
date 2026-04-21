@@ -609,7 +609,7 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
         ? 430.0
         : viewportInfo.isMobileLandscape
             ? 300.0
-            : 260.0;
+            : 320.0;
 
     final temperaturePoints = response.points
         .where(
@@ -742,7 +742,7 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                     yValueMapper: (p, _) => p.soilTemperature!,
                   ),
                   LineSeries<_ShiftedChancePoint, DateTime>(
-                    name: 'Frost Chance (%) - next 6h',
+                    name: 'Frost Chance (%) - predicted',
                     color: _frostChanceColor,
                     dataSource: splitChancePoints.solid,
                     xValueMapper: (p, _) => p.time,
@@ -750,13 +750,13 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                     width: 2.5,
                   ),
                   LineSeries<_ShiftedChancePoint, DateTime>(
-                    name: 'Frost Chance (%) - next 6h (Predicted)',
+                    name: 'Frost Chance (%) - predicted (future)',
                     color: _frostChanceColor,
                     dataSource: splitChancePoints.dashed,
                     xValueMapper: (p, _) => p.time,
                     yValueMapper: (p, _) => p.value,
                     width: 2.5,
-                    dashArray: const <double>[8, 4],
+                    dashArray: const <double>[3, 5],
                     isVisibleInLegend: false,
                   ),
                 ],
