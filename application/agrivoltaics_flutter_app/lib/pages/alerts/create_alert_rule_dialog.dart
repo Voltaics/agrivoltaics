@@ -37,7 +37,9 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
   late final TextEditingController _airTempMaxCtrl;
   late final TextEditingController _soilTempMaxCtrl;
   late final TextEditingController _lightMaxCtrl;
+  late final TextEditingController _clearingLuxDropRateCtrl;
   late bool _requireLowLight;
+  late bool _anticipateSkyClearingDuringNight;
 
   // mold specific controllers
   late final TextEditingController _moldHumidityMinCtrl;
@@ -102,9 +104,14 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
       text: (frost?['soilTempMaxF'] ?? 45.0).toString(),
     );
     _lightMaxCtrl = TextEditingController(
-      text: (frost?['lightMax'] ?? 5.0).toString(),
+      text: (frost?['lightMax'] ?? 20.0).toString(),
     );
     _requireLowLight = (frost?['requireLowLight'] ?? true) == true;
+    _anticipateSkyClearingDuringNight =
+    (frost?['anticipateSkyClearingDuringNight'] ?? false) == true;
+    _clearingLuxDropRateCtrl = TextEditingController(
+      text: (frost?['clearingLuxDropRatePerHourMin'] ?? 1000.0).toString(),
+    );
 
     final mold = rule?.ruleType == AlertRuleType.moldRisk ? config : null;
     _moldHumidityMinCtrl = TextEditingController(
@@ -117,7 +124,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
       text: (mold?['tempMaxF'] ?? 86.0).toString(),
     );
     _moldLightMaxCtrl = TextEditingController(
-      text: (mold?['lightMax'] ?? 5.0).toString(),
+      text: (mold?['lightMax'] ?? 20.0).toString(),
     );
     _moldSoilMoistureMinCtrl = TextEditingController(
       text: (mold?['soilMoistureMin'] ?? 40.0).toString(),
@@ -181,6 +188,7 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
     _airTempMaxCtrl.dispose();
     _soilTempMaxCtrl.dispose();
     _lightMaxCtrl.dispose();
+    _clearingLuxDropRateCtrl.dispose();
 
     _moldHumidityMinCtrl.dispose();
     _moldTempMinCtrl.dispose();
@@ -277,6 +285,9 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
             'soilTempMaxF': double.parse(_soilTempMaxCtrl.text.trim()),
             'lightMax': double.parse(_lightMaxCtrl.text.trim()),
             'requireLowLight': _requireLowLight,
+            'anticipateSkyClearingDuringNight': _anticipateSkyClearingDuringNight,
+            'clearingLuxDropRatePerHourMin':
+              double.parse(_clearingLuxDropRateCtrl.text.trim()),
           },
           // keep for backward compatibility if other code still reads frostConfig
           'frostConfig': {
@@ -286,6 +297,9 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
             'soilTempMaxF': double.parse(_soilTempMaxCtrl.text.trim()),
             'lightMax': double.parse(_lightMaxCtrl.text.trim()),
             'requireLowLight': _requireLowLight,
+            'anticipateSkyClearingDuringNight': _anticipateSkyClearingDuringNight,
+            'clearingLuxDropRatePerHourMin':
+              double.parse(_clearingLuxDropRateCtrl.text.trim()),
           },
           'enabled': _enabled,
           'notifyUserIds': _selectedUserIds.toList(),
@@ -377,7 +391,10 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
     final preferredWidth = isDesktop ? 700.0 : 560.0;
     final dialogWidth =
         maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
-    final maxDialogHeight = media.size.height * (isDesktop ? 0.88 : 0.94);
+    final keyboardInset = media.viewInsets.bottom;
+    final availableHeight =
+        (media.size.height - keyboardInset).clamp(320.0, media.size.height);
+    final maxDialogHeight = availableHeight * (isDesktop ? 0.9 : 0.94);
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -410,11 +427,15 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                 child: Form(
                   key: _formKey,
                   child: SingleChildScrollView(
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.only(bottom: keyboardInset + 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         TextFormField(
                           controller: _nameCtrl,
+                          autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                          scrollPadding: const EdgeInsets.only(bottom: 140),
                           decoration: const InputDecoration(
                             labelText: 'Rule Name',
                             border: OutlineInputBorder(),
@@ -534,6 +555,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                                 flex: 2,
                                 child: TextFormField(
                                   controller: _thresholdCtrl,
+                                  autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                                  scrollPadding: const EdgeInsets.only(bottom: 140),
                                   decoration: const InputDecoration(
                                     labelText: 'Threshold',
                                     border: OutlineInputBorder(),
@@ -574,6 +597,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _tempDropRateCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Temperature drop rate threshold (°F/hour)',
                               border: OutlineInputBorder(),
@@ -584,6 +609,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _humidityMinCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Minimum humidity (%)',
                               border: OutlineInputBorder(),
@@ -594,6 +621,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _airTempMaxCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Maximum air temperature (°F)',
                               border: OutlineInputBorder(),
@@ -604,6 +633,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _soilTempMaxCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Maximum soil temperature (°F)',
                               border: OutlineInputBorder(),
@@ -614,20 +645,49 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _lightMaxCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
-                              labelText: 'Maximum light threshold',
+                              labelText: 'nighttime upper light threshold (lux)',
                               border: OutlineInputBorder(),
-                              helperText: 'Used as a proxy for darkness / likely clear-sky night',
+                              helperText: 'Used as a proxy for darkness / assumes light level lower than this value = nighttime',
                             ),
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             validator: _validateDouble,
                           ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _clearingLuxDropRateCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
+                            decoration: const InputDecoration(
+                              labelText: 'Minimum clear-sky lux drop rate (lux/hour)',
+                              border: OutlineInputBorder(),
+                              helperText: 'Used when "Anticipate sky clearing during night" is off.',
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: _validateDouble,
+                          ),
+                          // SwitchListTile(
+                          //   value: _requireLowLight,
+                          //   onChanged: _saving
+                          //       ? null
+                          //       : (v) => setState(() => _requireLowLight = v),
+                          //   title: const Text('Require nighttime conditions'),
+                          //   subtitle:const Text(
+                          //     'when enabled, alert is only triggered if light level is below above threshold, indicating it is nighttime.',
+                          //     ),
+                          //   contentPadding: EdgeInsets.zero,
+                          // ),
                           SwitchListTile(
-                            value: _requireLowLight,
+                            value: _anticipateSkyClearingDuringNight,
                             onChanged: _saving
                                 ? null
-                                : (v) => setState(() => _requireLowLight = v),
-                            title: const Text('Require low light / nighttime condition'),
+                                : (v) => setState(() => _anticipateSkyClearingDuringNight = v),
+                            title: const Text('Anticipate sky clearing during night'),
+                            subtitle: const Text(
+                              'When enabled, frost alerts still trigger even if the evening lux drop suggests cloud cover before sunset.',
+                            ),
                             contentPadding: EdgeInsets.zero,
                           ),
                         ],
@@ -648,6 +708,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _moldHumidityMinCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Minimum humidity (%)',
                               border: OutlineInputBorder(),
@@ -658,6 +720,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _moldTempMinCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Minimum air temperature (°F)',
                               border: OutlineInputBorder(),
@@ -668,6 +732,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _moldTempMaxCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Maximum air temperature (°F)',
                               border: OutlineInputBorder(),
@@ -678,6 +744,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _moldLightMaxCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Maximum light threshold',
                               border: OutlineInputBorder(),
@@ -689,6 +757,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _moldSoilMoistureMinCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Minimum soil moisture',
                               border: OutlineInputBorder(),
@@ -699,6 +769,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _moldDurationHoursCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Required duration (hours)',
                               border: OutlineInputBorder(),
@@ -725,6 +797,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _blackRotHumidityMinCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Minimum humidity (%)',
                               border: OutlineInputBorder(),
@@ -735,6 +809,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _blackRotTempMinCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Minimum air temperature (°F)',
                               border: OutlineInputBorder(),
@@ -745,6 +821,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _blackRotTempMaxCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Maximum air temperature (°F)',
                               border: OutlineInputBorder(),
@@ -755,6 +833,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _blackRotSoilMoistureJumpCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Minimum soil moisture jump',
                               border: OutlineInputBorder(),
@@ -766,6 +846,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _blackRotFollowupHoursCtrl,
+                            autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                            scrollPadding: const EdgeInsets.only(bottom: 140),
                             decoration: const InputDecoration(
                               labelText: 'Follow-up window (hours)',
                               border: OutlineInputBorder(),
@@ -794,6 +876,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                               Expanded(
                                 child: TextFormField(
                                   controller: _dateStartCtrl,
+                                  autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                                  scrollPadding: const EdgeInsets.only(bottom: 140),
                                   decoration: const InputDecoration(
                                     labelText: 'Start (MM/dd)',
                                     hintText: '04/01',
@@ -806,6 +890,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                               Expanded(
                                 child: TextFormField(
                                   controller: _dateEndCtrl,
+                                  autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                                  scrollPadding: const EdgeInsets.only(bottom: 140),
                                   decoration: const InputDecoration(
                                     labelText: 'End (MM/dd)',
                                     hintText: '05/31',
@@ -821,6 +907,8 @@ class _CreateAlertRuleDialogState extends State<CreateAlertRuleDialog> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _cooldownCtrl,
+                          autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                          scrollPadding: const EdgeInsets.only(bottom: 140),
                           decoration: const InputDecoration(
                             labelText: 'Cooldown (minutes)',
                             border: OutlineInputBorder(),

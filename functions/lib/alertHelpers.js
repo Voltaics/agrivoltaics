@@ -82,6 +82,107 @@ function defaultIfNull(value, fallback) {
   return value != null ? value : fallback;
 }
 
+const FROST_TIMEZONE = 'America/New_York';
+const FROST_CLEAR_SKY_DROP_RATE_DEFAULT = 1000.0; // lux/hour, tune from field data
+
+/**
+ * Get local date parts in a specific timezone.
+ * @param {Date} date
+ * @param {string} timeZone
+ * @return {{year:number, month:number, day:number, hour:number, minute:number}}
+ */
+function getZonedParts(date, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+
+  const map = {};
+  for (const part of parts) {
+    if (part.type !== 'literal') {
+      map[part.type] = parseInt(part.value, 10);
+    }
+  }
+
+  return {
+    year: map.year,
+    month: map.month,
+    day: map.day,
+    hour: map.hour,
+    minute: map.minute,
+  };
+}
+
+/**
+ * Get YYYY-MM-DD key in a specific timezone.
+ * @param {Date} date
+ * @param {string} timeZone
+ * @return {string}
+ */
+function getZonedDateKey(date, timeZone) {
+  const p = getZonedParts(date, timeZone);
+  const mm = String(p.month).padStart(2, '0');
+  const dd = String(p.day).padStart(2, '0');
+  return `${p.year}-${mm}-${dd}`;
+}
+
+/**
+ * Estimate the rate of lux drop from 4 PM local time until sunset proxy.
+ * Sunset proxy = first light reading at or below lightMax after 4 PM.
+ *
+ * @param {Array<Object>} lightSeries
+ * @param {Date} now
+ * @param {number} lightMax
+ * @return {number|null}
+ */
+function computePreSunsetLuxDropRate(lightSeries, now, lightMax) {
+  if (!Array.isArray(lightSeries) || lightSeries.length === 0) return null;
+
+  const todayKey = getZonedDateKey(now, FROST_TIMEZONE);
+
+  const sameDaySeries = lightSeries
+      .map((entry) => {
+        const ts = new Date(entry.timestamp);
+        const zoned = getZonedParts(ts, FROST_TIMEZONE);
+        return {
+          ...entry,
+          _zoned: zoned,
+          _dateKey: `${zoned.year}-${String(zoned.month).padStart(2, '0')}-${String(zoned.day).padStart(2, '0')}`,
+        };
+      })
+      .filter((entry) => entry._dateKey === todayKey)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  if (sameDaySeries.length === 0) return null;
+
+  const startEntry = sameDaySeries.find((entry) => {
+    return entry._zoned.hour > 16 || (entry._zoned.hour === 16 && entry._zoned.minute >= 0);
+  });
+
+  if (!startEntry || startEntry.value == null) return null;
+
+  const sunsetEntry = sameDaySeries.find((entry) => {
+    const after4pm =
+      entry._zoned.hour > 16 || (entry._zoned.hour === 16 && entry._zoned.minute >= 0);
+    return after4pm && entry.value != null && entry.value <= lightMax;
+  });
+
+  if (!sunsetEntry || sunsetEntry.value == null) return null;
+
+  const startTs = new Date(startEntry.timestamp).getTime();
+  const sunsetTs = new Date(sunsetEntry.timestamp).getTime();
+  const elapsedHours = (sunsetTs - startTs) / (1000 * 60 * 60);
+
+  if (elapsedHours <= 0) return null;
+
+  return (startEntry.value - sunsetEntry.value) / elapsedHours;
+}
+
 /**
  * Group BigQuery reading rows by exact timestamp and field.
  * Returns timestamps sorted ascending plus a row map.
@@ -176,7 +277,13 @@ function buildFrostAlertMessage(rule, details) {
     `temp ${details.airTempF}°F, humidity ${details.humidity}%, ` +
     `soil temp ${details.soilTempF}°F, ` +
     `temp drop ${details.tempDropRateFPerHour.toFixed(1)}°F/hr` +
-    (details.light != null ? `, light ${details.light}` : '');
+    (details.light != null ? `, light ${details.light}` : '') +
+    (details.preSunsetLuxDropRate != null ?
+      `, pre-sunset lux drop ${details.preSunsetLuxDropRate.toFixed(0)} lux/hr` :
+      '') +
+    (details.anticipateSkyClearingDuringNight ?
+      `, anticipating overnight clearing` :
+      '');
 
   return {title, body};
 }
@@ -282,7 +389,7 @@ async function writeInAppNotification({
  */
 async function fetchRecentFrostContext({organizationId, siteId, zoneId, now}) {
   const endIso = now.toISOString();
-  const startIso = new Date(now.getTime() - 90 * 60 * 1000).toISOString();
+  const startIso = new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString();
 
   const query = `
     SELECT
@@ -317,6 +424,8 @@ async function fetchRecentFrostContext({organizationId, siteId, zoneId, now}) {
   let bestTempOneHourAgo = null;
   let bestTempDistanceMs = Number.POSITIVE_INFINITY;
 
+  const lightSeries = [];
+
   for (const row of rows) {
     const field = row.field;
     const value = toNumberOrNull(row.value);
@@ -333,6 +442,10 @@ async function fetchRecentFrostContext({organizationId, siteId, zoneId, now}) {
 
     if (!latest[field]) {
       latest[field] = entry;
+    }
+
+    if (field === 'light') {
+      lightSeries.push(entry);
     }
 
     if (field === 'temperature') {
@@ -352,6 +465,7 @@ async function fetchRecentFrostContext({organizationId, siteId, zoneId, now}) {
       light: latest.light || null,
     },
     oneHourAgoTemperature: bestTempOneHourAgo,
+    lightSeries,
   };
 }
 
@@ -481,6 +595,8 @@ function evaluateFrostWarning(rule, frostContext) {
   const airTempMaxFRaw = toNumberOrNull(config.airTempMaxF);
   const soilTempMaxFRaw = toNumberOrNull(config.soilTempMaxF);
   const lightMaxRaw = toNumberOrNull(config.lightMax);
+  const clearingLuxDropRatePerHourMinRaw =
+    toNumberOrNull(config.clearingLuxDropRatePerHourMin);
 
   const tempDropRateThreshold =
     tempDropRateThresholdRaw != null ? tempDropRateThresholdRaw : 2.0;
@@ -493,6 +609,12 @@ function evaluateFrostWarning(rule, frostContext) {
   const lightMax =
     lightMaxRaw != null ? lightMaxRaw : 5000.0;
   const requireLowLight = config.requireLowLight !== false;
+  const anticipateSkyClearingDuringNight =
+    config.anticipateSkyClearingDuringNight === true;
+  const clearingLuxDropRatePerHourMin =
+    clearingLuxDropRatePerHourMinRaw != null ?
+    clearingLuxDropRatePerHourMinRaw :
+    FROST_CLEAR_SKY_DROP_RATE_DEFAULT;
 
   const air = frostContext.current.temperature;
   const humidity = frostContext.current.humidity;
@@ -538,6 +660,27 @@ function evaluateFrostWarning(rule, frostContext) {
   if (airTempF > airTempMaxF) return {matched: false};
   if (soilTempF > soilTempMaxF) return {matched: false};
   if (requireLowLight && (lightValue == null || lightValue > lightMax)) return {matched: false};
+  const preSunsetLuxDropRate = computePreSunsetLuxDropRate(
+      frostContext.lightSeries,
+      new Date(air.timestamp),
+      lightMax,
+  );
+
+  const clearEnoughBeforeSunset =
+    preSunsetLuxDropRate != null &&
+    preSunsetLuxDropRate >= clearingLuxDropRatePerHourMin;
+
+  if (!anticipateSkyClearingDuringNight && !clearEnoughBeforeSunset) {
+    return {
+      matched: false,
+      reason: 'cloud_cover_gate_failed',
+      details: {
+        anticipateSkyClearingDuringNight,
+        preSunsetLuxDropRate,
+        clearingLuxDropRatePerHourMin,
+      },
+    };
+  }
 
   const details = {
     airTempF,
@@ -545,6 +688,9 @@ function evaluateFrostWarning(rule, frostContext) {
     soilTempF,
     light: lightValue,
     tempDropRateFPerHour,
+    anticipateSkyClearingDuringNight,
+    preSunsetLuxDropRate,
+    clearingLuxDropRatePerHourMin,
   };
 
   // Reuse a fieldEntry-shaped object so dispatch can still attach a sensor/timestamp.

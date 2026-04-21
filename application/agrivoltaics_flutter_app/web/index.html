@@ -40,9 +40,19 @@
   <script>
     {{flutter_js}}
     {{flutter_build_config}}
-    
+
     window.addEventListener('load', function(ev) {
       _flutter.loader.load();
+
+      // Disable autofill on all inputs
+      setTimeout(() => {
+        document.querySelectorAll('input').forEach(input => {
+          input.setAttribute('autocomplete', 'off');
+          input.setAttribute('autocorrect', 'off');
+          input.setAttribute('autocapitalize', 'off');
+          input.setAttribute('spellcheck', 'false');
+        });
+      }, 1000); // delay to wait for Flutter to render inputs
     });
   </script>
 </body>

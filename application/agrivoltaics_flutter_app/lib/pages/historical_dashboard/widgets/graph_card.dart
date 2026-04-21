@@ -61,6 +61,12 @@ class _GraphCardWidgetState extends State<GraphCardWidget> {
     final readingsService = ReadingsService();
     final title = readingsService.getReadingName(widget.graph.field);
     final unit = _unit.isEmpty ? '' : ' $_unit';
+    final sortedSeries = widget.graph.series.toList()
+      ..sort((a, b) {
+        final aName = (widget.zoneLookup[a.zoneId] ?? a.zoneId).toLowerCase();
+        final bName = (widget.zoneLookup[b.zoneId] ?? b.zoneId).toLowerCase();
+        return aName.compareTo(bName);
+      });
     final chartHeight = widget.isDesktop
       ? 350.0
       : widget.isMobileLandscape
@@ -147,7 +153,7 @@ class _GraphCardWidgetState extends State<GraphCardWidget> {
                         majorGridLines: MajorGridLines(width: 0.5),
                       ),
                       trackballBehavior: _trackballBehavior,
-                      series: widget.graph.series.map((series) {
+                      series: sortedSeries.map((series) {
                         return LineSeries<HistoricalPoint, DateTime>(
                           name: widget.zoneLookup[series.zoneId] ?? series.zoneId,
                           dataSource: series.points,

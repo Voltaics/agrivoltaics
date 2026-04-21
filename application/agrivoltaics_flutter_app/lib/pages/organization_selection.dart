@@ -20,6 +20,8 @@ class OrganizationSelectionPage extends StatefulWidget {
 
 class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
   final OrganizationService _orgService = OrganizationService();
+  static const String _createOrgRestrictedMessage =
+      'Only OMID can create organizations, please contact mohsen.rezayat@omid-usa.org to create an organization for you.';
 
   bool get _canCreateOrganization {
     final user = FirebaseAuth.instance.currentUser;
@@ -96,22 +98,25 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
               ),
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: _canCreateOrganization
-                  ? () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => const CreateOrganizationDialog(
-                          autoNavigate: true,
-                        ),
-                      );
-                    }
-                  : null,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Organization'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                textStyle: const TextStyle(fontSize: 16),
+            Tooltip(
+              message: _canCreateOrganization ? '' : _createOrgRestrictedMessage,
+              child: ElevatedButton.icon(
+                onPressed: _canCreateOrganization
+                    ? () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => const CreateOrganizationDialog(
+                            autoNavigate: true,
+                          ),
+                        );
+                      }
+                    : null,
+                icon: const Icon(Icons.add),
+                label: const Text('Create Organization'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
+                ),
               ),
             ),
           ],
@@ -194,21 +199,24 @@ class _OrganizationSelectionPageState extends State<OrganizationSelectionPage> {
         ),
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: OutlinedButton.icon(
-            onPressed: _canCreateOrganization
-                ? () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => const CreateOrganizationDialog(
-                        autoNavigate: true,
-                      ),
-                    );
-                  }
-                : null,
-            icon: const Icon(Icons.add),
-            label: const Text('Create New Organization'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Tooltip(
+            message: _canCreateOrganization ? '' : _createOrgRestrictedMessage,
+            child: OutlinedButton.icon(
+              onPressed: _canCreateOrganization
+                  ? () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const CreateOrganizationDialog(
+                          autoNavigate: true,
+                        ),
+                      );
+                    }
+                  : null,
+              icon: const Icon(Icons.add),
+              label: const Text('Create New Organization'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
             ),
           ),
         ),
