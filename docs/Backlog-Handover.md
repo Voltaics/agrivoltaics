@@ -130,6 +130,9 @@ An interface is needed within the application to:
 
 This will support future machine learning workflows for the agrivoltaics platform.
 
+The AI Models will need to be trained with more imgaes that are taken in the vineyard to be more accurate.
+
+The pest_detection model could be trained to detect additional pests such as phylloxera, grape berry moth, etc.
 ---
 
 ## 8. Frost Model
