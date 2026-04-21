@@ -57,7 +57,15 @@ class _AlertsPageState extends State<AlertsPage> {
       final humidity = config['humidityMin'] ?? 90.0;
       final air = config['airTempMaxF'] ?? 39.0;
       final soil = config['soilTempMaxF'] ?? 45.0;
-      return 'Frost: drop > $drop°F/hr, RH ≥ $humidity%, air ≤ $air°F, soil ≤ $soil°F';
+      final requireNight = (config['requireLowLight'] ?? true) == true;
+      final anticipateClearing =
+          (config['anticipateSkyClearingDuringNight'] ?? false) == true;
+      final clearSkyDrop =
+          config['clearingLuxDropRatePerHourMin'] ?? 1000.0;
+
+      return 'Frost: drop > $drop°F/hr, RH ≥ $humidity%, air ≤ $air°F, soil ≤ $soil°F'
+          '${requireNight ? ', night required' : ''}'
+          '${anticipateClearing ? ', anticipate clearing ON' : ', clear-sky drop ≥ $clearSkyDrop lux/hr'}';
     }
 
     if (rule.ruleType == AlertRuleType.moldRisk) {

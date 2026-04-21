@@ -101,7 +101,10 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
     final maxDialogWidth = media.size.width * 0.95;
     final preferredWidth = isDesktop ? 560.0 : 520.0;
     final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
-    final contentMaxHeight = media.size.height * (isDesktop ? 0.58 : 0.72);
+    final keyboardInset = media.viewInsets.bottom;
+    final availableHeight =
+        (media.size.height - keyboardInset).clamp(280.0, media.size.height);
+    final contentMaxHeight = availableHeight * (isDesktop ? 0.58 : 0.72);
 
     return AlertDialog(
       title: const Row(
@@ -118,6 +121,8 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(bottom: keyboardInset + 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -132,6 +137,8 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
               const SizedBox(height: 24),
               TextFormField(
                 controller: _nameController,
+                autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                scrollPadding: const EdgeInsets.only(bottom: 140),
                 decoration: const InputDecoration(
                   labelText: 'Organization Name',
                   hintText: 'e.g., Vineyard Co.',
@@ -154,6 +161,8 @@ class _CreateOrganizationDialogState extends State<CreateOrganizationDialog> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
+                autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                scrollPadding: const EdgeInsets.only(bottom: 140),
                 decoration: const InputDecoration(
                   labelText: 'Description (Optional)',
                   hintText: 'e.g., Main vineyard operations',

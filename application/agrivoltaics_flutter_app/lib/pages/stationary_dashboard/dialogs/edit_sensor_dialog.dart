@@ -120,6 +120,8 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextFormField(
+                      autofillHints: const [],
+                      scrollPadding: const EdgeInsets.only(bottom: 140),
                       decoration: InputDecoration(
                         labelText: 'Reading Name *',
                         hintText: 'Search or select a reading',
@@ -159,6 +161,8 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
                     const SizedBox(height: 12),
                     if (selectedReadingAlias != null)
                       TextFormField(
+                        autofillHints: const [],
+                        scrollPadding: const EdgeInsets.only(bottom: 140),
                         decoration: InputDecoration(
                           labelText: 'Unit *',
                           hintText: 'Search or select a unit',
@@ -242,70 +246,81 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
               borderRadius: BorderRadius.all(Radius.circular(8)),
             ),
             insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-            child: SizedBox(
-              width: double.maxFinite,
-              height: 400,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: TextField(
-                      autofocus: true,
-                      onChanged: (value) {
-                        setState(() {
-                          searchText = value;
-                          filtered = items
-                              .where((item) => getLabel(item)
-                                  .toLowerCase()
-                                  .contains(searchText.toLowerCase()))
-                              .toList();
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Search...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: filtered.isEmpty
-                        ? Center(
-                            child: Text(
-                              searchText.isEmpty
-                                  ? 'No items'
-                                  : 'No results for "$searchText"',
-                              style: const TextStyle(color: AppColors.textMuted),
+            child: Builder(
+              builder: (context) {
+                final media = MediaQuery.of(context);
+                final keyboardInset = media.viewInsets.bottom;
+                final availableHeight =
+                    (media.size.height - keyboardInset).clamp(240.0, media.size.height);
+
+                return SizedBox(
+                  width: double.maxFinite,
+                  height: availableHeight < 400 ? availableHeight * 0.9 : 400,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: TextField(
+                          autofocus: true,
+                          autofillHints: const [],
+                          scrollPadding: const EdgeInsets.only(bottom: 140),
+                          onChanged: (value) {
+                            setState(() {
+                              searchText = value;
+                              filtered = items
+                                  .where((item) => getLabel(item)
+                                      .toLowerCase()
+                                      .contains(searchText.toLowerCase()))
+                                  .toList();
+                            });
+                          },
+                          decoration: InputDecoration(
+                            hintText: 'Search...',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(6),
                             ),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: false,
-                            padding: EdgeInsets.zero,
-                            itemExtent: 48,
-                            addAutomaticKeepAlives: false,
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) {
-                              final item = filtered[index];
-                              return ListTile(
-                                dense: true,
-                                title: Text(getLabel(item)),
-                                onTap: () {
-                                  Navigator.pop(dialogContext, item);
-                                },
-                              );
-                            },
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            isDense: true,
                           ),
+                        ),
+                      ),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? Center(
+                                child: Text(
+                                  searchText.isEmpty
+                                      ? 'No items'
+                                      : 'No results for "$searchText"',
+                                  style: const TextStyle(color: AppColors.textMuted),
+                                ),
+                              )
+                            : ListView.builder(
+                                shrinkWrap: false,
+                                padding: EdgeInsets.zero,
+                                itemExtent: 48,
+                                addAutomaticKeepAlives: false,
+                                itemCount: filtered.length,
+                                itemBuilder: (context, index) {
+                                  final item = filtered[index];
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(getLabel(item)),
+                                    onTap: () {
+                                      Navigator.pop(dialogContext, item);
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
           );
         },
@@ -682,25 +697,34 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
   }) {
     return TextField(
       controller: controller,
+      keyboardType: keyboardType,
+      autofillHints: const [],
+      scrollPadding: const EdgeInsets.only(bottom: 140),
       decoration: InputDecoration(
         labelText: isRequired ? '$label *' : label,
         hintText: hint,
         border: const OutlineInputBorder(),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
-      keyboardType: keyboardType,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final keyboardInset = media.viewInsets.bottom;
+    final availableHeight =
+        (media.size.height - keyboardInset).clamp(320.0, media.size.height);
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        constraints: const BoxConstraints(maxWidth: 500),
+        width: media.size.width * 0.9,
+        constraints: BoxConstraints(
+          maxWidth: 500,
+          maxHeight: availableHeight * 0.9,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -737,9 +761,10 @@ class _EditSensorDialogState extends State<EditSensorDialog> {
             ),
 
             // Content
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+              Flexible(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + keyboardInset),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

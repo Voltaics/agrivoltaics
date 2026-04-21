@@ -52,7 +52,10 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
     final media = MediaQuery.of(context);
     final isDesktop = media.size.width >= 1280;
     final dialogWidth = isDesktop ? 620.0 : 540.0;
-    final dialogMaxHeight = media.size.height * (isDesktop ? 0.82 : 0.9);
+    final keyboardInset = media.viewInsets.bottom;
+    final availableHeight =
+        (media.size.height - keyboardInset).clamp(320.0, media.size.height);
+    final dialogMaxHeight = availableHeight * (isDesktop ? 0.82 : 0.9);
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -63,6 +66,8 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxHeight: dialogMaxHeight),
           child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.only(bottom: keyboardInset + 24),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -286,6 +291,8 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          autofillHints: const [],
+          scrollPadding: const EdgeInsets.only(bottom: 140),
           decoration: InputDecoration(
             hintText: hint,
             border: OutlineInputBorder(
@@ -331,10 +338,13 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
     showDialog(
       context: outerContext,
       builder: (innerContext) {
-        final media = MediaQuery.of(innerContext);
-        final isDesktop = media.size.width >= 1280;
-        final addReadingWidth = isDesktop ? 540.0 : 480.0;
-        final addReadingMaxHeight = media.size.height * (isDesktop ? 0.68 : 0.78);
+      final media = MediaQuery.of(innerContext);
+      final isDesktop = media.size.width >= 1280;
+      final addReadingWidth = isDesktop ? 540.0 : 480.0;
+      final keyboardInset = media.viewInsets.bottom;
+      final availableHeight =
+          (media.size.height - keyboardInset).clamp(280.0, media.size.height);
+      final addReadingMaxHeight = availableHeight * (isDesktop ? 0.68 : 0.78);
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -348,6 +358,8 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: addReadingMaxHeight),
                   child: SingleChildScrollView(
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.only(bottom: keyboardInset + 24),
                     child: Padding(
                       padding: const EdgeInsets.all(20),
                       child: Column(
@@ -363,6 +375,8 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
+                      autofillHints: const [],
+                      scrollPadding: const EdgeInsets.only(bottom: 140),
                       decoration: InputDecoration(
                         labelText: 'Reading Name *',
                         hintText: 'Search or select a reading',
@@ -409,6 +423,8 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
                     const SizedBox(height: 16),
                     if (selectedReadingAlias != null) ...[
                       TextFormField(
+                        autofillHints: const [],
+                        scrollPadding: const EdgeInsets.only(bottom: 140),
                         decoration: InputDecoration(
                           labelText: 'Unit *',
                           hintText: 'Search or select a unit',
@@ -493,93 +509,104 @@ class _AddSensorDialogState extends State<AddSensorDialog> {
     );
   }
 
-  Future<T?> _showSearchableDropdown<T>(
-    BuildContext context,
-    List<T> items,
-    String Function(T) getLabel,
-  ) async {
-    String searchText = '';
-    late List<T> filtered = items;
+Future<T?> _showSearchableDropdown<T>(
+  BuildContext context,
+  List<T> items,
+  String Function(T) getLabel,
+) async {
+  String searchText = '';
+  late List<T> filtered = items;
 
-    return showDialog<T>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) {
-          return Dialog(
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(8)),
-            ),
-            insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-            child: SizedBox(
-              width: double.maxFinite,
-              height: 400,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: TextField(
-                      autofocus: true,
-                      onChanged: (value) {
-                        setState(() {
-                          searchText = value;
-                          filtered = items
-                              .where((item) => getLabel(item)
-                                  .toLowerCase()
-                                  .contains(searchText.toLowerCase()))
-                              .toList();
-                        });
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Search...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
+  return showDialog<T>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setState) {
+        return Dialog(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Builder(
+            builder: (context) {
+              final media = MediaQuery.of(context);
+              final keyboardInset = media.viewInsets.bottom;
+              final availableHeight =
+                  (media.size.height - keyboardInset).clamp(240.0, media.size.height);
+
+              return SizedBox(
+                width: double.maxFinite,
+                height: availableHeight < 400 ? availableHeight * 0.9 : 400,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: TextField(
+                        autofocus: true,
+                        autofillHints: const [],
+                        scrollPadding: const EdgeInsets.only(bottom: 140),
+                        onChanged: (value) {
+                          setState(() {
+                            searchText = value;
+                            filtered = items
+                                .where((item) => getLabel(item)
+                                    .toLowerCase()
+                                    .contains(searchText.toLowerCase()))
+                                .toList();
+                          });
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          isDense: true,
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        isDense: true,
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: filtered.isEmpty
-                        ? Center(
-                            child: Text(
-                              searchText.isEmpty
-                                  ? 'No items'
-                                  : 'No results for "$searchText"',
-                              style: const TextStyle(color: AppColors.textMuted),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? Center(
+                              child: Text(
+                                searchText.isEmpty
+                                    ? 'No items'
+                                    : 'No results for "$searchText"',
+                                style: const TextStyle(color: AppColors.textMuted),
+                              ),
+                            )
+                          : ListView.builder(
+                              shrinkWrap: false,
+                              padding: EdgeInsets.zero,
+                              itemExtent: 48,
+                              addAutomaticKeepAlives: false,
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) {
+                                final item = filtered[index];
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(getLabel(item)),
+                                  onTap: () {
+                                    Navigator.pop(dialogContext, item);
+                                  },
+                                );
+                              },
                             ),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: false,
-                            padding: EdgeInsets.zero,
-                            itemExtent: 48,
-                            addAutomaticKeepAlives: false,
-                            itemCount: filtered.length,
-                            itemBuilder: (context, index) {
-                              final item = filtered[index];
-                              return ListTile(
-                                dense: true,
-                                title: Text(getLabel(item)),
-                                onTap: () {
-                                  Navigator.pop(dialogContext, item);
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    ),
+  );
+}
 
   Future<void> _handleAddSensor() async {
     // Validation
