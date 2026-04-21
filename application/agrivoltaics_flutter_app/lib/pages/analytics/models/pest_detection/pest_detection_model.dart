@@ -84,7 +84,7 @@ class _PestDetectionModelState extends State<PestDetectionModel> with SingleTick
 
     try {
       // Use 10.0.2.2 for Android Emulator, localhost for Web/iOS/Desktop
-      String baseUrl = 'http://localhost:8080/pests_predict';
+      String baseUrl = 'https://pest-detection-api-593883469296.us-east4.run.app/pests_predict';
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         baseUrl = 'http://10.0.2.2:8080/pests_predict';
       }
