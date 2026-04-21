@@ -140,7 +140,10 @@ class _EditZoneDialogState extends State<EditZoneDialog> {
     final maxDialogWidth = media.size.width * 0.95;
     final preferredWidth = isDesktop ? 560.0 : 460.0;
     final dialogWidth = maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
-    final contentMaxHeight = media.size.height * (isDesktop ? 0.6 : 0.66);
+    final keyboardInset = media.viewInsets.bottom;
+    final availableHeight =
+        (media.size.height - keyboardInset).clamp(280.0, media.size.height);
+    final contentMaxHeight = availableHeight * (isDesktop ? 0.62 : 0.72);
 
     return AlertDialog(
       title: const Text('Edit Zone'),
@@ -151,11 +154,15 @@ class _EditZoneDialogState extends State<EditZoneDialog> {
           child: Form(
             key: _formKey,
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(bottom: keyboardInset + 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextFormField(
                     controller: _nameController,
+                    autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                    scrollPadding: const EdgeInsets.only(bottom: 140),
                     decoration: const InputDecoration(
                       labelText: 'Zone Name *',
                       border: OutlineInputBorder(),
@@ -172,6 +179,8 @@ class _EditZoneDialogState extends State<EditZoneDialog> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _descriptionController,
+                    autofillHints: const [], // disable autofill to prevent unwanted suggestions
+                    scrollPadding: const EdgeInsets.only(bottom: 140),
                     decoration: const InputDecoration(
                       labelText: 'Description (Optional)',
                       border: OutlineInputBorder(),
