@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -258,16 +257,14 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
                 ),
               ),
               const SizedBox(width: 12),
-              if (!kIsWeb) ...[
-                Expanded(
-                  child: _OutlinedBtn(
-                    icon: Icons.camera_alt_rounded,
-                    label: 'Camera',
-                    onTap: () => _pickImage(ImageSource.camera),
-                  ),
+              Expanded(
+                child: _OutlinedBtn(
+                  icon: Icons.camera_alt_rounded,
+                  label: 'Camera',
+                  onTap: () => _pickImage(ImageSource.camera),
                 ),
-                const SizedBox(width: 12),
-              ],
+              ),
+              const SizedBox(width: 12),
               if (_selectedImage != null)
                 Expanded(
                   child: _OutlinedBtn(
