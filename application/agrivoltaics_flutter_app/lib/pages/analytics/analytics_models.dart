@@ -33,6 +33,11 @@ final List<AnalyticsModelDefinition> analyticsModelDefinitions = [
     builder: (_) => const PlantDiseaseDetectionModel(),
   ),
   AnalyticsModelDefinition(
+    id: 'pest_detection',
+    displayName: 'Pest Detection',
+    builder: (_) => const PestDetectionModel(),
+  ),
+  AnalyticsModelDefinition(
     id: 'irrigation_need_example',
     displayName: 'Irrigation Need Estimator (example)',
     builder: (_) => const IrrigationNeedExampleModel(),
@@ -41,10 +46,5 @@ final List<AnalyticsModelDefinition> analyticsModelDefinitions = [
     id: 'yield_proxy_example',
     displayName: 'Yield Proxy Calculator (example)',
     builder: (_) => const YieldProxyExampleModel(),
-  ),
-  AnalyticsModelDefinition(
-    id: 'pest_detection',
-    displayName: 'Pest Detection',
-    builder: (_) => const PestDetectionModel(),
   ),
 ];
