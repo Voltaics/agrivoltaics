@@ -36,6 +36,7 @@ Home Page
 class HomePage extends State<HomeState> {
 
   int _selectedIndex = 0;
+  final GlobalKey _pageStackKey = GlobalKey();
 
   final List<Widget> _pages = const [
     StationaryDashboardPage(key: PageStorageKey('stationary-dashboard')),
@@ -56,9 +57,12 @@ class HomePage extends State<HomeState> {
   }
 
   Widget _buildCurrentPage() {
-    return IndexedStack(
-      index: _selectedIndex,
-      children: _pages,
+    return KeyedSubtree(
+      key: _pageStackKey,
+      child: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
     );
   }
 
