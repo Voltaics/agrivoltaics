@@ -26,7 +26,7 @@ class PestDetectionModel extends StatefulWidget {
   State<PestDetectionModel> createState() => _PestDetectionModelState();
 }
 
-class _PestDetectionModelState extends State<PestDetectionModel> with SingleTickerProviderStateMixin {
+class _PestDetectionModelState extends State<PestDetectionModel> with SingleTickerProviderStateMixin,AutomaticKeepAliveClientMixin {
   XFile? _selectedXFile;
   PestResult? _result;
   bool _isLoading = false;
@@ -36,6 +36,9 @@ class _PestDetectionModelState extends State<PestDetectionModel> with SingleTick
   late AnimationController _pulseCtrl;
   late Animation<double> _pulseAnim;
 
+  @override
+  bool get wantKeepAlive => true;
+  
   @override
   void initState() {
     super.initState();
@@ -127,6 +130,7 @@ class _PestDetectionModelState extends State<PestDetectionModel> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // Styling constants derived standard layout
     final scheme = Theme.of(context).colorScheme;
     final onSurfaceVar = scheme.onSurfaceVariant;
@@ -141,7 +145,7 @@ class _PestDetectionModelState extends State<PestDetectionModel> with SingleTick
           children: [
             const Text(
               'Pest Detection Scan',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textOnLight),
             ),
             const SizedBox(height: 8),
             Text(
@@ -559,7 +563,7 @@ class _CardTitle extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: scheme.primary),
         const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textOnLight)),
       ],
     );
   }
@@ -582,7 +586,7 @@ class _MetricRow extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textOnLight),
             ),
           ),
         ],
