@@ -1,35 +1,16 @@
 import 'dart:convert';
-
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 
 import '../../../../app_colors.dart';
-import 'plant_disease_api_config.dart';
-import 'plant_image_preview_io.dart' if (dart.library.html) 'plant_image_preview_web.dart' as preview;
 
-class DiseaseTopEntry {
-  const DiseaseTopEntry({required this.disease, required this.confidence});
-
-  final String disease;
+class PestResult {
+  final String prediction;
   final double confidence;
-}
-
-class DiseaseResult {
-  DiseaseResult({
-    required this.disease,
-    required this.confidence,
-    this.top3 = const [],
-  })  : severity = confidence > 0.85
-            ? 'High Confidence'
-            : confidence > 0.6
-                ? 'Moderate Confidence'
-                : 'Low Confidence';
-
-  final String disease;
-  final double confidence;
-  final List<DiseaseTopEntry> top3;
-  final String severity;
+  PestResult({required this.prediction, required this.confidence});
 
   Color get confidenceColor {
     if (confidence > 0.85) return AppColors.success;
@@ -38,36 +19,20 @@ class DiseaseResult {
   }
 }
 
-List<DiseaseTopEntry> _parseTop3(Object? raw) {
-  if (raw is! List<dynamic>) return const [];
-  final out = <DiseaseTopEntry>[];
-  for (final e in raw) {
-    if (e is Map) {
-      final m = Map<String, dynamic>.from(e);
-      final d = m['disease'];
-      final c = m['confidence'];
-      if (d is String && c is num) {
-        out.add(DiseaseTopEntry(disease: d, confidence: c.toDouble()));
-      }
-    }
-  }
-  return out;
-}
-
-class PlantDiseaseDetectionModel extends StatefulWidget {
-  const PlantDiseaseDetectionModel({super.key});
+class PestDetectionModel extends StatefulWidget {
+  const PestDetectionModel({super.key});
 
   @override
-  State<PlantDiseaseDetectionModel> createState() =>
-      _PlantDiseaseDetectionModelState();
+  State<PestDetectionModel> createState() => _PestDetectionModelState();
 }
 
-class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
-    with SingleTickerProviderStateMixin {
-  XFile? _selectedImage;
-  DiseaseResult? _result;
+class _PestDetectionModelState extends State<PestDetectionModel> with SingleTickerProviderStateMixin{
+  XFile? _selectedXFile;
+  PestResult? _result;
   bool _isLoading = false;
   String? _error;
+
+  final ImagePicker _picker = ImagePicker();
   late AnimationController _pulseCtrl;
   late Animation<double> _pulseAnim;
 
@@ -90,15 +55,11 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: source,
-      imageQuality: 90,
-      maxWidth: 1024,
-    );
-    if (picked != null) {
+    final XFile? image = await _picker.pickImage(source: source, imageQuality: 90);
+    if (image != null) {
+      if (!mounted) return;
       setState(() {
-        _selectedImage = picked;
+        _selectedXFile = image;
         _result = null;
         _error = null;
       });
@@ -106,58 +67,69 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
   }
 
   Future<void> _analyzeImage() async {
-    if (_selectedImage == null) return;
+    if (_selectedXFile == null) return;
+
     setState(() {
       _isLoading = true;
       _error = null;
-      _result = null;
+      _result = null; // Clear previous result on new analysis
     });
 
     try {
-      final bytes = await _selectedImage!.readAsBytes();
-      final request = http.MultipartRequest('POST', Uri.parse(plantDiseasePredictUrl));
-      request.files.add(
-        http.MultipartFile.fromBytes(
+      String baseUrl = 'https://pest-detection-api-593883469296.us-east4.run.app/pests_predict';
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        baseUrl = 'http://10.0.2.2:8080/pests_predict';
+      }
+
+      var request = http.MultipartRequest('POST', Uri.parse(baseUrl));
+
+      if (kIsWeb) {
+        final bytes = await _selectedXFile!.readAsBytes();
+        request.files.add(http.MultipartFile.fromBytes(
           'file',
           bytes,
-          filename: _selectedImage!.name,
-        ),
-      );
+          filename: _selectedXFile!.name,
+        ));
+      } else {
+        request.files.add(await http.MultipartFile.fromPath('file', _selectedXFile!.path));
+      }
 
-      final response = await request.send();
-      final body = await response.stream.bytesToString();
+      var response = await request.send();
+      var responseData = await response.stream.bytesToString();
+      var jsonDecoded = json.decode(responseData);
+
+      if (!mounted) return;
 
       if (response.statusCode == 200) {
-        final json = jsonDecode(body) as Map<String, dynamic>;
-        if (!mounted) return;
         setState(() {
-          _result = DiseaseResult(
-            disease: json['disease'] as String,
-            confidence: (json['confidence'] as num).toDouble(),
-            top3: _parseTop3(json['top3']),
+          _result = PestResult(
+            prediction: jsonDecoded['prediction'],
+            confidence: (jsonDecoded['confidence'] as num).toDouble(),
           );
         });
       } else {
-        if (!mounted) return;
-        setState(() => _error = 'Server error (${response.statusCode})');
+        final errorMessage = jsonDecoded['error'] ?? jsonDecoded['detail'] ?? jsonDecoded['message'] ?? responseData;
+        setState(() => _error = "Server Error (${response.statusCode}): $errorMessage");
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = 'Failed to connect to analysis server.\n$e');
+      setState(() => _error = "Connection Failed: $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _reset() => setState(() {
-        _selectedImage = null;
-        _result = null;
-        _error = null;
-      });
+    _selectedXFile = null;
+    _result = null;
+    _error = null;
+  });
 
   @override
   Widget build(BuildContext context) {
-    final onVar = Theme.of(context).colorScheme.onSurfaceVariant;
+    // Styling constants derived standard layout
+    final scheme = Theme.of(context).colorScheme;
+    final onSurfaceVar = scheme.onSurfaceVariant;
 
     return Card(
       elevation: 2,
@@ -168,17 +140,19 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Plant Disease Detection',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              'Plant Pest Detection Scan',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textOnLight),
             ),
             const SizedBox(height: 8),
             Text(
-              'Upload or capture plant image and then tap on Analyze Plant to start calculations '
+              'Upload or capture pest image and then tap on Analyze Pest to start calculations '
               '(it might take a few minutes to finish). Currently, the AI model detects following '
-              'diseases: Black Rot, Black Measles, Leaf Blight, Downey Mildew, Powdery Mildew',
-              style: TextStyle(color: onVar),
+              'pests: Adult Spotted Laternfly, Early Nypmh Spotted Lanternfly, Late Nymph Spotted Lanternfly, Green Leaf Hopper, and Japanese Beetle. '
+              '(The model returns "No Pests" if it could not find any specific pests in the image.)',
+              style: TextStyle(fontSize: 13, color: onSurfaceVar),
             ),
             const SizedBox(height: 16),
+            // The main responsive grid
             _buildMainGrid(context),
           ],
         ),
@@ -186,29 +160,26 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
     );
   }
 
+  // Uses LayoutBuilder to handle orientation changes (Bug Fix 2 & 3)
   Widget _buildMainGrid(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 700;
-        if (isWide) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 6, child: _buildImagePanel(context)),
-              const SizedBox(width: 20),
-              Expanded(flex: 5, child: _buildResultsPanel(context)),
-            ],
-          );
-        }
-        return Column(
+    return LayoutBuilder(builder: (context, constraints) {
+      final isWide = constraints.maxWidth > 700;
+      if (isWide) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildImagePanel(context),
-            const SizedBox(height: 20),
-            _buildResultsPanel(context),
+            Expanded(flex: 6, child: _buildImagePanel(context)),
+            const SizedBox(width: 20),
+            Expanded(flex: 5, child: _buildResultsPanel(context)),
           ],
         );
-      },
-    );
+      }
+      return Column(children: [
+        _buildImagePanel(context),
+        const SizedBox(height: 20),
+        _buildResultsPanel(context),
+      ]);
+    });
   }
 
   Widget _buildImagePanel(BuildContext context) {
@@ -218,10 +189,7 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _CardTitle(
-            icon: Icons.camera_alt_rounded,
-            label: 'Image Input',
-          ),
+          const _CardTitle(icon: Icons.camera_alt_rounded, label: 'Image Input'),
           const SizedBox(height: 16),
           GestureDetector(
             onTap: () => _pickImage(ImageSource.gallery),
@@ -229,24 +197,23 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
               duration: const Duration(milliseconds: 300),
               height: 280,
               decoration: BoxDecoration(
-                color: _selectedImage == null
-                    ? AppColors.scaffoldBackground
-                    : Colors.black,
+                color: _selectedXFile == null ? AppColors.scaffoldBackground : Colors.black,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _selectedImage == null
+                  color: _selectedXFile == null
                       ? scheme.primary.withValues(alpha: 0.35)
                       : Colors.transparent,
                   width: 1.5,
                 ),
               ),
               clipBehavior: Clip.hardEdge,
-              child: _selectedImage == null
-                  ? const _DropZoneContent()
-                  : _ImagePreview(file: _selectedImage!),
+              child: _selectedXFile == null
+                  ? const _EmptyImagePreview()
+                  : _ImagePreview(selectedXFile: _selectedXFile!),
             ),
           ),
           const SizedBox(height: 16),
+          // Button row with standard spacing to prevent single-letter text
           Row(
             children: [
               Expanded(
@@ -264,30 +231,31 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
                   onTap: () => _pickImage(ImageSource.camera),
                 ),
               ),
-              const SizedBox(width: 12),
-              if (_selectedImage != null)
+              if (_selectedXFile != null) ...[
+                const SizedBox(width: 12),
                 Expanded(
                   child: _OutlinedBtn(
                     icon: Icons.refresh_rounded,
                     label: 'Reset',
                     onTap: _reset,
-                    color: AppColors.error,
+                    color: scheme.error,
                   ),
                 ),
+              ]
             ],
           ),
-          if (_selectedImage != null) ...[
+          if (_selectedXFile != null) ...[
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: _PrimaryBtn(
-                label: _isLoading ? 'Analyzing...' : 'Analyze Plant',
+                label: _isLoading ? 'Analyzing...' : 'Analyze Pest',
                 icon: _isLoading ? null : Icons.biotech_rounded,
                 loading: _isLoading,
                 onTap: _isLoading ? null : _analyzeImage,
               ),
             ),
-          ],
+          ]
         ],
       ),
     );
@@ -298,10 +266,7 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _CardTitle(
-            icon: Icons.analytics_rounded,
-            label: 'Analysis Results',
-          ),
+          const _CardTitle(icon: Icons.analytics_rounded, label: 'Analysis Results'),
           const SizedBox(height: 16),
           if (_isLoading)
             _LoadingState(animation: _pulseAnim)
@@ -317,17 +282,23 @@ class _PlantDiseaseDetectionModelState extends State<PlantDiseaseDetectionModel>
   }
 }
 
+// ── Image Handling Components ───────────────────────────────────────────────
 class _ImagePreview extends StatelessWidget {
-  const _ImagePreview({required this.file});
-
-  final XFile file;
+  const _ImagePreview({required this.selectedXFile});
+  final XFile selectedXFile;
 
   @override
-  Widget build(BuildContext context) => preview.plantImagePreview(file);
+  Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return Image.network(selectedXFile.path, fit: BoxFit.contain, width: double.infinity);
+    } else {
+      return Image.file(File(selectedXFile.path), fit: BoxFit.contain, width: double.infinity);
+    }
+  }
 }
 
-class _DropZoneContent extends StatelessWidget {
-  const _DropZoneContent();
+class _EmptyImagePreview extends StatelessWidget {
+  const _EmptyImagePreview();
 
   @override
   Widget build(BuildContext context) {
@@ -335,27 +306,18 @@ class _DropZoneContent extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: scheme.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(32),
-          ),
-          child: Icon(
-            Icons.upload_file_rounded,
-            size: 32,
-            color: scheme.primary,
+        Center(
+          child: Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(color: scheme.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(32)),
+            child: Icon(Icons.upload_file_rounded, size: 32, color: scheme.primary),
           ),
         ),
         const SizedBox(height: 16),
         const Text(
-          'Click to upload a plant image',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textOnLight,
-          ),
+          'Click to upload image',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textOnLight),
         ),
         const SizedBox(height: 6),
         const Text(
@@ -367,31 +329,24 @@ class _DropZoneContent extends StatelessWidget {
   }
 }
 
+// ── Analysis Display Components ───────────────────────────────────────────────
 class _ResultContent extends StatefulWidget {
   const _ResultContent({required this.result});
-
-  final DiseaseResult result;
+  final PestResult result;
 
   @override
   State<_ResultContent> createState() => _ResultContentState();
 }
 
-class _ResultContentState extends State<_ResultContent>
-    with SingleTickerProviderStateMixin {
+class _ResultContentState extends State<_ResultContent> with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _barAnim;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    _barAnim = Tween<double>(
-      begin: 0,
-      end: widget.result.confidence,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+    _barAnim = Tween<double>(begin: 0, end: widget.result.confidence).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
     _ctrl.forward();
   }
 
@@ -401,14 +356,21 @@ class _ResultContentState extends State<_ResultContent>
     super.dispose();
   }
 
+  String _getConfidenceSeverity(double confidence) {
+    if (confidence > 0.85) return 'High Confidence';
+    if (confidence > 0.6) return 'Moderate Confidence';
+    return 'Low Confidence';
+  }
+
   @override
   Widget build(BuildContext context) {
     final r = widget.result;
-    const dividerColor = Color(0xFFE5E7EB);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Status Pill
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
@@ -421,23 +383,17 @@ class _ResultContentState extends State<_ResultContent>
               Icon(Icons.circle, size: 8, color: r.confidenceColor),
               const SizedBox(width: 6),
               Text(
-                r.severity,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: r.confidenceColor,
-                ),
+                _getConfidenceSeverity(r.confidence),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: r.confidenceColor),
               ),
             ],
           ),
         ),
         const SizedBox(height: 16),
-        _MetricRow(
-          label: 'Detected Condition',
-          value: r.disease,
-          unit: '',
-        ),
-        const Divider(color: dividerColor, height: 1),
+        _MetricRow(label: 'Detected Pest', value: r.prediction),
+        const Divider(color: Color(0xFFE5E7EB), height: 1),
+        
+        // Animated Confidence Bar section
         const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -447,22 +403,12 @@ class _ResultContentState extends State<_ResultContent>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Confidence',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
+                  const Text('Confidence', style: TextStyle(fontSize: 14, color: AppColors.textMuted)),
                   AnimatedBuilder(
                     animation: _barAnim,
                     builder: (_, __) => Text(
                       '${(_barAnim.value * 100).toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: r.confidenceColor,
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: r.confidenceColor),
                     ),
                   ),
                 ],
@@ -475,7 +421,7 @@ class _ResultContentState extends State<_ResultContent>
                   builder: (_, __) => LinearProgressIndicator(
                     value: _barAnim.value,
                     minHeight: 8,
-                    backgroundColor: dividerColor,
+                    backgroundColor: Color(0xFFE5E7EB),
                     valueColor: AlwaysStoppedAnimation<Color>(r.confidenceColor),
                   ),
                 ),
@@ -483,76 +429,9 @@ class _ResultContentState extends State<_ResultContent>
             ],
           ),
         ),
-        if (r.top3.isNotEmpty) ...[
-          const Divider(color: dividerColor, height: 1),
-          const SizedBox(height: 8),
-          const Text(
-            'Top predictions',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...r.top3.map(
-            (e) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      e.disease,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textOnLight,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '${(e.confidence * 100).toStringAsFixed(1)}%',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-        ],
-        const Divider(color: dividerColor, height: 1),
-        const SizedBox(height: 4),
-        _MetricRow(
-          label: 'Recommendation',
-          value: _recommendation(r.disease),
-          unit: '',
-          valueStyle: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textOnLight,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
+        const Divider(color: Color(0xFFE5E7EB), height: 1),
       ],
     );
-  }
-
-  String _recommendation(String disease) {
-    final d = disease.toLowerCase();
-    if (d.contains('healthy')) {
-      return 'Plant appears healthy. Continue current care.';
-    }
-    if (d.contains('rust')) return 'Apply fungicide. Remove infected leaves.';
-    if (d.contains('blight')) {
-      return 'Improve drainage. Use copper-based fungicide.';
-    }
-    if (d.contains('mildew')) {
-      return 'Increase air circulation. Apply sulfur spray.';
-    }
-    return 'Consult an agronomist for targeted treatment.';
   }
 }
 
@@ -567,11 +446,7 @@ class _EmptyResultState extends StatelessWidget {
       child: Center(
         child: Column(
           children: [
-            Icon(
-              Icons.eco_rounded,
-              size: 48,
-              color: scheme.primary.withValues(alpha: 0.3),
-            ),
+            Icon(Icons.bug_report_rounded, size: 48, color: scheme.primary.withValues(alpha: 0.3)),
             const SizedBox(height: 16),
             const Text(
               'No image analysed yet',
@@ -579,11 +454,8 @@ class _EmptyResultState extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'Upload a plant image and tap Analyse',
-              style: TextStyle(
-                color: AppColors.textMuted.withValues(alpha: 0.6),
-                fontSize: 12,
-              ),
+              'Upload a pest image and tap Analyse',
+              style: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.6), fontSize: 12),
             ),
           ],
         ),
@@ -594,7 +466,6 @@ class _EmptyResultState extends StatelessWidget {
 
 class _LoadingState extends StatelessWidget {
   const _LoadingState({required this.animation});
-
   final Animation<double> animation;
 
   @override
@@ -609,19 +480,12 @@ class _LoadingState extends StatelessWidget {
               SizedBox(
                 width: 40,
                 height: 40,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+                child: CircularProgressIndicator(strokeWidth: 3, color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(height: 20),
               const Text(
-                'Analyzing plant health...',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+                'Analyzing pest image...',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 14, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -633,7 +497,6 @@ class _LoadingState extends StatelessWidget {
 
 class _ErrorState extends StatelessWidget {
   const _ErrorState({required this.message});
-
   final String message;
 
   @override
@@ -648,27 +511,18 @@ class _ErrorState extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.error_outline_rounded,
-            color: AppColors.error,
-            size: 20,
-          ),
+          const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 20),
           const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(color: AppColors.error, fontSize: 13),
-            ),
-          ),
+          Expanded(child: Text(message, style: const TextStyle(color: AppColors.error, fontSize: 13))),
         ],
       ),
     );
   }
 }
 
+// ── Generic Reusable UI Containers consistent standard styling ────────────────────
 class _Panel extends StatelessWidget {
   const _Panel({required this.child});
-
   final Widget child;
 
   @override
@@ -694,45 +548,27 @@ class _Panel extends StatelessWidget {
 }
 
 class _CardTitle extends StatelessWidget {
-  const _CardTitle({
-    required this.icon,
-    required this.label,
-  });
-
+  const _CardTitle({required this.icon, required this.label});
   final IconData icon;
   final String label;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+        Icon(icon, size: 16, color: scheme.primary),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textOnLight,
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textOnLight)),
       ],
     );
   }
 }
 
 class _MetricRow extends StatelessWidget {
-  const _MetricRow({
-    required this.label,
-    required this.value,
-    required this.unit,
-    this.valueStyle,
-  });
-
+  const _MetricRow({required this.label, required this.value});
   final String label;
   final String value;
-  final String unit;
-  final TextStyle? valueStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -741,23 +577,12 @@ class _MetricRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textMuted,
-            ),
-          ),
+          Text(label, style: const TextStyle(fontSize: 14, color: AppColors.textMuted)),
           Flexible(
             child: Text(
-              '$value $unit'.trim(),
+              value,
               textAlign: TextAlign.end,
-              style: valueStyle ??
-                  const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textOnLight,
-                  ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textOnLight),
             ),
           ),
         ],
@@ -767,13 +592,7 @@ class _MetricRow extends StatelessWidget {
 }
 
 class _OutlinedBtn extends StatelessWidget {
-  const _OutlinedBtn({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.color,
-  });
-
+  const _OutlinedBtn({required this.icon, required this.label, required this.onTap, this.color});
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -781,28 +600,28 @@ class _OutlinedBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    // Explicitly define color or default to primary from theme
+    final c = color ?? theme.colorScheme.primary;
+    
     return OutlinedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, size: 16, color: c),
-      label: Text(label, style: TextStyle(color: c, fontSize: 13)),
+      label: Text(label, style: TextStyle(color: c, fontSize: 13), maxLines: 1),
       style: OutlinedButton.styleFrom(
         side: BorderSide(color: c.withValues(alpha: 0.4)),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        // Set minimum width to zero to allow responsive resizing by parent layout
+        minimumSize: Size.zero, 
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }
 }
 
 class _PrimaryBtn extends StatelessWidget {
-  const _PrimaryBtn({
-    required this.label,
-    this.icon,
-    this.loading = false,
-    this.onTap,
-  });
-
+  const _PrimaryBtn({required this.label, this.icon, this.loading = false, this.onTap});
   final String label;
   final IconData? icon;
   final bool loading;
@@ -817,18 +636,12 @@ class _PrimaryBtn extends StatelessWidget {
           ? const SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
             )
           : Icon(icon, size: 18, color: Colors.white),
       label: Text(
         label,
-        style: const TextStyle(
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
+        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: primary,

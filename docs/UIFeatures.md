@@ -79,4 +79,14 @@ Sensor data can be viewed in multiple ways:
   * Enables trend analysis over specified periods
 
 ## Mobile Imaging
-**Status:** To Be Determined
+
+Mobile imaging is implemented through the captures workflow.
+
+**Current Capabilities:**
+* View captures from Firestore `captures` collection
+* Filter between all captures and disease-flagged captures
+* Open capture detail views for processed imagery
+
+**Notes:**
+* Capture ingestion/upload pipeline is handled by the Pi-side workflow
+* Image URLs may be storage paths or public URLs depending on pipeline configuration

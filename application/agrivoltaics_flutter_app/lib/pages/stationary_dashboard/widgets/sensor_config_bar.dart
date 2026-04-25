@@ -90,9 +90,7 @@ Fill these in with the necessary values if they haven't been already. If you hav
 
 7. Then you need to put the ID in for the sensor. If you are adding a light sensor the constant you would fill in would be SENSOR_ID_LIGHT.
 
-8. After filling in all the IDs in the arduino code, deploy it to the arduino and the sensor box is ready to push data to the cloud.
-
-NOTE: This guide does not explain how to add sensors beyond what is currently implemented for the previous OMID Vineyard sensor boxes in the arduino code.''';
+8. After filling in all the IDs in the arduino code, deploy it to the arduino and the sensor box is ready to push data to the cloud.''';
 
     showDialog(
       context: context,

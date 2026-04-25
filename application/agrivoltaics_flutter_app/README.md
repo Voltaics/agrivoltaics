@@ -1,16 +1,56 @@
-# agrivoltaics_flutter_app
+# Agrivoltaics Flutter App
 
-A new Flutter project.
+Primary client application for organization management, sensor monitoring, alerts, and historical analytics.
 
-## Getting Started
+## Scope
 
-This project is a starting point for a Flutter application.
+This is the active Flutter app for the project.
 
-A few resources to get you started if this is your first Flutter project:
+For full handoff context, read:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- ../../docs/Developer-Handoff.md
+- ../../docs/Applicable-Software.md
+- ../../docs/DataModel.md
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Prerequisites
+
+- Flutter SDK
+- Dart SDK (project constraint: >=3.0.0 <4.0.0)
+- Access to Firebase project agrivoltaics-flutter-firebase
+
+## Run Locally
+
+```bash
+flutter pub get
+flutter run -d chrome
+```
+
+## Useful Commands
+
+```bash
+flutter analyze
+flutter test
+```
+
+## Runtime Configuration (dart-define)
+
+Environment-backed values are read from lib/app_constants.dart.
+
+Commonly used:
+
+- HISTORICAL_SERIES_ENDPOINT
+- FROST_PREDICTION_SERIES_ENDPOINT
+- TIMEZONE
+
+Example:
+
+```bash
+flutter run -d chrome \
+	--dart-define=HISTORICAL_SERIES_ENDPOINT=https://us-central1-agrivoltaics-flutter-firebase.cloudfunctions.net/getHistoricalSeries \
+	--dart-define=FROST_PREDICTION_SERIES_ENDPOINT=https://us-central1-agrivoltaics-flutter-firebase.cloudfunctions.net/getFrostPredictionSeries
+```
+
+## Notes
+
+- Firebase options are configured in lib/firebase_options.dart.
+- Legacy/prototype Flutter apps exist elsewhere in the repository and are not the primary development target.
