@@ -140,7 +140,7 @@ class _PestDetectionModelState extends State<PestDetectionModel> with SingleTick
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Pest Detection Scan',
+              'Plant Pest Detection Scan',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textOnLight),
             ),
             const SizedBox(height: 8),
