@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
+import 'package:agrivoltaics_flutter_app/services/formatters_service.dart';
 
 class FrostPredictionTimelineModel extends StatefulWidget {
   const FrostPredictionTimelineModel({super.key});
@@ -24,7 +25,9 @@ class FrostPredictionTimelineModel extends StatefulWidget {
 class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineModel> {
   final SiteService _siteService = SiteService();
   final ZoneService _zoneService = ZoneService();
+  final FormattersService _formattersService = FormattersService();
   late final FrostPredictionSeriesService _service;
+
 
   static const Duration _forecastWindow = Duration(hours: 6);
   static const Color _frostChanceColor = Color(0xFFFFB300);
@@ -291,6 +294,45 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
     }
 
     return (solid: solid, dashed: dashed);
+  }
+
+  double? _trackballValueForSeriesPoint({
+    required int? seriesIndex,
+    required int? pointIndex,
+    required List<FrostTimelinePoint> temperaturePoints,
+    required List<FrostTimelinePoint> humidityPoints,
+    required List<FrostTimelinePoint> soilTempPoints,
+    required List<_ShiftedChancePoint> solidChancePoints,
+    required List<_ShiftedChancePoint> dashedChancePoints,
+  }) {
+    if (seriesIndex == null || pointIndex == null || pointIndex < 0) {
+      return null;
+    }
+
+    switch (seriesIndex) {
+      case 0:
+        return pointIndex < temperaturePoints.length
+            ? temperaturePoints[pointIndex].temperature
+            : null;
+      case 1:
+        return pointIndex < humidityPoints.length
+            ? humidityPoints[pointIndex].humidity
+            : null;
+      case 2:
+        return pointIndex < soilTempPoints.length
+            ? soilTempPoints[pointIndex].soilTemperature
+            : null;
+      case 3:
+        return pointIndex < solidChancePoints.length
+            ? solidChancePoints[pointIndex].value
+            : null;
+      case 4:
+        return pointIndex < dashedChancePoints.length
+            ? dashedChancePoints[pointIndex].value
+            : null;
+      default:
+        return null;
+    }
   }
 
   DateTime? _trackballTimeForSeriesPoint({
@@ -676,7 +718,7 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                 });
               },
               child: SfCartesianChart(
-                  onTrackballPositionChanging: (TrackballArgs args) {
+                onTrackballPositionChanging: (TrackballArgs args) {
                   final pointIndex = args.chartPointInfo.dataPointIndex;
                   final seriesIndex = args.chartPointInfo.seriesIndex;
 
@@ -695,8 +737,24 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
                     dashedChancePoints: splitChancePoints.dashed,
                   );
 
+                  final value = _trackballValueForSeriesPoint(
+                    seriesIndex: seriesIndex,
+                    pointIndex: pointIndex,
+                    temperaturePoints: temperaturePoints,
+                    humidityPoints: humidityPoints,
+                    soilTempPoints: soilTempPoints,
+                    solidChancePoints: splitChancePoints.solid,
+                    dashedChancePoints: splitChancePoints.dashed,
+                  );
+
                   if (time != null) {
                     args.chartPointInfo.header = _trackballHeaderFormat.format(time);
+                  }
+
+                  if (value != null) {
+                    args.chartPointInfo.label =
+                        '${args.chartPointInfo.series?.name ?? ''}: '
+                        '${_formattersService.formatNumber(value)}';
                   }
                 },
                 legend: const Legend(

@@ -117,7 +117,7 @@ class ReadingCard extends StatelessWidget {
                     const SizedBox(width: 8),
                   ],
                   Text(
-                    value.toStringAsFixed(1),
+                    formattersService.formatNumber(value),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
