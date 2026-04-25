@@ -95,11 +95,12 @@ class FormattersService {
     return DateFormat('MMM dd, h:mm a').format(dateTime);
   }
 
-  /// Format a double value with specified decimal places
+  /// Round a double value with specified decimal places
   /// Example: 23.456789 with 2 decimals -> "23.46"
-  String formatNumber(double value, {int decimals = 1}) {
-    return value.toStringAsFixed(decimals);
+  String formatNumber(double value, {int decimalPlaces = 2}) {
+    return value.toStringAsFixed(decimalPlaces);
   }
+
 
   /// Format a temperature value (typically 1 decimal place)
   /// Example: 23.456 -> "23.5°C"

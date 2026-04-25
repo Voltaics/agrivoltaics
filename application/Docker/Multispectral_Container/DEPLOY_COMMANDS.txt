@@ -1,0 +1,22 @@
+# Build and push
+
+gcloud artifacts repositories create crop-inference \
+  --repository-format=docker \
+  --location=us-central1
+
+gcloud builds submit --config cloudbuild.yaml .
+
+# Deploy Cloud Run with GPU (adjust region/flags if needed)
+gcloud run deploy crop-inference-service \
+  --image us-central1-docker.pkg.dev/PROJECT_ID/crop-inference/crop-inference:latest \
+  --region us-central1 \
+  --cpu 8 \
+  --memory 32Gi \
+  --gpu 1 \
+  --gpu-type nvidia-l4 \
+  --concurrency 1 \
+  --timeout 3600 \
+  --no-allow-unauthenticated \
+  --set-env-vars MODEL_ROOT=/app/model_training,FIREBASE_STORAGE_BUCKET=agrivoltaics-flutter-firebase.firebasestorage.app
+
+# Allow the Pi or calling identity to invoke the service.

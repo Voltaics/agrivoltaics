@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
+import 'package:agrivoltaics_flutter_app/services/formatters_service.dart';
 
 class GraphCardWidget extends StatefulWidget {
   final HistoricalGraph graph;
@@ -59,6 +60,7 @@ class _GraphCardWidgetState extends State<GraphCardWidget> {
   @override
   Widget build(BuildContext context) {
     final readingsService = ReadingsService();
+    final formattersService = FormattersService();
     final title = readingsService.getReadingName(widget.graph.field);
     final unit = _unit.isEmpty ? '' : ' $_unit';
     final sortedSeries = widget.graph.series.toList()
@@ -120,13 +122,28 @@ class _GraphCardWidgetState extends State<GraphCardWidget> {
                       });
                     },
                     child: SfCartesianChart(
-                      onTrackballPositionChanging: (TrackballArgs args) {
-                        final pointIndex = args.chartPointInfo.dataPointIndex;
-                        if (pointIndex != null) {
-                          _trackballDismissedByOutsideTap = false;
-                          _lastSelectedDataPointIndex = pointIndex;
-                        }
-                      },
+                    onTrackballPositionChanging: (TrackballArgs args) {
+                      final pointIndex = args.chartPointInfo.dataPointIndex;
+                      final seriesIndex = args.chartPointInfo.seriesIndex;
+
+                      if (pointIndex != null) {
+                        _trackballDismissedByOutsideTap = false;
+                        _lastSelectedDataPointIndex = pointIndex;
+                      }
+
+                      if (pointIndex == null || seriesIndex == null) {
+                        return;
+                      }
+
+                      final series = sortedSeries[seriesIndex];
+                      final point = series.points[pointIndex];
+
+                      args.chartPointInfo.label =
+                          '${widget.zoneLookup[series.zoneId] ?? series.zoneId} - '
+                          '${axisConfig.dateFormat.format(point.time)} - '
+                          '${formattersService.formatNumber(point.value)}'
+                          '${_unit.isEmpty ? '' : ' $_unit'}';
+                    },
                       legend: const Legend(
                         isVisible: true,
                         position: LegendPosition.bottom,
