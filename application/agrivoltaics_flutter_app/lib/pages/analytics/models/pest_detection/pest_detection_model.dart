@@ -26,7 +26,7 @@ class PestDetectionModel extends StatefulWidget {
   State<PestDetectionModel> createState() => _PestDetectionModelState();
 }
 
-class _PestDetectionModelState extends State<PestDetectionModel> with SingleTickerProviderStateMixin,AutomaticKeepAliveClientMixin {
+class _PestDetectionModelState extends State<PestDetectionModel> with SingleTickerProviderStateMixin{
   XFile? _selectedXFile;
   PestResult? _result;
   bool _isLoading = false;
@@ -36,9 +36,6 @@ class _PestDetectionModelState extends State<PestDetectionModel> with SingleTick
   late AnimationController _pulseCtrl;
   late Animation<double> _pulseAnim;
 
-  @override
-  bool get wantKeepAlive => true;
-  
   @override
   void initState() {
     super.initState();
@@ -130,7 +127,6 @@ class _PestDetectionModelState extends State<PestDetectionModel> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     // Styling constants derived standard layout
     final scheme = Theme.of(context).colorScheme;
     final onSurfaceVar = scheme.onSurfaceVariant;
