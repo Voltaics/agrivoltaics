@@ -34,7 +34,7 @@ final List<AnalyticsModelDefinition> analyticsModelDefinitions = [
   ),
   AnalyticsModelDefinition(
     id: 'pest_detection',
-    displayName: 'Pest Detection',
+    displayName: 'Plant Pest Detection',
     builder: (_) => const PestDetectionModel(),
   ),
   AnalyticsModelDefinition(
