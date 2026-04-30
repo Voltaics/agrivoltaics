@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:agrivoltaics_flutter_app/services/formatters_service.dart';
+import 'package:agrivoltaics_flutter_app/pages/analytics/dialogs/frost_settings_dialog.dart';
 
 class FrostPredictionTimelineModel extends StatefulWidget {
   const FrostPredictionTimelineModel({super.key});
@@ -374,6 +375,37 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
     }
   }
 
+  Future<void> _showFrostSettingsDialog(BuildContext context) async {
+    final appState = context.read<AppState>();
+    final selectedOrg = appState.selectedOrganization;
+
+    if (selectedOrg == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select an organization before editing frost settings.'),
+        ),
+      );
+      return;
+    }
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (_) => FrostSettingsDialog(
+        orgId: selectedOrg.id,
+        initialSiteId: appState.frostTimelineSelectedSite?.id,
+        initialZoneId: appState.frostTimelineSelectedZone?.id,
+      ),
+    );
+
+    if (!mounted || saved != true) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Frost settings saved.'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -422,9 +454,20 @@ class _FrostPredictionTimelineModelState extends State<FrostPredictionTimelineMo
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Frost Prediction Timeline',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Frost Prediction Timeline',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Frost prediction settings',
+                      icon: const Icon(Icons.settings),
+                      onPressed: () => _showFrostSettingsDialog(context),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Text(
