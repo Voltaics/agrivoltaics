@@ -32,6 +32,10 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
   final _frostSettingsService = const FrostSettingsService();
   final _dateFormat = DateFormat('MMM d, yyyy h:mm a');
 
+  late final Stream<List<models.Site>> _sitesStream;
+  Stream<List<Zone>>? _zonesStream;
+  String? _zonesStreamSiteId;
+
   late final TextEditingController _predStartCtrl;
   late final TextEditingController _predEndCtrl;
   late final TextEditingController _tempThresholdCtrl;
@@ -58,6 +62,8 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
   @override
   void initState() {
     super.initState();
+
+    _sitesStream = _siteService.getSites(widget.orgId);
 
     _selectedSiteId = widget.initialSiteId;
     _selectedZoneId = widget.initialZoneId;
@@ -90,15 +96,17 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
     super.dispose();
   }
 
+  void _ensureZonesStreamForSite(String siteId) {
+    if (_zonesStreamSiteId == siteId && _zonesStream != null) return;
+
+    _zonesStreamSiteId = siteId;
+    _zonesStream = _zoneService.getZones(widget.orgId, siteId);
+  }
+
   void _handleTempThresholdFocusChange() {
     if (!_tempThresholdFocusNode.hasFocus) return;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_tempThresholdFocusNode.hasFocus) return;
-      _scrollTempThresholdIntoView();
-    });
-
-    Future.delayed(const Duration(milliseconds: 350), () {
+    Future.delayed(const Duration(milliseconds: 450), () {
       if (!mounted || !_tempThresholdFocusNode.hasFocus) return;
       _scrollTempThresholdIntoView();
     });
@@ -350,7 +358,6 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
     final preferredWidth = isDesktop ? 700.0 : 560.0;
     final dialogWidth =
         maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
-    final keyboardInset = media.viewInsets.bottom;
     final verticalInset = isDesktop ? 24.0 : 12.0;
 
     final maxDialogHeight = media.size.height * (isDesktop ? 0.9 : 0.86);
@@ -402,7 +409,7 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
                   child: Form(
                     key: _formKey,
                     child: StreamBuilder<List<models.Site>>(
-                      stream: _siteService.getSites(widget.orgId),
+                      stream: _sitesStream,
                       builder: (context, siteSnapshot) {
                         Widget body;
 
@@ -463,6 +470,13 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
                                             _selectedSiteId = siteId;
                                             _selectedZoneId = null;
                                             _loadError = null;
+
+                                            if (siteId != null) {
+                                              _ensureZonesStreamForSite(siteId);
+                                            } else {
+                                              _zonesStream = null;
+                                              _zonesStreamSiteId = null;
+                                            }
                                           });
                                         },
                                   validator: (value) => value == null ? 'Select a site' : null,
@@ -509,9 +523,7 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
                         return SingleChildScrollView(
                           controller: _scrollController,
                           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                          padding: EdgeInsets.only(
-                            bottom: keyboardInset > 0 ? 260 : 24,
-                          ),
+                          padding: const EdgeInsets.only(bottom: 260),
                           child: body,
                         );
                       },
@@ -552,8 +564,25 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
   }
 
   Widget _buildZoneSelector() {
+    final siteId = _selectedSiteId;
+
+    if (siteId == null) {
+      return const Text('Choose a site to load zones.');
+    }
+
+    _ensureZonesStreamForSite(siteId);
+
+    final zonesStream = _zonesStream;
+
+    if (zonesStream == null) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return StreamBuilder<List<Zone>>(
-      stream: _zoneService.getZones(widget.orgId, _selectedSiteId!),
+      stream: zonesStream,
       builder: (context, zoneSnapshot) {
         if (zoneSnapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
@@ -718,12 +747,6 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
           keyboardType: TextInputType.number,
           validator: _validateInt,
           enabled: !_saving,
-          onTap: () {
-            Future.delayed(const Duration(milliseconds: 100), () {
-              if (!mounted || !_tempThresholdFocusNode.hasFocus) return;
-              _scrollTempThresholdIntoView();
-            });
-          },
           onChanged: (_) => _rememberCurrentEdits(),
         ),
       ],
