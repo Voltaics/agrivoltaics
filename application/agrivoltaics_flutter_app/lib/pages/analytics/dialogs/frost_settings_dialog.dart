@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -7,6 +8,7 @@ import '../../../models/zone.dart';
 import '../../../services/frost_settings_service.dart';
 import '../../../services/site_service.dart';
 import '../../../services/zone_service.dart';
+
 
 class FrostSettingsDialog extends StatefulWidget {
   const FrostSettingsDialog({
@@ -37,6 +39,7 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
 
   final GlobalKey _tempThresholdFieldKey = GlobalKey();
   late final FocusNode _tempThresholdFocusNode;
+  late final ScrollController _scrollController;
 
   final Map<String, _FrostSettingsDraft> _draftsByZoneKey = {};
   final Set<String> _dirtyZoneKeys = {};
@@ -64,6 +67,8 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
     _predEndCtrl = TextEditingController();
     _tempThresholdCtrl = TextEditingController();
 
+    _scrollController = ScrollController();
+
     _tempThresholdFocusNode = FocusNode();
     _tempThresholdFocusNode.addListener(_handleTempThresholdFocusChange);
 
@@ -78,6 +83,7 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
   void dispose() {
     _tempThresholdFocusNode.removeListener(_handleTempThresholdFocusChange);
     _tempThresholdFocusNode.dispose();
+    _scrollController.dispose();
 
     _predStartCtrl.dispose();
     _predEndCtrl.dispose();
@@ -88,14 +94,12 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
   void _handleTempThresholdFocusChange() {
     if (!_tempThresholdFocusNode.hasFocus) return;
 
-    _scrollTempThresholdIntoView();
-
-    Future.delayed(const Duration(milliseconds: 300), () {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_tempThresholdFocusNode.hasFocus) return;
       _scrollTempThresholdIntoView();
     });
 
-    Future.delayed(const Duration(milliseconds: 650), () {
+    Future.delayed(const Duration(milliseconds: 350), () {
       if (!mounted || !_tempThresholdFocusNode.hasFocus) return;
       _scrollTempThresholdIntoView();
     });
@@ -103,15 +107,14 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
 
   void _scrollTempThresholdIntoView() {
     final fieldContext = _tempThresholdFieldKey.currentContext;
-
     if (fieldContext == null) return;
 
     Scrollable.ensureVisible(
       fieldContext,
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
-      alignment: 0.35,
-      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      alignment: 0.15,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
     );
   }
 
@@ -349,18 +352,29 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
     final preferredWidth = isDesktop ? 700.0 : 560.0;
     final dialogWidth =
         maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
-    final maxDialogHeight = media.size.height * (isDesktop ? 0.9 : 0.86);
+    final keyboardInset = media.viewInsets.bottom;
+    final verticalInset = isDesktop ? 24.0 : 12.0;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-      child: Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    final availableHeight = media.size.height - keyboardInset - (verticalInset * 2);
+
+    final maxDialogHeight = math.min(
+      media.size.height * (isDesktop ? 0.9 : 0.86),
+      math.max(240.0, availableHeight),
+    );
+
+    return Dialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: verticalInset,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: dialogWidth,
+          maxHeight: maxDialogHeight,
+        ),
         child: SizedBox(
           width: dialogWidth,
-          height: maxDialogHeight,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -395,8 +409,11 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
                   child: Form(
                     key: _formKey,
                     child: SingleChildScrollView(
-                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: const EdgeInsets.only(bottom: 24),
+                      controller: _scrollController,
+                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                      padding: EdgeInsets.only(
+                        bottom: keyboardInset > 0 ? 180 : 24,
+                      ),
                       child: StreamBuilder<List<models.Site>>(
                         stream: _siteService.getSites(widget.orgId),
                         builder: (context, siteSnapshot) {
@@ -695,7 +712,7 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
           controller: _tempThresholdCtrl,
           focusNode: _tempThresholdFocusNode,
           autofillHints: const [],
-          scrollPadding: EdgeInsets.zero,
+          scrollPadding: const EdgeInsets.only(bottom: 180),
           textInputAction: TextInputAction.done,
           decoration: const InputDecoration(
             labelText: 'Temperature threshold (°F)',
@@ -706,7 +723,12 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
           keyboardType: TextInputType.number,
           validator: _validateInt,
           enabled: !_saving,
-          onTap: _scrollTempThresholdIntoView,
+          onTap: () {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (!mounted || !_tempThresholdFocusNode.hasFocus) return;
+              _scrollTempThresholdIntoView();
+            });
+          },
           onChanged: (_) => _rememberCurrentEdits(),
         ),
       ],
