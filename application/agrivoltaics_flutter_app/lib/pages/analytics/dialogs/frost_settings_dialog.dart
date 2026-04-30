@@ -41,6 +41,9 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
   late final TextEditingController _tempThresholdCtrl;
 
   final GlobalKey _settingsFieldsKey = GlobalKey();
+  final GlobalKey _scrollViewportKey = GlobalKey();
+  final GlobalKey _tempThresholdFieldKey = GlobalKey();
+
   late final FocusNode _tempThresholdFocusNode;
   late final ScrollController _scrollController;
 
@@ -115,10 +118,43 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
   void _scrollTempThresholdIntoView() {
     if (!_scrollController.hasClients) return;
 
-    final maxScrollExtent = _scrollController.position.maxScrollExtent;
+    final viewportContext = _scrollViewportKey.currentContext;
+    final fieldContext = _tempThresholdFieldKey.currentContext;
+
+    if (viewportContext == null || fieldContext == null) return;
+
+    final viewportBox = viewportContext.findRenderObject() as RenderBox?;
+    final fieldBox = fieldContext.findRenderObject() as RenderBox?;
+
+    if (viewportBox == null || fieldBox == null) return;
+    if (!viewportBox.hasSize || !fieldBox.hasSize) return;
+
+    final viewportTop = viewportBox.localToGlobal(Offset.zero).dy;
+    final viewportBottom = viewportTop + viewportBox.size.height;
+
+    final fieldTop = fieldBox.localToGlobal(Offset.zero).dy;
+    final fieldBottom = fieldTop + fieldBox.size.height;
+
+    const topMargin = 24.0;
+    const bottomMargin = 32.0;
+
+    double targetOffset = _scrollController.offset;
+
+    if (fieldBottom > viewportBottom - bottomMargin) {
+      targetOffset += fieldBottom - (viewportBottom - bottomMargin);
+    } else if (fieldTop < viewportTop + topMargin) {
+      targetOffset -= (viewportTop + topMargin) - fieldTop;
+    } else {
+      return;
+    }
+
+    targetOffset = targetOffset.clamp(
+      _scrollController.position.minScrollExtent,
+      _scrollController.position.maxScrollExtent,
+    );
 
     _scrollController.animateTo(
-      maxScrollExtent,
+      targetOffset,
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
     );
@@ -521,9 +557,10 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
                         }
 
                         return SingleChildScrollView(
+                          key: _scrollViewportKey,
                           controller: _scrollController,
                           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
-                          padding: const EdgeInsets.only(bottom: 260),
+                          padding: const EdgeInsets.only(bottom: 120),
                           child: body,
                         );
                       },
@@ -733,10 +770,11 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
         ),
         const SizedBox(height: 12),
         TextFormField(
+          key: _tempThresholdFieldKey,
           controller: _tempThresholdCtrl,
           focusNode: _tempThresholdFocusNode,
           autofillHints: const [],
-          scrollPadding: const EdgeInsets.only(bottom: 180),
+          scrollPadding: const EdgeInsets.only(bottom: 80),
           textInputAction: TextInputAction.done,
           decoration: const InputDecoration(
             labelText: 'Temperature threshold (°F)',
