@@ -35,6 +35,9 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
   late final TextEditingController _predEndCtrl;
   late final TextEditingController _tempThresholdCtrl;
 
+  final GlobalKey _tempThresholdFieldKey = GlobalKey();
+  late final FocusNode _tempThresholdFocusNode;
+
   final Map<String, _FrostSettingsDraft> _draftsByZoneKey = {};
   final Set<String> _dirtyZoneKeys = {};
   final Set<String> _loadedZoneKeys = {};
@@ -61,6 +64,9 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
     _predEndCtrl = TextEditingController();
     _tempThresholdCtrl = TextEditingController();
 
+    _tempThresholdFocusNode = FocusNode();
+    _tempThresholdFocusNode.addListener(_handleTempThresholdFocusChange);
+
     if (_selectedSiteId != null && _selectedZoneId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadOrApplySettingsForSelectedZone();
@@ -70,10 +76,43 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
 
   @override
   void dispose() {
+    _tempThresholdFocusNode.removeListener(_handleTempThresholdFocusChange);
+    _tempThresholdFocusNode.dispose();
+
     _predStartCtrl.dispose();
     _predEndCtrl.dispose();
     _tempThresholdCtrl.dispose();
     super.dispose();
+  }
+
+  void _handleTempThresholdFocusChange() {
+    if (!_tempThresholdFocusNode.hasFocus) return;
+
+    _scrollTempThresholdIntoView();
+
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted || !_tempThresholdFocusNode.hasFocus) return;
+      _scrollTempThresholdIntoView();
+    });
+
+    Future.delayed(const Duration(milliseconds: 650), () {
+      if (!mounted || !_tempThresholdFocusNode.hasFocus) return;
+      _scrollTempThresholdIntoView();
+    });
+  }
+
+  void _scrollTempThresholdIntoView() {
+    final fieldContext = _tempThresholdFieldKey.currentContext;
+
+    if (fieldContext == null) return;
+
+    Scrollable.ensureVisible(
+      fieldContext,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      alignment: 0.35,
+      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+    );
   }
 
   String _zoneKey(String siteId, String zoneId) => '$siteId::$zoneId';
@@ -310,187 +349,190 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
     final preferredWidth = isDesktop ? 700.0 : 560.0;
     final dialogWidth =
         maxDialogWidth > preferredWidth ? preferredWidth : maxDialogWidth;
-    final keyboardInset = media.viewInsets.bottom;
-    final availableHeight =
-        (media.size.height - keyboardInset).clamp(320.0, media.size.height);
-    final maxDialogHeight = availableHeight * (isDesktop ? 0.9 : 0.94);
+    final maxDialogHeight = media.size.height * (isDesktop ? 0.9 : 0.86);
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SizedBox(
-        width: dialogWidth,
-        height: maxDialogHeight,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-              child: Row(
-                children: [
-                  const Icon(Icons.settings, color: AppColors.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Frost Prediction Settings',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  if (_dirtyZoneKeys.isNotEmpty)
-                    Text(
-                      '${_dirtyZoneKeys.length} unsaved',
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+      child: Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: SizedBox(
+          width: dialogWidth,
+          height: maxDialogHeight,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.settings, color: AppColors.primary),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Frost Prediction Settings',
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                ],
+                    if (_dirtyZoneKeys.isNotEmpty)
+                      Text(
+                        '${_dirtyZoneKeys.length} unsaved',
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-                child: Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: EdgeInsets.only(bottom: keyboardInset + 24),
-                    child: StreamBuilder<List<models.Site>>(
-                      stream: _siteService.getSites(widget.orgId),
-                      builder: (context, siteSnapshot) {
-                        if (siteSnapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+                  child: Form(
+                    key: _formKey,
+                    child: SingleChildScrollView(
+                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: StreamBuilder<List<models.Site>>(
+                        stream: _siteService.getSites(widget.orgId),
+                        builder: (context, siteSnapshot) {
+                          if (siteSnapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
 
-                        if (siteSnapshot.hasError) {
-                          return Text('Error loading sites: ${siteSnapshot.error}');
-                        }
+                          if (siteSnapshot.hasError) {
+                            return Text('Error loading sites: ${siteSnapshot.error}');
+                          }
 
-                        final sites = siteSnapshot.data ?? [];
+                          final sites = siteSnapshot.data ?? [];
 
-                        if (sites.isEmpty) {
-                          return const Text('No sites found for this organization.');
-                        }
+                          if (sites.isEmpty) {
+                            return const Text('No sites found for this organization.');
+                          }
 
-                        final selectedSiteStillExists =
-                            sites.any((site) => site.id == _selectedSiteId);
+                          final selectedSiteStillExists =
+                              sites.any((site) => site.id == _selectedSiteId);
 
-                        if (!selectedSiteStillExists && _selectedSiteId != null) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (!mounted) return;
-                            setState(() {
-                              _rememberCurrentEdits();
-                              _selectedSiteId = null;
-                              _selectedZoneId = null;
+                          if (!selectedSiteStillExists && _selectedSiteId != null) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (!mounted) return;
+                              setState(() {
+                                _rememberCurrentEdits();
+                                _selectedSiteId = null;
+                                _selectedZoneId = null;
+                              });
                             });
-                          });
-                        }
+                          }
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              'Select a site and zone, make changes, then move to another zone if needed. '
-                              'All changed zones are saved together when you press Save.',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            DropdownButtonFormField<String>(
-                              initialValue:
-                                  selectedSiteStillExists ? _selectedSiteId : null,
-                              decoration: const InputDecoration(
-                                labelText: 'Site',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: sites
-                                  .map(
-                                    (site) => DropdownMenuItem<String>(
-                                      value: site.id,
-                                      child: Text(site.name),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: _saving
-                                  ? null
-                                  : (siteId) {
-                                      setState(() {
-                                        _rememberCurrentEdits();
-                                        _selectedSiteId = siteId;
-                                        _selectedZoneId = null;
-                                        _loadError = null;
-                                      });
-                                    },
-                              validator: (value) =>
-                                  value == null ? 'Select a site' : null,
-                            ),
-                            const SizedBox(height: 12),
-                            if (_selectedSiteId == null)
-                              const Text('Choose a site to load zones.')
-                            else
-                              _buildZoneSelector(),
-                            const SizedBox(height: 16),
-                            if (_loadingSettings)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 12),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Text('Loading frost settings...'),
-                                  ],
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Select a site and zone, make changes, then move to another zone if needed. '
+                                'All changed zones are saved together when you press Save.',
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                            if (_loadError != null)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Text(
-                                  _loadError!,
-                                  style: const TextStyle(color: AppColors.error),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                initialValue:
+                                    selectedSiteStillExists ? _selectedSiteId : null,
+                                decoration: const InputDecoration(
+                                  labelText: 'Site',
+                                  border: OutlineInputBorder(),
                                 ),
+                                items: sites
+                                    .map(
+                                      (site) => DropdownMenuItem<String>(
+                                        value: site.id,
+                                        child: Text(site.name),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: _saving
+                                    ? null
+                                    : (siteId) {
+                                        setState(() {
+                                          _rememberCurrentEdits();
+                                          _selectedSiteId = siteId;
+                                          _selectedZoneId = null;
+                                          _loadError = null;
+                                        });
+                                      },
+                                validator: (value) =>
+                                    value == null ? 'Select a site' : null,
                               ),
-                            if (_selectedSiteId != null && _selectedZoneId != null)
-                              _buildSettingsFields(),
-                          ],
-                        );
-                      },
+                              const SizedBox(height: 12),
+                              if (_selectedSiteId == null)
+                                const Text('Choose a site to load zones.')
+                              else
+                                _buildZoneSelector(),
+                              const SizedBox(height: 16),
+                              if (_loadingSettings)
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text('Loading frost settings...'),
+                                    ],
+                                  ),
+                                ),
+                              if (_loadError != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Text(
+                                    _loadError!,
+                                    style: const TextStyle(color: AppColors.error),
+                                  ),
+                                ),
+                              if (_selectedSiteId != null && _selectedZoneId != null)
+                                _buildSettingsFields(),
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: _saving || _loadingSettings ? null : _save,
-                    icon: _saving
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.save),
-                    label: Text(_saving ? 'Saving...' : 'Save'),
-                  ),
-                ],
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 16, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: _saving || _loadingSettings ? null : _save,
+                      icon: _saving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save),
+                      label: Text(_saving ? 'Saving...' : 'Save'),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -649,9 +691,12 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
         ),
         const SizedBox(height: 12),
         TextFormField(
+          key: _tempThresholdFieldKey,
           controller: _tempThresholdCtrl,
+          focusNode: _tempThresholdFocusNode,
           autofillHints: const [],
-          scrollPadding: const EdgeInsets.only(bottom: 140),
+          scrollPadding: EdgeInsets.zero,
+          textInputAction: TextInputAction.done,
           decoration: const InputDecoration(
             labelText: 'Temperature threshold (°F)',
             border: OutlineInputBorder(),
@@ -661,6 +706,7 @@ class _FrostSettingsDialogState extends State<FrostSettingsDialog> {
           keyboardType: TextInputType.number,
           validator: _validateInt,
           enabled: !_saving,
+          onTap: _scrollTempThresholdIntoView,
           onChanged: (_) => _rememberCurrentEdits(),
         ),
       ],
