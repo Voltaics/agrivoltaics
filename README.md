@@ -10,6 +10,7 @@ Eli Rindler (CS)
 Huy Nguyen (CS)
 Ayushi Sharma (CS)
 Dylan Serger (CS)
+Ben Rode (CE)
 
 ## Project Abstract
 See below for Abstract
