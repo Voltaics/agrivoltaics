@@ -1,0 +1,16 @@
+{
+  "//": "Emulator-only config, kept fully separate from firebase.json so `firebase deploy` (which reads firebase.json) never sees or deploys firestore.rules. Run with: firebase emulators:start --only firestore --config firebase.emulator.json",
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
+    "singleProjectMode": true
+  }
+}

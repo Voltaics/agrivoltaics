@@ -5,6 +5,7 @@ import '../models/organization.dart';
 import '../models/member.dart';
 import '../services/organization_service.dart';
 import '../services/user_service.dart';
+import 'member_directory/dialogs/edit_full_name_dialog.dart';
 
 class MemberManagementDialog extends StatefulWidget {
   final Organization organization;
@@ -20,39 +21,24 @@ class MemberManagementDialog extends StatefulWidget {
 
 class _MemberManagementDialogState extends State<MemberManagementDialog> {
   final _organizationService = OrganizationService();
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _fullNameController = TextEditingController();
   String _selectedRole = 'member';
   bool _isAddingMember = false;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _fullNameController.dispose();
     super.dispose();
   }
 
   Future<void> _addMember() async {
-    final email = _emailController.text.trim();
-    
-    if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter an email address'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    // Basic email validation
-    if (!email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid email address'),
-          backgroundColor: AppColors.warning,
-        ),
-      );
-      return;
-    }
+    final email = _emailController.text.trim();
+    final fullName = _fullNameController.text.trim();
 
     setState(() {
       _isAddingMember = true;
@@ -63,12 +49,14 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
         orgId: widget.organization.id,
         userEmail: email,
         role: _selectedRole,
+        fullName: fullName.isEmpty ? null : fullName,
       );
 
       if (!mounted) return;
 
       // Clear form
       _emailController.clear();
+      _fullNameController.clear();
       setState(() {
         _selectedRole = 'member';
         _isAddingMember = false;
@@ -264,80 +252,110 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
             ? const Border(top: BorderSide(color: AppColors.scaffoldBackground))
             : null,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'Add New Member',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _emailController,
-            scrollPadding: const EdgeInsets.only(bottom: 140),
-            decoration: const InputDecoration(
-              labelText: 'Email Address',
-              hintText: 'user@example.com',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.email),
-              isDense: true,
-            ),
-            enabled: !_isAddingMember,
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _addMember(),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedRole,
-            decoration: const InputDecoration(
-              labelText: 'Role',
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
-            items: const [
-              DropdownMenuItem(value: 'owner', child: Text('Owner')),
-              DropdownMenuItem(value: 'admin', child: Text('Admin')),
-              DropdownMenuItem(value: 'member', child: Text('Member')),
-              DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
-            ],
-            onChanged: _isAddingMember
-                ? null
-                : (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedRole = value;
-                      });
-                    }
-                  },
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isAddingMember ? null : _addMember,
-              icon: _isAddingMember
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
-                      ),
-                    )
-                  : const Icon(Icons.add),
-              label: Text(_isAddingMember ? 'Adding...' : 'Add Member'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Add New Member',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _emailController,
+              autofillHints: const [],
+              scrollPadding: const EdgeInsets.only(bottom: 140),
+              decoration: const InputDecoration(
+                labelText: 'Email Address',
+                hintText: 'user@example.com',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.email),
+                isDense: true,
+              ),
+              validator: (value) {
+                final email = value?.trim() ?? '';
+                if (email.isEmpty) {
+                  return 'Please enter an email address';
+                }
+                if (!email.contains('@')) {
+                  return 'Please enter a valid email address';
+                }
+                return null;
+              },
+              enabled: !_isAddingMember,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _fullNameController,
+              autofillHints: const [],
+              scrollPadding: const EdgeInsets.only(bottom: 140),
+              decoration: const InputDecoration(
+                labelText: 'Full Name (optional)',
+                hintText: 'e.g., Jane Smith',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.badge_outlined),
+                isDense: true,
+              ),
+              enabled: !_isAddingMember,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _addMember(),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedRole,
+              decoration: const InputDecoration(
+                labelText: 'Role',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              items: const [
+                DropdownMenuItem(value: 'owner', child: Text('Owner')),
+                DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                DropdownMenuItem(value: 'member', child: Text('Member')),
+                DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
+              ],
+              onChanged: _isAddingMember
+                  ? null
+                  : (value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedRole = value;
+                        });
+                      }
+                    },
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isAddingMember ? null : _addMember,
+                icon: _isAddingMember
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.textPrimary),
+                        ),
+                      )
+                    : const Icon(Icons.add),
+                label: Text(_isAddingMember ? 'Adding...' : 'Add Member'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.textPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -360,6 +378,21 @@ class MemberListItem extends StatefulWidget {
 class _MemberListItemState extends State<MemberListItem> {
   bool _isRemoving = false;
 
+  Future<void> _editFullName(String email, String? currentFullName) async {
+    await showDialog<bool>(
+      context: context,
+      builder: (context) => EditFullNameDialog(
+        userId: widget.member.userId,
+        email: email,
+        currentFullName: currentFullName,
+      ),
+    );
+
+    // The FutureBuilder in build() re-fetches on every rebuild, so a simple
+    // setState is enough to pick up the new name after the dialog closes.
+    if (mounted) setState(() {});
+  }
+
   Future<void> _removeMember() async {
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
@@ -375,7 +408,7 @@ class _MemberListItemState extends State<MemberListItem> {
         content: FutureBuilder(
           future: UserService().getUser(widget.member.userId),
           builder: (context, snapshot) {
-            final userName = snapshot.data?.displayName ?? 'this member';
+            final userName = snapshot.data?.resolvedName ?? 'this member';
             final userEmail = snapshot.data?.email ?? '';
             
             return Column(
@@ -462,7 +495,11 @@ class _MemberListItemState extends State<MemberListItem> {
       future: userService.getUser(widget.member.userId),
       builder: (context, snapshot) {
         final userData = snapshot.data;
-        final displayName = userData?.displayName ?? 'Loading...';
+        final isPending = snapshot.connectionState != ConnectionState.done;
+        final displayName = userData?.resolvedName ??
+            (isPending
+                ? 'Loading...'
+                : (snapshot.hasError ? 'Error loading member' : 'Unknown member'));
         final email = userData?.email ?? '';
 
         return ListTile(
@@ -491,6 +528,11 @@ class _MemberListItemState extends State<MemberListItem> {
                     color: AppColors.textMuted,
                   ),
                 ),
+              if (!isPending && snapshot.hasError)
+                Text(
+                  '${snapshot.error}',
+                  style: const TextStyle(fontSize: 11, color: AppColors.error),
+                ),
               const SizedBox(height: 4),
               Row(
                 children: [
@@ -505,6 +547,13 @@ class _MemberListItemState extends State<MemberListItem> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // TODO: Add role dropdown
+              if (userData != null)
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  color: AppColors.textMuted,
+                  onPressed: () => _editFullName(userData.email, userData.fullName),
+                  tooltip: 'Edit full name',
+                ),
               if (_isRemoving)
                 const SizedBox(
                   width: 20,

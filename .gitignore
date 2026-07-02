@@ -26,3 +26,10 @@ application/pi_code/__pycache__/run_inference.cpython-312.pyc
 
 docker_app/backend/model/*.safetensors
 docker_app/model/*.safetensors
+node_modules
+
+# Local dev emulator stack (scripts/start-local-dev.ps1 / stop-local-dev.ps1)
+.local-dev-pids.json
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

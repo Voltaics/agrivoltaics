@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../app_constants.dart';
 import '../models/organization.dart';
 import '../models/member.dart';
+import 'user_service.dart';
 
 enum AddMemberOutcome { added, invited }
 
@@ -84,7 +85,9 @@ class OrganizationService {
     
     // Add creator as owner using member permissions
     final ownerPermissions = MemberPermissions.forRole('owner');
+    final normalizedCreatorEmail = (user.email ?? '').trim().toLowerCase();
     await orgRef.collection('members').doc(userId).set({
+      if (normalizedCreatorEmail.isNotEmpty) 'email': normalizedCreatorEmail,
       'role': 'owner',
       'permissions': ownerPermissions.toMap(),
       'joinedAt': FieldValue.serverTimestamp(),
@@ -145,12 +148,17 @@ class OrganizationService {
     });
   }
 
-  // Add a member to an organization
+  // Add a member to an organization. If [fullName] is provided: for a user
+  // who already has an account, it's applied immediately as their name
+  // override; for a not-yet-signed-in user, it's stashed on the invite and
+  // applied once they accept (see UserService._acceptPendingInvites).
   Future<AddMemberOutcome> addMember({
     required String orgId,
     required String userEmail,
     String role = 'viewer',
+    String? fullName,
   }) async {
+    final trimmedFullName = fullName?.trim();
     final currentUserId = _auth.currentUser!.uid;
     final normalizedEmail = userEmail.trim().toLowerCase();
     final inviteDocId = _inviteDocIdForEmail(normalizedEmail);
@@ -198,6 +206,8 @@ class OrganizationService {
         'invitedBy': currentUserId,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
+        if (trimmedFullName != null && trimmedFullName.isNotEmpty)
+          'fullName': trimmedFullName,
       }, SetOptions(merge: true));
 
       return AddMemberOutcome.invited;
@@ -226,6 +236,10 @@ class OrganizationService {
       'invitedBy': currentUserId,
       'lastActive': null,
     });
+
+    if (trimmedFullName != null && trimmedFullName.isNotEmpty) {
+      await UserService().updateFullName(userId, trimmedFullName);
+    }
 
     return AddMemberOutcome.added;
   }
@@ -318,12 +332,109 @@ class OrganizationService {
     final memberDoc = await _firestore
         .doc('organizations/$orgId/members/$userId')
         .get();
-    
+
     if (!memberDoc.exists) return false;
-    
+
     final data = memberDoc.data() as Map<String, dynamic>;
     final permissions = data['permissions'] as Map<String, dynamic>?;
-    
+
     return permissions?['canManageMembers'] ?? false;
   }
+
+  // Whether the current user has member-management permission in at least
+  // one organization. Gates access to the cross-org Member Directory and to
+  // full-name editing, since both surface/affect data beyond a single org.
+  Future<bool> canManageMembersInAnyOrg() async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return false;
+
+    final orgSnapshot = await _firestore.collection('organizations').get();
+    final checks = await Future.wait(
+      orgSnapshot.docs.map((orgDoc) async {
+        final memberDoc = await orgDoc.reference.collection('members').doc(userId).get();
+        if (!memberDoc.exists) return false;
+        final data = memberDoc.data() as Map<String, dynamic>;
+        final permissions = data['permissions'] as Map<String, dynamic>?;
+        return permissions?['canManageMembers'] ?? false;
+      }),
+    );
+
+    return checks.any((canManage) => canManage);
+  }
+
+  // Every organization the given user email belongs to, with their role.
+  // Used by the Member Directory to show cross-org membership status.
+  Future<List<MemberOrganizationRef>> getOrganizationsForEmail(String normalizedEmail) async {
+    final memberDocs = await _firestore
+        .collectionGroup('members')
+        .where('email', isEqualTo: normalizedEmail)
+        .get();
+
+    final refs = await Future.wait(memberDocs.docs.map((doc) async {
+      final orgId = doc.reference.parent.parent!.id;
+      final orgDoc = await _firestore.doc('organizations/$orgId').get();
+      final orgName = orgDoc.data()?['name'] as String? ?? 'Unknown organization';
+      final role = doc.data()['role'] as String? ?? 'viewer';
+      return MemberOrganizationRef(orgId: orgId, orgName: orgName, role: role);
+    }));
+
+    return refs;
+  }
+
+  // Every organization with a pending (not yet accepted) invite for the
+  // given email. Used by the Member Directory to surface outstanding invites.
+  Future<List<MemberOrganizationRef>> getPendingInvitesForEmail(String normalizedEmail) async {
+    final inviteDocs = await _firestore
+        .collectionGroup('pendingInvites')
+        .where('email', isEqualTo: normalizedEmail)
+        .where('status', isEqualTo: 'pending')
+        .get();
+
+    final refs = await Future.wait(inviteDocs.docs.map((doc) async {
+      final orgId = doc.data()['orgId'] as String? ?? doc.reference.parent.parent!.id;
+      final orgDoc = await _firestore.doc('organizations/$orgId').get();
+      final orgName = orgDoc.data()?['name'] as String? ?? 'Unknown organization';
+      final role = doc.data()['role'] as String? ?? 'viewer';
+      return MemberOrganizationRef(orgId: orgId, orgName: orgName, role: role);
+    }));
+
+    return refs;
+  }
+
+  // Organizations where the current user can manage members — used to scope
+  // the "Add to Organization" picker on the Member Directory page.
+  Future<List<Organization>> getManageableOrganizations() async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return [];
+
+    final orgSnapshot = await _firestore.collection('organizations').get();
+    final results = <Organization>[];
+
+    for (final orgDoc in orgSnapshot.docs) {
+      final memberDoc = await orgDoc.reference.collection('members').doc(userId).get();
+      if (!memberDoc.exists) continue;
+      final data = memberDoc.data() as Map<String, dynamic>;
+      final permissions = data['permissions'] as Map<String, dynamic>?;
+      if (permissions?['canManageMembers'] == true) {
+        results.add(Organization.fromFirestore(orgDoc));
+      }
+    }
+
+    return results;
+  }
+}
+
+/// Lightweight reference to an organization + a role/relationship, used by
+/// the Member Directory to show cross-org membership and invite status
+/// without pulling in the full Organization/Member models.
+class MemberOrganizationRef {
+  final String orgId;
+  final String orgName;
+  final String role;
+
+  MemberOrganizationRef({
+    required this.orgId,
+    required this.orgName,
+    required this.role,
+  });
 }

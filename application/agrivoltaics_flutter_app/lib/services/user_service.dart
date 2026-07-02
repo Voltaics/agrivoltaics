@@ -88,6 +88,8 @@ class UserService {
         .where('email', isEqualTo: normalizedEmail)
         .get();
 
+    final userRef = _firestore.doc('users/$userId');
+
     for (final inviteDoc in invites.docs) {
       final inviteData = inviteDoc.data();
       final status = (inviteData['status'] as String?) ?? 'pending';
@@ -101,9 +103,13 @@ class UserService {
       }
 
       final memberRef = _firestore.doc('organizations/$orgId/members/$userId');
+      final inviteFullName = (inviteData['fullName'] as String?)?.trim();
 
       await _firestore.runTransaction((tx) async {
+        // All reads must happen before any writes within a transaction.
         final existingMember = await tx.get(memberRef);
+        final needsFullNameCheck = inviteFullName != null && inviteFullName.isNotEmpty;
+        final userSnapshot = needsFullNameCheck ? await tx.get(userRef) : null;
 
         if (!existingMember.exists) {
           tx.set(memberRef, {
@@ -114,6 +120,16 @@ class UserService {
             'invitedBy': inviteData['invitedBy'],
             'lastActive': null,
           });
+        }
+
+        // Only apply the invite's name if the user doesn't already have an
+        // override set, so an earlier edit is never clobbered.
+        if (needsFullNameCheck) {
+          final existingFullName =
+              (userSnapshot?.data()?['fullName'] as String?)?.trim() ?? '';
+          if (existingFullName.isEmpty) {
+            tx.update(userRef, {'fullName': inviteFullName});
+          }
         }
 
         tx.update(inviteDoc.reference, {
@@ -138,6 +154,18 @@ class UserService {
     if (updates.isNotEmpty) {
       await _firestore.doc('users/$userId').update(updates);
     }
+  }
+
+  /// Admin-facing override of another (or the current) user's display name.
+  /// Distinct from [updateProfile], which only ever touches the caller's own
+  /// document — this is called from member-management UI, gated by
+  /// OrganizationService.canManageMembersInAnyOrg().
+  Future<void> updateFullName(String userId, String fullName) async {
+    final trimmed = fullName.trim();
+    if (trimmed.isEmpty) {
+      throw Exception('Full name cannot be empty');
+    }
+    await _firestore.doc('users/$userId').update({'fullName': trimmed});
   }
 
   // Delete user document
