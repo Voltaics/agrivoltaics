@@ -1,0 +1,16 @@
+rules_version = '2';
+
+// LOCAL EMULATOR ONLY. This file is referenced only by firebase.emulator.json
+// (loaded via `firebase emulators:start --only firestore --config
+// firebase.emulator.json`), never by the root firebase.json that `firebase
+// deploy` reads. It exists purely so the emulator has a ruleset to boot
+// with, and is intentionally wide open so local dev/test data behaves like
+// an unrestricted sandbox. Do not reference this file from firebase.json or
+// point production Firestore at it.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

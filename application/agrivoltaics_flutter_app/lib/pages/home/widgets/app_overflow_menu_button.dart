@@ -3,9 +3,11 @@ import 'package:agrivoltaics_flutter_app/app_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../services/organization_service.dart';
+import '../../member_directory/member_directory_page.dart';
 import 'sign_out_dialog.dart';
 
-class AppOverflowMenuButton extends StatelessWidget {
+class AppOverflowMenuButton extends StatefulWidget {
   final Color iconColor;
   final EdgeInsetsGeometry padding;
   final String tooltip;
@@ -18,6 +20,23 @@ class AppOverflowMenuButton extends StatelessWidget {
     this.tooltip = 'Menu',
     this.iconSize,
   });
+
+  @override
+  State<AppOverflowMenuButton> createState() => _AppOverflowMenuButtonState();
+}
+
+class _AppOverflowMenuButtonState extends State<AppOverflowMenuButton> {
+  // Defaults to hidden until the permission check resolves, so the option
+  // never flashes visible for someone who isn't allowed to use it.
+  bool _canAccessDirectory = false;
+
+  @override
+  void initState() {
+    super.initState();
+    OrganizationService().canManageMembersInAnyOrg().then((canAccess) {
+      if (mounted) setState(() => _canAccessDirectory = canAccess);
+    });
+  }
 
   Future<void> _openHelpPdf(BuildContext context) async {
     final uri = Uri.parse(AppConstants.helpPdfUrl);
@@ -35,6 +54,11 @@ class AppOverflowMenuButton extends StatelessWidget {
 
   Future<void> _handleSelection(BuildContext context, String value) async {
     switch (value) {
+      case 'directory':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const MemberDirectoryPage()),
+        );
+        break;
       case 'help':
         await _openHelpPdf(context);
         break;
@@ -51,16 +75,27 @@ class AppOverflowMenuButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
-      tooltip: tooltip,
-      padding: padding,
+      tooltip: widget.tooltip,
+      padding: widget.padding,
       icon: Icon(
         Icons.menu,
-        color: iconColor,
-        size: iconSize,
+        color: widget.iconColor,
+        size: widget.iconSize,
       ),
       onSelected: (value) => _handleSelection(context, value),
-      itemBuilder: (context) => const [
-        PopupMenuItem<String>(
+      itemBuilder: (context) => [
+        if (_canAccessDirectory)
+          const PopupMenuItem<String>(
+            value: 'directory',
+            child: Row(
+              children: [
+                Icon(Icons.people_outline),
+                SizedBox(width: 12),
+                Text('Member Directory'),
+              ],
+            ),
+          ),
+        const PopupMenuItem<String>(
           value: 'help',
           child: Row(
             children: [
@@ -70,7 +105,7 @@ class AppOverflowMenuButton extends StatelessWidget {
             ],
           ),
         ),
-        PopupMenuItem<String>(
+        const PopupMenuItem<String>(
           value: 'logout',
           child: Row(
             children: [

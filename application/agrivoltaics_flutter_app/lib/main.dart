@@ -1,5 +1,6 @@
 import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:agrivoltaics_flutter_app/app_state.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
@@ -12,6 +13,16 @@ import 'app_constants.dart';
 import 'services/readings_service.dart';
 import 'pages/login.dart';
 
+/// Local-dev-only escape hatch: when true, Firestore reads/writes go to a
+/// local emulator (`firebase emulators:start --only firestore --config
+/// firebase.emulator.json`) instead of production, while Firebase Auth
+/// keeps using the real project unchanged. Off by default, so a normal
+/// build/run is unaffected.
+const bool _useFirestoreEmulator = bool.fromEnvironment(
+  'USE_FIRESTORE_EMULATOR',
+  defaultValue: false,
+);
+
 void main() async {
   // Initialize Firebase
   // (https://stackoverflow.com/a/63873689)
@@ -19,6 +30,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform
   );
+
+  if (_useFirestoreEmulator) {
+    FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+  }
 
   // Register getIt
   final getIt = GetIt.instance;
