@@ -1,6 +1,7 @@
 import 'package:agrivoltaics_flutter_app/app_colors.dart';
 import 'package:flutter/material.dart';
 import '../../../models/authorized_member_summary.dart';
+import '../../../models/member.dart';
 import '../../../models/organization.dart';
 import '../../../services/organization_service.dart';
 
@@ -138,12 +139,7 @@ class _AddToOrganizationDialogState extends State<AddToOrganizationDialog> {
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'owner', child: Text('Owner')),
-                      DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                      DropdownMenuItem(value: 'member', child: Text('Member')),
-                      DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
-                    ],
+                    items: roleDropdownItems,
                     onChanged: _isSaving
                         ? null
                         : (value) {

@@ -1,4 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+
+/// Shared role options for every role-picking dropdown in the app (Add
+/// Member, Add to Organization, Edit Role), so the list of roles and their
+/// labels only need to be kept in sync in one place.
+const roleDropdownItems = <DropdownMenuItem<String>>[
+  DropdownMenuItem(value: 'owner', child: Text('Owner')),
+  DropdownMenuItem(value: 'admin', child: Text('Admin')),
+  DropdownMenuItem(value: 'member', child: Text('Member')),
+  DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
+];
 
 class Member {
   final String userId; // Document ID from members subcollection

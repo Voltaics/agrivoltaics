@@ -6,6 +6,7 @@ import '../models/member.dart';
 import '../services/organization_service.dart';
 import '../services/user_service.dart';
 import 'member_directory/dialogs/edit_full_name_dialog.dart';
+import 'member_directory/dialogs/edit_role_dialog.dart';
 
 class MemberManagementDialog extends StatefulWidget {
   final Organization organization;
@@ -315,12 +316,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
-              items: const [
-                DropdownMenuItem(value: 'owner', child: Text('Owner')),
-                DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                DropdownMenuItem(value: 'member', child: Text('Member')),
-                DropdownMenuItem(value: 'viewer', child: Text('Viewer')),
-              ],
+              items: roleDropdownItems,
               onChanged: _isAddingMember
                   ? null
                   : (value) {
@@ -391,6 +387,21 @@ class _MemberListItemState extends State<MemberListItem> {
     // The FutureBuilder in build() re-fetches on every rebuild, so a simple
     // setState is enough to pick up the new name after the dialog closes.
     if (mounted) setState(() {});
+  }
+
+  Future<void> _editRole(String currentRole, String memberName) async {
+    await showDialog<bool>(
+      context: context,
+      builder: (context) => EditRoleDialog(
+        orgId: widget.organization.id,
+        userId: widget.member.userId,
+        memberName: memberName,
+        currentRole: currentRole,
+      ),
+    );
+    // No setState needed here: widget.member comes from the StreamBuilder in
+    // _buildMemberList(), which will already re-emit fresh role/permissions
+    // once the Firestore write in EditRoleDialog completes.
   }
 
   Future<void> _removeMember() async {
@@ -534,19 +545,28 @@ class _MemberListItemState extends State<MemberListItem> {
                   style: const TextStyle(fontSize: 11, color: AppColors.error),
                 ),
               const SizedBox(height: 4),
-              Row(
-                children: [
-                  _buildRoleBadge(widget.member.role),
-                  const SizedBox(width: 8),
-                  _buildPermissionChips(widget.member.permissions),
-                ],
-              ),
+              _buildRoleBadge(widget.member.role),
             ],
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // TODO: Add role dropdown
+              if (isCurrentUser)
+                const Tooltip(
+                  message: 'You cannot change your own role',
+                  child: Icon(
+                    Icons.admin_panel_settings_outlined,
+                    size: 20,
+                    color: AppColors.textMuted,
+                  ),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
+                  color: AppColors.textMuted,
+                  onPressed: () => _editRole(widget.member.role, displayName),
+                  tooltip: 'Edit role',
+                ),
               if (userData != null)
                 IconButton(
                   icon: const Icon(Icons.edit, size: 20),
@@ -616,40 +636,6 @@ class _MemberListItemState extends State<MemberListItem> {
           fontSize: 10,
           fontWeight: FontWeight.bold,
         ),
-      ),
-    );
-  }
-
-  Widget _buildPermissionChips(MemberPermissions permissions) {
-    final activePermissions = <String>[];
-    if (permissions.canManageMembers) activePermissions.add('Members');
-    if (permissions.canManageSites) activePermissions.add('Sites');
-    if (permissions.canManageSensors) activePermissions.add('Sensors');
-
-    if (activePermissions.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Expanded(
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 4,
-        children: activePermissions.map((perm) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.info.withAlpha((0.1 * 255).toInt()),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              perm,
-              style: const TextStyle(
-                color: AppColors.info,
-                fontSize: 9,
-              ),
-            ),
-          );
-        }).toList(),
       ),
     );
   }
