@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/sensor.dart';
+import 'organization_service.dart';
 import 'sensor_lookup_service.dart';
 
 class SensorService {
@@ -55,6 +56,10 @@ class SensorService {
     GeoPoint? location,
     Map<String, SensorField>? fields,
   }) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     try {
       final now = DateTime.now();
       final docRef = _firestore
@@ -106,6 +111,10 @@ class SensorService {
     String sensorId,
     Map<String, dynamic> updates,
   ) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     try {
       updates['updatedAt'] = Timestamp.fromDate(DateTime.now());
       
@@ -150,6 +159,10 @@ class SensorService {
     double value,
     String unit,
   ) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     try {
       final now = DateTime.now();
       await _firestore
@@ -175,6 +188,10 @@ class SensorService {
 
   /// Delete a sensor
   Future<void> deleteSensor(String orgId, String siteId, String zoneId, String sensorId) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     try {
       await _firestore
           .collection('organizations')

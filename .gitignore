@@ -33,3 +33,10 @@ node_modules
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Local-only credentials (see secrets/README.md) - never commit these.
+/secrets/*
+!/secrets/README.md
+# Belt-and-suspenders: Firebase's default downloaded-key filename pattern,
+# wherever it ends up.
+*firebase-adminsdk*.json

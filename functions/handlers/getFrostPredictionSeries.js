@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const {bigquery} = require('../lib/firebase');
+const {verifyAuthHeader, isOrgMember} = require('../lib/http');
 
 const FROST_TABLE_DATASET_ID = 'sensor_data';
 const FROST_TABLE_ID = 'frost_predictions';
@@ -66,6 +67,14 @@ const getFrostPredictionSeries = functions.https.onRequest(async (req, res) => {
   }
 
   try {
+    const decodedToken = await verifyAuthHeader(req);
+    if (!decodedToken) {
+      return res.status(401).json({
+        success: false,
+        error: 'Missing or invalid auth token.',
+      });
+    }
+
     const {
       organizationId,
       siteId,
@@ -81,6 +90,13 @@ const getFrostPredictionSeries = functions.https.onRequest(async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: organizationId, siteId, zoneId, start, end',
+      });
+    }
+
+    if (!(await isOrgMember(organizationId, decodedToken.uid))) {
+      return res.status(403).json({
+        success: false,
+        error: 'Not a member of this organization.',
       });
     }
 

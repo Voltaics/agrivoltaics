@@ -31,12 +31,36 @@ class _EditRoleDialogState extends State<EditRoleDialog> {
   final _organizationService = OrganizationService();
   late String _selectedRole;
   bool _isSaving = false;
+  // Both default to false until the checks resolve, so Save never flashes
+  // enabled before settling into its real state.
+  bool _canManageMembers = false;
+  bool _isOwner = false;
 
   @override
   void initState() {
     super.initState();
     _selectedRole = widget.currentRole;
+    Future.wait([
+      _organizationService.canManageMembers(widget.orgId),
+      _organizationService.isOwnerOfOrg(widget.orgId),
+    ]).then((results) {
+      if (mounted) {
+        setState(() {
+          _canManageMembers = results[0];
+          _isOwner = results[1];
+        });
+      }
+    });
   }
+
+  // Granting or revoking owner status requires being an owner; other role
+  // changes only require canManageMembers — mirrors the server-side rule in
+  // OrganizationService.updateMemberRole.
+  bool get _touchesOwnerStatus =>
+      widget.currentRole == 'owner' || _selectedRole == 'owner';
+
+  bool get _canSave =>
+      _canManageMembers && (!_touchesOwnerStatus || _isOwner);
 
   Future<void> _save() async {
     setState(() => _isSaving = true);
@@ -104,6 +128,13 @@ class _EditRoleDialogState extends State<EditRoleDialog> {
               "The last remaining owner of an organization can't be demoted.",
               style: TextStyle(color: AppColors.textMuted, fontSize: 12, fontStyle: FontStyle.italic),
             ),
+            if (_touchesOwnerStatus && !_isOwner) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Only an owner can grant or revoke owner status.',
+                style: TextStyle(color: AppColors.error, fontSize: 12, fontStyle: FontStyle.italic),
+              ),
+            ],
           ],
         ),
       ),
@@ -113,7 +144,7 @@ class _EditRoleDialogState extends State<EditRoleDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton.icon(
-          onPressed: _isSaving ? null : _save,
+          onPressed: (_isSaving || !_canSave) ? null : _save,
           icon: _isSaving
               ? const SizedBox(
                   width: 16,

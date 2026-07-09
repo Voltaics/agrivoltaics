@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/site.dart';
+import 'organization_service.dart';
 
 class SiteService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -39,6 +40,10 @@ class SiteService {
     String? timezone,
     bool siteChecked = true,
   }) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     final userId = _auth.currentUser!.uid;
     final siteRef = _firestore.collection('organizations/$orgId/sites').doc();
     
@@ -67,6 +72,10 @@ class SiteService {
     String siteId,
     Map<String, dynamic> updates,
   ) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     await _firestore
         .doc('organizations/$orgId/sites/$siteId')
         .update({
@@ -77,8 +86,12 @@ class SiteService {
 
   // Delete site
   Future<void> deleteSite(String orgId, String siteId) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     final siteRef = _firestore.doc('organizations/$orgId/sites/$siteId');
-    
+
     // Delete zones subcollection
     final zonesSnapshot = await siteRef.collection('zones').get();
     for (final zoneDoc in zonesSnapshot.docs) {

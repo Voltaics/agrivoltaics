@@ -27,6 +27,17 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
   final _fullNameController = TextEditingController();
   String _selectedRole = 'member';
   bool _isAddingMember = false;
+  // Defaults to false until the check resolves, so Add/Remove/Edit-role
+  // never flash enabled before settling into their real state.
+  bool _canManageMembers = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _organizationService.canManageMembers(widget.organization.id).then((canManage) {
+      if (mounted) setState(() => _canManageMembers = canManage);
+    });
+  }
 
   @override
   void dispose() {
@@ -236,6 +247,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
             return MemberListItem(
               member: member,
               organization: widget.organization,
+              canManageMembers: _canManageMembers,
             );
           },
         );
@@ -331,7 +343,7 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _isAddingMember ? null : _addMember,
+                onPressed: (_isAddingMember || !_canManageMembers) ? null : _addMember,
                 icon: _isAddingMember
                     ? const SizedBox(
                         width: 16,
@@ -360,11 +372,13 @@ class _MemberManagementDialogState extends State<MemberManagementDialog> {
 class MemberListItem extends StatefulWidget {
   final Member member;
   final Organization organization;
+  final bool canManageMembers;
 
   const MemberListItem({
     super.key,
     required this.member,
     required this.organization,
+    required this.canManageMembers,
   });
 
   @override
@@ -417,7 +431,7 @@ class _MemberListItemState extends State<MemberListItem> {
           ],
         ),
         content: FutureBuilder(
-          future: UserService().getUser(widget.member.userId),
+          future: UserService().getUser(widget.member.userId, widget.organization.id),
           builder: (context, snapshot) {
             final userName = snapshot.data?.resolvedName ?? 'this member';
             final userEmail = snapshot.data?.email ?? '';
@@ -503,7 +517,7 @@ class _MemberListItemState extends State<MemberListItem> {
     final isCurrentUser = widget.member.userId == currentUserId;
 
     return FutureBuilder(
-      future: userService.getUser(widget.member.userId),
+      future: userService.getUser(widget.member.userId, widget.organization.id),
       builder: (context, snapshot) {
         final userData = snapshot.data;
         final isPending = snapshot.connectionState != ConnectionState.done;
@@ -560,6 +574,15 @@ class _MemberListItemState extends State<MemberListItem> {
                     color: AppColors.textMuted,
                   ),
                 )
+              else if (!widget.canManageMembers)
+                const Tooltip(
+                  message: 'You do not have permission to edit roles',
+                  child: Icon(
+                    Icons.admin_panel_settings_outlined,
+                    size: 20,
+                    color: AppColors.textMuted,
+                  ),
+                )
               else
                 IconButton(
                   icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
@@ -580,14 +603,7 @@ class _MemberListItemState extends State<MemberListItem> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              else if (!isCurrentUser) // Hide delete button for current user
-                IconButton(
-                  icon: const Icon(Icons.delete, size: 20),
-                  color: AppColors.error,
-                  onPressed: _removeMember,
-                  tooltip: 'Remove member',
-                )
-              else
+              else if (isCurrentUser) // Hide delete button for current user
                 const Tooltip(
                   message: 'You cannot remove yourself',
                   child: Icon(
@@ -595,6 +611,22 @@ class _MemberListItemState extends State<MemberListItem> {
                     size: 20,
                     color: AppColors.textMuted,
                   ),
+                )
+              else if (!widget.canManageMembers)
+                const Tooltip(
+                  message: 'You do not have permission to remove members',
+                  child: Icon(
+                    Icons.delete,
+                    size: 20,
+                    color: AppColors.textMuted,
+                  ),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.delete, size: 20),
+                  color: AppColors.error,
+                  onPressed: _removeMember,
+                  tooltip: 'Remove member',
                 ),
             ],
           ),

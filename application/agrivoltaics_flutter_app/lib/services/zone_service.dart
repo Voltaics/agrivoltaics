@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/zone.dart';
+import 'organization_service.dart';
 
 class ZoneService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -37,6 +38,10 @@ class ZoneService {
     bool zoneChecked = true,
     Map<String, String>? readings,
   }) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     final zoneRef = _firestore
         .collection('organizations/$orgId/sites/$siteId/zones')
         .doc();
@@ -64,6 +69,10 @@ class ZoneService {
     String zoneId,
     Map<String, dynamic> updates,
   ) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     await _firestore
         .doc('organizations/$orgId/sites/$siteId/zones/$zoneId')
         .update({
@@ -74,9 +83,13 @@ class ZoneService {
 
   // Delete zone
   Future<void> deleteZone(String orgId, String siteId, String zoneId) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     final zoneRef = _firestore
         .doc('organizations/$orgId/sites/$siteId/zones/$zoneId');
-    
+
     // Delete all sensors in this zone
     final sensorsSnapshot = await zoneRef.collection('sensors').get();
     for (final sensorDoc in sensorsSnapshot.docs) {
@@ -112,6 +125,10 @@ class ZoneService {
     required String siteId,
     required List<String> zoneNames,
   }) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     final batch = _firestore.batch();
     final zoneIds = <String>[];
     
@@ -147,6 +164,10 @@ class ZoneService {
     required String readingFieldName,
     required String sensorId,
   }) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     await _firestore
         .doc('organizations/$orgId/sites/$siteId/zones/$zoneId')
         .update({
@@ -162,6 +183,10 @@ class ZoneService {
     required String zoneId,
     required String readingFieldName,
   }) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     await _firestore
         .doc('organizations/$orgId/sites/$siteId/zones/$zoneId')
         .update({

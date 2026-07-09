@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const {bigquery, DATASET_ID, TABLE_ID, ALERTS_TABLE_ID} = require('../lib/firebase');
+const {verifyAuthHeader, isAdmin} = require('../lib/http');
 
 /**
  * HTTPS Cloud Function: Setup BigQuery
@@ -12,6 +13,12 @@ const {bigquery, DATASET_ID, TABLE_ID, ALERTS_TABLE_ID} = require('../lib/fireba
  * @returns {Promise<void>} JSON response with setup status
  */
 const setupBigQuery = functions.https.onRequest(async (req, res) => {
+  const decodedToken = await verifyAuthHeader(req);
+  if (!decodedToken || !isAdmin(decodedToken.uid)) {
+    res.status(403).json({success: false, error: 'Admin access required.'});
+    return;
+  }
+
   try {
     const dataset = bigquery.dataset(DATASET_ID);
     const [datasetExists] = await dataset.exists();

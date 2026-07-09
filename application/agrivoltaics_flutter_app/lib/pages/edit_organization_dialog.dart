@@ -25,12 +25,18 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
   late final TextEditingController _descriptionController;
   final _organizationService = OrganizationService();
   bool _isLoading = false;
+  // Defaults to false (not the owner) until the check resolves, so Save/
+  // Delete never flash enabled before settling into their real state.
+  bool _isOwner = false;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.organization.name);
     _descriptionController = TextEditingController(text: widget.organization.description);
+    _organizationService.isOwnerOfOrg(widget.organization.id).then((isOwner) {
+      if (mounted) setState(() => _isOwner = isOwner);
+    });
   }
 
   @override
@@ -315,9 +321,9 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
                 ),
               ),
               const SizedBox(height: 12),
-              // Delete Button
+              // Delete Button — owner only
               OutlinedButton.icon(
-                onPressed: _isLoading ? null : _deleteOrganization,
+                onPressed: (_isLoading || !_isOwner) ? null : _deleteOrganization,
                 icon: const Icon(Icons.delete),
                 label: const Text('Delete Organization'),
                 style: OutlinedButton.styleFrom(
@@ -336,7 +342,7 @@ class _EditOrganizationDialogState extends State<EditOrganizationDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton.icon(
-          onPressed: _isLoading ? null : _updateOrganization,
+          onPressed: (_isLoading || !_isOwner) ? null : _updateOrganization,
           icon: _isLoading
               ? const SizedBox(
                   width: 16,

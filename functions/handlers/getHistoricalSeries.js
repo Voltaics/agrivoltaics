@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const {bigquery, DATASET_ID, TABLE_ID} = require('../lib/firebase');
+const {verifyAuthHeader, isOrgMember} = require('../lib/http');
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000; // Get the number of milliseconds in a day
 
@@ -32,17 +33,13 @@ const getHistoricalSeries = functions.https.onRequest(async (req, res) => {
   }
 
   try {
-    // TODO: Re-enable authentication before production
-    // const authHeader = req.headers.authorization || '';
-    // const match = authHeader.match(/^Bearer (.+)$/);
-    // if (!match) {
-    //   return res.status(401).json({
-    //     success: false,
-    //     error: 'Missing or invalid auth token.',
-    //   });
-    // }
-    //
-    // await admin.auth().verifyIdToken(match[1]);
+    const decodedToken = await verifyAuthHeader(req);
+    if (!decodedToken) {
+      return res.status(401).json({
+        success: false,
+        error: 'Missing or invalid auth token.',
+      });
+    }
 
     const {
       organizationId,
@@ -70,6 +67,13 @@ const getHistoricalSeries = functions.https.onRequest(async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Missing required fields: organizationId, siteId',
+      });
+    }
+
+    if (!(await isOrgMember(organizationId, decodedToken.uid))) {
+      return res.status(403).json({
+        success: false,
+        error: 'Not a member of this organization.',
       });
     }
 

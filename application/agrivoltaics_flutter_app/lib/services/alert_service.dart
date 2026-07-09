@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/alert_rule.dart';
+import 'organization_service.dart';
 
 class AlertService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -21,6 +22,10 @@ class AlertService {
     required String orgId,
     required Map<String, dynamic> payload,
   }) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     final userId = _auth.currentUser!.uid;
     final ref = _rulesRef(orgId).doc();
 
@@ -40,6 +45,10 @@ class AlertService {
     String ruleId,
     Map<String, dynamic> updates,
   ) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     await _rulesRef(orgId).doc(ruleId).update({
       ...updates,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -55,6 +64,10 @@ class AlertService {
   }
 
   Future<void> deleteAlertRule(String orgId, String ruleId) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     await _rulesRef(orgId).doc(ruleId).delete();
   }
 }

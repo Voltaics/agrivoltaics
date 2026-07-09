@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user.dart';
+import 'organization_service.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -28,8 +29,15 @@ class UserService {
         .map((doc) => doc.exists ? AppUser.fromFirestore(doc) : null);
   }
 
-  // Get user by ID
-  Future<AppUser?> getUser(String userId) async {
+  // Get user by ID. contextOrgId scopes the lookup: the caller and the
+  // target user must both be members of that org, so this can't be used to
+  // look up an arbitrary unrelated user.
+  Future<AppUser?> getUser(String userId, String contextOrgId) async {
+    final orgService = OrganizationService();
+    if (!await orgService.isMemberOfOrg(contextOrgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     final doc = await _firestore.doc('users/$userId').get();
     if (!doc.exists) return null;
     return AppUser.fromFirestore(doc);
@@ -158,9 +166,13 @@ class UserService {
 
   /// Admin-facing override of another (or the current) user's display name.
   /// Distinct from [updateProfile], which only ever touches the caller's own
-  /// document — this is called from member-management UI, gated by
-  /// OrganizationService.canManageMembersInAnyOrg().
+  /// document — this requires the caller to manage members in at least one
+  /// organization (same bar as the Member Directory this is called from).
   Future<void> updateFullName(String userId, String fullName) async {
+    if (!await OrganizationService().canManageMembersInAnyOrg()) {
+      throw Exception('You do not have permission to edit member names.');
+    }
+
     final trimmed = fullName.trim();
     if (trimmed.isEmpty) {
       throw Exception('Full name cannot be empty');
@@ -193,9 +205,16 @@ class UserService {
     });
   }
 
-  // Get multiple users by IDs
-  Future<List<AppUser>> getUsers(List<String> userIds) async {
+  // Get multiple users by IDs. contextOrgId scopes the lookup the same way
+  // as getUser — caller must be a member of that org. (No callers today;
+  // kept consistent with getUser for whenever this is used.)
+  Future<List<AppUser>> getUsers(List<String> userIds, String contextOrgId) async {
     if (userIds.isEmpty) return [];
+
+    final orgService = OrganizationService();
+    if (!await orgService.isMemberOfOrg(contextOrgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
 
     final docs = await Future.wait(
       userIds.map((id) => _firestore.doc('users/$id').get())

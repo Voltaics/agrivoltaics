@@ -7,8 +7,8 @@
  */
 
 const functions = require('firebase-functions');
-const {getAuth} = require('firebase-admin/auth');
 const {db} = require('../lib/firebase');
+const {verifyAuthHeader, isOrgMember} = require('../lib/http');
 const {
   dispatchAlertNotifications,
 } = require('../lib/alertHelpers');
@@ -185,18 +185,9 @@ exports.sendTestAlert = functions.https.onRequest(async (req, res) => {
     return;
   }
 
-  const authHeader = req.headers.authorization || '';
-  const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-
-  if (!idToken) {
-    res.status(401).json({error: 'Missing auth token'});
-    return;
-  }
-
-  try {
-    await getAuth().verifyIdToken(idToken);
-  } catch (err) {
-    res.status(401).json({error: 'Invalid auth token'});
+  const decodedToken = await verifyAuthHeader(req);
+  if (!decodedToken) {
+    res.status(401).json({error: 'Missing or invalid auth token'});
     return;
   }
 
@@ -205,6 +196,11 @@ exports.sendTestAlert = functions.https.onRequest(async (req, res) => {
 
   if (!orgId || !ruleId) {
     res.status(400).json({error: 'orgId and ruleId are required'});
+    return;
+  }
+
+  if (!(await isOrgMember(orgId, decodedToken.uid))) {
+    res.status(403).json({error: 'Not a member of this organization.'});
     return;
   }
 

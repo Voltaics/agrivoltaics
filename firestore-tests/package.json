@@ -1,0 +1,14 @@
+{
+  "name": "agrivoltaics-firestore-rules-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Firestore security rules tests, run against the emulator only — see README.md.",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --config ../firebase.json --project agrivoltaics-rules-test \"jest\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "firebase": "^12.9.0",
+    "jest": "^29.7.0"
+  }
+}

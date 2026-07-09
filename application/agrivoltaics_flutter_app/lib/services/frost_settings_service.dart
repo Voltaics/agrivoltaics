@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'organization_service.dart';
 
 class FrostSettings {
   const FrostSettings({
@@ -104,6 +105,10 @@ class FrostSettingsService {
     required String zoneId,
     required FrostSettings settings,
   }) async {
+    if (!await OrganizationService().isMemberOfOrg(orgId)) {
+      throw Exception('You are not a member of this organization.');
+    }
+
     await _zoneDoc(
       orgId: orgId,
       siteId: siteId,

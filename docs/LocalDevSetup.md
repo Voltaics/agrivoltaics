@@ -121,6 +121,9 @@ scripts\start-local-dev.ps1
 
 # or non-interactively:
 scripts\start-local-dev.ps1 -AuthorizedEmails "you@gmail.com,teammate@gmail.com"
+
+# or with a test org auto-seeded and owned by you (see "Seeding a test org" below):
+scripts\start-local-dev.ps1 you@gmail.com "My Test Org"
 ```
 
 This opens two windows:
@@ -140,15 +143,76 @@ scripts\stop-local-dev.ps1
 This kills both windows and their child processes cleanly. Restarting the emulator
 always starts from an **empty** database — nothing persists between runs.
 
-## 8. Known local-testing limitations
+## 8. Seeding a test org (working around the hardcoded org-creation gate)
 
-- **Org creation is gated to one hardcoded account.** `AppConstants.canCreateOrganizationForUser`
-  in `lib/app_constants.dart` only allows a single specific UID/email to create
-  organizations. This is a hardcoded check, not driven by Firestore data or dart-defines,
-  so it can't be worked around via `AUTHORIZED_EMAILS` or emulator data alone. To create
-  a test org locally as a different account, temporarily edit that function to also
-  allow your email, test, then **revert the file** (`git checkout -- lib/app_constants.dart`)
-  before committing anything — do not leave a debug bypass in place.
+`AppConstants.canCreateOrganizationForUser` in `lib/app_constants.dart` only allows a
+single specific UID/email to create organizations through the app's own UI. This is a
+hardcoded check, not driven by Firestore data or dart-defines, so it can't be worked
+around via `AUTHORIZED_EMAILS` or emulator data alone.
+
+`start-local-dev.ps1` can seed a test org for you instead, bypassing that gate entirely
+(it writes straight to the local emulator, not through the app):
+
+```powershell
+scripts\start-local-dev.ps1 <your-email> ["Org Name"]
+```
+
+This requires credentials for the real project (separate from `firebase login`). Two
+ways to get them — **use the service account key** unless you have a specific reason
+not to; it's simpler and doesn't depend on your personal Google account's IAM
+permissions on the GCP project (which may not be set up even if you can see the
+project fine in the Firebase console).
+
+**Option A — service account key (recommended), one-time setup:**
+
+1. Firebase Console → **agrivoltaics-flutter-firebase** → gear icon → **Project
+   Settings** → **Service Accounts** tab → **Generate new private key**.
+2. Save the downloaded file as `secrets/agrivoltaics-admin-key.json` in this repo.
+   That folder is gitignored (see `secrets/README.md`) — the key never gets committed.
+3. Before running the script, in the same terminal:
+   ```powershell
+   $env:GOOGLE_APPLICATION_CREDENTIALS = "secrets\agrivoltaics-admin-key.json"
+   ```
+   (Set this once per terminal session — it doesn't persist across terminals unless
+   you add it to your PowerShell profile.)
+
+This key is a real, long-lived credential with broad Admin SDK access — treat it like
+a password. If you ever suspect it leaked, revoke it from the same Service Accounts
+page and generate a new one.
+
+**Option B — Application Default Credentials via gcloud**, if you'd rather not
+download a key file. *Not* an npm package (`npx gcloud ...` won't work — it's the
+standalone Google Cloud SDK CLI):
+
+```powershell
+winget install Google.CloudSDK --accept-package-agreements --accept-source-agreements
+```
+
+Open a **new** terminal, then:
+
+```powershell
+gcloud auth application-default login
+```
+
+This can fail with a `PERMISSION_DENIED` / `USER_PROJECT_DENIED` error if your personal
+Google account isn't granted the `serviceusage.serviceUsageConsumer` role (or broader)
+on the `agrivoltaics-flutter-firebase` GCP project — the error message includes a
+console link to grant it. If you hit that, Option A avoids the issue entirely.
+
+What it does: looks up your email's real Firebase Auth account (creates one via the
+Admin SDK if you've never signed in before — Auth stays real per this doc's design,
+only Firestore is emulated), then seeds an `organizations/{id}` doc plus an owner
+`members/{uid}` doc for that account directly into the local emulator. Sign in with
+that same email in the browser and you'll land in the seeded org.
+
+If seeding fails (e.g. ADC not set up), the script warns and still starts the app — you
+can retry standalone with `node scripts\seed-test-org.js <email> ["Org Name"]` once
+the emulator is running, no restart needed. The old manual-edit-and-revert workaround
+(temporarily editing `canCreateOrganizationForUser`) still works too if you'd rather do
+that for some reason, but shouldn't be necessary anymore.
+
+## 9. Other known local-testing limitations
+
 - **Testing a second "pending member"** (an authorized email that hasn't joined any org)
   requires either a second real Google account signed into a separate browser profile/
   incognito window (simplest, and what we did to verify this), or manually creating a
@@ -156,7 +220,7 @@ always starts from an **empty** database — nothing persists between runs.
 - The emulator UI lets you inspect/edit any document directly — useful for seeding edge
   cases without going through the app's UI at all.
 
-## 9. Known pre-existing issue you may hit
+## 10. Known pre-existing issue you may hit
 
 `OrganizationService.createOrganization()` didn't originally write an `email` field onto
 the creating owner's own membership document (only the invite-based `addMember()` path

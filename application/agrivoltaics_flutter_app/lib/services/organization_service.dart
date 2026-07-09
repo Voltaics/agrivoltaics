@@ -103,6 +103,10 @@ class OrganizationService {
     String orgId,
     Map<String, dynamic> updates,
   ) async {
+    if (!await isOwnerOfOrg(orgId)) {
+      throw Exception('Only the organization owner can do this.');
+    }
+
     await _firestore.doc('organizations/$orgId').update({
       ...updates,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -111,8 +115,12 @@ class OrganizationService {
 
   // Delete organization
   Future<void> deleteOrganization(String orgId) async {
+    if (!await isOwnerOfOrg(orgId)) {
+      throw Exception('Only the organization owner can do this.');
+    }
+
     final orgRef = _firestore.doc('organizations/$orgId');
-    
+
     // Delete members subcollection
     final membersSnapshot = await orgRef.collection('members').get();
     for (final doc in membersSnapshot.docs) {
@@ -158,6 +166,10 @@ class OrganizationService {
     String role = 'viewer',
     String? fullName,
   }) async {
+    if (!await canManageMembers(orgId)) {
+      throw Exception('You do not have permission to manage members in this organization.');
+    }
+
     final trimmedFullName = fullName?.trim();
     final currentUserId = _auth.currentUser!.uid;
     final normalizedEmail = userEmail.trim().toLowerCase();
@@ -249,8 +261,12 @@ class OrganizationService {
     required String orgId,
     required String userId,
   }) async {
+    if (!await canManageMembers(orgId)) {
+      throw Exception('You do not have permission to manage members in this organization.');
+    }
+
     final currentUserId = _auth.currentUser!.uid;
-    
+
     // Don't allow removing yourself
     if (userId == currentUserId) {
       throw Exception('You cannot remove yourself from the organization');
@@ -286,25 +302,37 @@ class OrganizationService {
     required String userId,
     required String newRole,
   }) async {
+    if (!await canManageMembers(orgId)) {
+      throw Exception('You do not have permission to manage members in this organization.');
+    }
+
     final currentUserId = _auth.currentUser!.uid;
-    
+
     // Don't allow changing your own role
     if (userId == currentUserId) {
       throw Exception('You cannot change your own role');
     }
-    
+
     // Get current member data
     final memberDoc = await _firestore
         .doc('organizations/$orgId/members/$userId')
         .get();
-    
+
     if (!memberDoc.exists) {
       throw Exception('Member not found');
     }
-    
+
     final currentData = memberDoc.data() as Map<String, dynamic>;
     final currentRole = currentData['role'];
-    
+
+    // Granting or revoking owner status is an owner-only action — being an
+    // admin (canManageMembers above) is not enough, otherwise an admin could
+    // promote an arbitrary member to owner.
+    if ((currentRole == 'owner' || newRole == 'owner') &&
+        !await isOwnerOfOrg(orgId)) {
+      throw Exception('Only an owner can grant or revoke owner status.');
+    }
+
     // If removing owner status, check if there's another owner
     if (currentRole == 'owner' && newRole != 'owner') {
       final ownersSnapshot = await _firestore
@@ -339,6 +367,29 @@ class OrganizationService {
     final permissions = data['permissions'] as Map<String, dynamic>?;
 
     return permissions?['canManageMembers'] ?? false;
+  }
+
+  // Whether the current user is the owner (not just admin) of orgId.
+  Future<bool> isOwnerOfOrg(String orgId) async {
+    final userId = _auth.currentUser!.uid;
+    final memberDoc = await _firestore
+        .doc('organizations/$orgId/members/$userId')
+        .get();
+
+    if (!memberDoc.exists) return false;
+
+    final data = memberDoc.data() as Map<String, dynamic>;
+    return data['role'] == 'owner';
+  }
+
+  // Whether the current user is a member (any role) of orgId.
+  Future<bool> isMemberOfOrg(String orgId) async {
+    final userId = _auth.currentUser!.uid;
+    final memberDoc = await _firestore
+        .doc('organizations/$orgId/members/$userId')
+        .get();
+
+    return memberDoc.exists;
   }
 
   // Whether the current user has member-management permission in at least

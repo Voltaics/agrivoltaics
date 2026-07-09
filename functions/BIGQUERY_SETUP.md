@@ -38,7 +38,11 @@ Or enable it manually:
 
 ### 2. Create Dataset and Tables
 
-Deploy the setup function and call it once:
+Deploy the setup function and call it once. `setupBigQuery` requires a Firebase
+ID token for a UID on the admin allowlist in `functions/lib/http.js`
+(`ADMIN_UIDS`) — get a token by signing into the app with an allowlisted
+account and calling `FirebaseAuth.instance.currentUser?.getIdToken()`, or add
+your own UID to the allowlist first if you're not on it yet.
 
 ```bash
 # Deploy all functions (including setupBigQuery)
@@ -46,12 +50,13 @@ cd functions
 npm run deploy
 
 # Call the setup function to create/verify dataset and tables
-curl -X POST https://[REGION]-[PROJECT-ID].cloudfunctions.net/setupBigQuery
+curl -X POST https://[REGION]-[PROJECT-ID].cloudfunctions.net/setupBigQuery \
+  -H "Authorization: Bearer <admin-id-token>"
 ```
 
 **PowerShell:**
 ```powershell
-Invoke-RestMethod -Uri "https://us-central1-[PROJECT-ID].cloudfunctions.net/setupBigQuery" -Method POST
+Invoke-RestMethod -Uri "https://us-central1-[PROJECT-ID].cloudfunctions.net/setupBigQuery" -Method POST -Headers @{ Authorization = "Bearer <admin-id-token>" }
 ```
 
 **Expected Response:**
@@ -299,9 +304,10 @@ Or in [BigQuery Console](https://console.cloud.google.com/bigquery):
 
 ### "Table not found" error
 
-Run the setup function:
+Run the setup function (requires an admin ID token — see setup step above):
 ```bash
-curl -X POST https://[REGION]-[PROJECT-ID].cloudfunctions.net/setupBigQuery
+curl -X POST https://[REGION]-[PROJECT-ID].cloudfunctions.net/setupBigQuery \
+  -H "Authorization: Bearer <admin-id-token>"
 ```
 
 ### "Permission denied" error
