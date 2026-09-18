@@ -9,7 +9,7 @@ Service account key JSON files downloaded from Firebase Console → Project
 Settings → Service Accounts → **Generate new private key**, used to give
 `scripts/seed-test-org.js` (and `start-local-dev.ps1`, which calls it)
 permission to look up/create your real Firebase Auth account for local
-testing. See `docs/LocalDevSetup.md` section 8.
+testing. See `docs/Developer-Handbook.md` section 11.8.
 
 Suggested filename: `agrivoltaics-admin-key.json`.
 

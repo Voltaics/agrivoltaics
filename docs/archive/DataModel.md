@@ -212,6 +212,101 @@ organizations/{orgId}/sites/{siteId}/zones/{zoneId}/frostRunLock/lease
 }
 ```
 
+### 2h) frostRuleConfig — the six-level frost alert engine
+
+`frostRuleConfig` is a **sibling** map on the zone doc (2d), never overloading `frostSettings`
+(2d) — that map is read by `parseFrostSettings`/`shouldTriggerFrostJob` in
+`functions/handlers/ingestSensorData.js` to gate the *unrelated* AI-model Cloud Tasks trigger.
+`frostRuleConfig` instead drives the independent, stateful engine in
+`functions/lib/frostEngine/` (evaluated on ingest, throttled to ~15 min) and is edited from the
+Flutter app via `FrostEngineConfigService`/`FrostEngineConfigDialog`. Every threshold below falls
+back to a spec-faithful default (`FrostRuleConfig.defaults()` in
+`lib/models/frost_rule_config.dart`, mirrored server-side by `defaultIfNull(config.*, ...)` calls
+in `functions/lib/frostEngine/{derivations,rules,evaluateZoneFrostEngine}.js`) if unset, so a zone
+with no `frostRuleConfig` at all is inert (`enabled` defaults to `false`).
+
+```javascript
+organizations/{orgId}/sites/{siteId}/zones/{zoneId}
+{
+  // ...fields from 2d...
+
+  frostRuleConfig?: {
+    enabled: boolean,                  // default false — opt-in per zone
+    growthStage: string,               // dormant|swollenBud|budBreak|shoot1to3in|flowering|fruitSet
+    cultivar: string,
+    criticalTempF: number,
+    minExposureDurationMinutes: number,
+    eventMarginF: number,
+    allClearMarginF: number,
+    allClearStableMinutes: number,
+    allClearForecastWindowHours: number,
+    allClearHoldMinutes: number,
+    warningMinConsecutiveReadings: number,
+
+    windCalmMaxMph: number,
+    windLightMaxMph: number,
+    windModerateMaxMph: number,
+    leafWetnessDryMaxPercent: number,
+    leafWetnessWetMinPercent: number,
+
+    watch2A_airTempMaxF: number,
+    watch2A_coolingRateMinFPerHr: number,
+    watch2A_windMaxMph: number,
+    watch2A_dewSpreadMinF: number,
+    watch2B_forecastHorizonHours: number,
+    watch2B_referenceThresholdF: number,
+
+    warn3A_airTempMaxF: number,
+    warn3A_windMaxMph: number,
+    warn3A_coolingRateMinFPerHr: number,
+    warn3A_dewSpreadMaxF: number,
+    warn3B_airTempMaxF: number,
+    warn3B_windMaxMph: number,
+    warn3B_coolingRateMinFPerHr: number,
+    warn3B_dewSpreadMinF: number,
+    warn3B_projected2hMaxF: number,
+    warn3C_airTempMaxF: number,
+    warn3C_windMinMph: number,
+
+    imminent4A_airTempMaxF: number,
+    imminent4A_minGrowthStage: string,
+    imminent4B_airTempMaxF: number,
+    imminent4B_dewSpreadMaxF: number,
+    imminent4B_windMaxMph: number,
+
+    nightLightMaxLux: number,
+    frostSensitiveFromStage: string,
+
+    notifyUserIds: string[],
+    updatedAt: timestamp,
+    updatedBy: string,
+  }
+}
+```
+
+`leafMoisture` (existing reading alias) is reused as the leaf-wetness sensor's raw reading — no
+new `leafWetnessRaw` alias exists. `windGust` is not a registered reading alias; rules that could
+use it (gust) simply come back empty.
+
+#### organizations/{orgId}/sites/{siteId}/zones/{zoneId}/frostConfigAudit
+
+One doc per **changed field**, written client-side in the same batched write as the
+`frostRuleConfig` merge (no Cloud Function needed — same "direct Firestore write from browser"
+pattern already used for sensor creation).
+
+```javascript
+organizations/{orgId}/sites/{siteId}/zones/{zoneId}/frostConfigAudit/{autoId}
+{
+  changedAt: timestamp,
+  changedByUid: string,
+  fieldKey: string,           // e.g. "criticalTempF", "notifyUserIds"
+  previousValue: any,
+  newValue: any,
+  cultivarAtChange: string,
+  growthStageAtChange: string,
+}
+```
+
 ## 3) readings (top-level)
 
 Document ID: reading alias (camelCase)

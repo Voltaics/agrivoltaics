@@ -3,7 +3,7 @@
 ## Status
 
 This guide has been updated for the current Cloud Functions implementation.
-For full operational context, use docs/Developer-Handoff.md as the canonical handoff reference.
+For full operational context, use docs/Developer-Handbook.md as the canonical handoff reference.
 
 ## Overview
 

@@ -8,9 +8,7 @@ This is the active Flutter app for the project.
 
 For full handoff context, read:
 
-- ../../docs/Developer-Handoff.md
-- ../../docs/Applicable-Software.md
-- ../../docs/DataModel.md
+- ../../docs/Developer-Handbook.md
 
 ## Prerequisites
 

@@ -1,0 +1,520 @@
+Benjamin Rode - 7/29/2026 
+
+Updated Frost Alert Rules 
+
+ 
+
+"The app should communicate three separate conclusions:  
+
+1. Likelihood of frost formation: Frost Watch warning/alert  
+
+2. Expected frost type: radiation, advective, or mixed  
+
+3. Likelihood of vine injury as low/medium/high based on growth stage and exposure duration" 
+
+ 
+
+Implementing features new app systems is beyond my capabilities, but I can create alerts using the existing tools to follow Mohsen's guidelines: 
+
+ 
+
+"I recommend six app levels of Normal, Watch, Warning, Imminent, Event in Progress, and All Clear." 
+
+ 
+
+Level 1: Normal  
+
+Display green when all are true:  
+
+• Air temperature above 40°F  
+
+• No unusually rapid cooling  
+
+• Forecast minimum, when available, above 36°F  
+
+• No frost-sensitive growth stage concern 
+
+No notification is needed.  
+
+ 
+
+ 
+
+Level 2: Frost Watch 
+
+Trigger a Frost Watch when the vines are at bud swell or later and the rule set below is satisfied: 
+
+ 
+
+Rule 2A:  
+
+Rapid dry-air cooling (provided numbers are default values adjustable by farmer in app)  
+
+• Air temperature ≤ 42°F 5  
+
+• Cooling rate ≤ −2°F/hour  
+
+• Wind speed < 5 mph  
+
+• Dew-point spread > 5°F  
+
+ 
+
+Rule 2B:  
+
+Forecast threshold approach  
+
+• The local forecast or projected temperature is expected to reach the configured Warning or critical threshold within six hours. 
+
+ 
+
+This second pattern deserves attention because dry air can permit considerable additional cooling before saturation occurs.  
+
+ 
+
+Example notification: 
+
+Frost Watch: Vineyard temperature is falling. Current temperature 39°F, declining 1.6°F/hour. Continue monitoring.  
+
+ 
+
+ 
+
+Level 3: Frost Warning 
+
+Trigger a Frost Warning when frost-sensitive tissue is present and any of the following combinations persist for at least two consecutive 15-minute readings.  
+
+ 
+
+Rule 3A: 
+
+Radiation-frost pattern (provided numbers are default values and adjustable by farmer in the app)  
+
+• Air temperature ≤ 36°F  
+
+• Wind speed ≤ 3 mph  
+
+• Cooling rate ≤ −1°F/hour  
+
+• Night-time or very low light  
+
+• Either:  
+
+o Dew-point spread ≤ 4°F, or  
+
+o Leaf wetness has changed from dry to wet  
+
+This is the classic clear/calm-night pattern. Wind machines are most useful under calm conditions when a temperature inversion exists.  
+
+ 
+
+Rule 3B: 
+
+Rapid dry-air cooling (provided numbers are default values and adjustable by farmer in the app) 
+
+• Air temperature ≤ 37°F  
+
+• Wind speed ≤ 5 mph  
+
+• Cooling rate ≤ −2°F/hour  
+
+• Dew-point-spread > 4°F (see Appendix A) 6  
+
+• Projected temperature reaches 32°F within two hours  
+
+The projected temperature can initially be calculated as: 𝑇𝑝𝑟𝑜𝑗𝑒𝑐𝑡𝑒𝑑,2ℎ = 𝑇𝑛𝑜𝑤 + 2(𝐶𝑜𝑜𝑙𝑖𝑛𝑔𝑅𝑎𝑡𝑒60)  
+
+That is deliberately simple. Later, we can replace it with a locally calibrated regression using the vineyard’s recorded nights.  
+
+ 
+
+Rule 3C: 
+
+Wind-driven freeze approaching signaling possible Advective freeze (provided numbers are default values and adjustable by farmer in the app)  
+
+• Air temperature ≤ 36°F  
+
+• Wind speed consistently > 5 mph  
+
+• Temperature continuing to fall  
+
+• Regional weather forecast indicates freezing air  
+
+This should be labeled Advective Freeze Warning, not radiation frost. High winds signal an incoming cold-air mass and can make irrigation protection or high-speed fans less effective. So, in this situation we will have two distinct warning, on for radiation freeze and one for advective freeze.  
+
+ 
+
+Example notifications are:  
+
+Radiation Freeze Warning: Bud-zone temperature is 35°F and falling. Wind is calm, and conditions favor surface frost. The configured critical temperature of 32°F may be reached within two hours. Prepare the approved frost-protection procedure.  
+
+Advective Freeze Warning: A regional freeze is approaching. Bud-zone temperature is 35°F and falling, sustained wind is 8.2 mph, and the forecast indicates temperatures below the configured critical threshold within two hours. Wind-based mixing may provide limited protection. 
+
+ 
+
+ 
+
+Level 4: Frost Imminent 
+
+Trigger Frost Imminent if any of the following occurs.  
+
+ 
+
+Rule 4A:  
+
+Critical air-temperature approach (provided numbers are default values and adjustable by farmer in the app)  
+
+• Air temperature ≤ 33°F  
+
+• Cooling rate remains negative  
+
+• Bud break or later growth stage  
+
+ 
+
+Rule 4B:  
+
+Frost forming on wet tissue  
+
+(provided numbers are default values and adjustable by farmer in the app)  
+
+• Air temperature ≤ 33°F 7  
+
+• Leaf wetness is active  
+
+• Dew-point spread ≤ 1°F  
+
+• Wind speed ≤ 3 mph  
+
+Trigger if: 𝑇𝑏𝑢𝑑_𝑧𝑜𝑛𝑒 ≤ 32°𝐹  
+
+ 
+
+Rule 4C:  
+
+Bud-zone temperature reaches the configured critical threshold  
+
+Trigger Frost Imminent when the latest valid bud-zone temperature reaches or falls below the farmer-configured critical temperature (provided numbers are default values and adjustable by farmer in the app)  
+
+• 𝑇𝑏𝑢𝑑_𝑧𝑜𝑛𝑒 ≤ 32°F for the last reading  
+
+ 
+
+Example notification:  
+
+Frost Imminent: Measured bud-zone temperature has reached 31°F. Initiate the vineyard’s frost protection procedure immediately. 
+
+ 
+
+ 
+
+Level 5: Freeze Event in Progress 
+
+Trigger when either:  
+
+• The measured bud-zone temperature remains at or below the default value of 32°F or farmer-configured critical temperature for the farmer-configured minimum exposure duration or the default of 30 minutes; or  
+
+• The measured bud-zone temperature falls at least 2°F below the configured critical threshold in one valid reading. The 2°F margin is an adjustable default.  
+
+Display:  
+
+• Time below the configured threshold by farmer  
+
+• Time below 32°F  
+
+• Time below 30°F  
+
+• Continuous leaf wetness  
+
+• Wind classification  
+
+• Growth stage  
+
+• Vineyard zones affected  
+
+ 
+
+Freeze duration matters because longer exposure increases tissue injury.  
+
+ 
+
+Cornell notes that grape shoots may survive a brief freeze but suffer more severe damage when freezing persists and ice formation disrupts tissue.  
+
+ 
+
+Example notification:  
+
+8 Freeze Event in Progress: Bud-zone temperature has remained below the configured critical threshold for 30 minutes. Continue the vineyard’s approved frost-protection procedure and monitoring. 
+
+ 
+
+ 
+
+Level 6: All Clear 
+
+Monitoring should continue past sunrise and then the app should report the likelihood of vine injury based on the exposure duration. Also, do not lower an alert level until:  
+
+• Temperature is at least 2°F above the applicable critical threshold;  
+
+• Temperature has been stable or rising for at least 30 minutes; and  
+
+• No forecasted decline below the critical threshold is expected during the next hour.  
+
+ 
+
+Issue All Clear only after those conditions are met.  
+
+Also, continue logging after All Clear so the app can calculate:  
+
+• Minimum temperature  
+
+• Time below the critical threshold  
+
+• Time below 32°F  
+
+• Maximum cooling rate  
+
+• Wetness duration  
+
+• Zones affected  
+
+ 
+
+Example notification:  
+
+All Clear: The current frost event has ended. Bud-zone temperature is above the configured critical threshold and has remained stable or rising for 30 minutes. Continue routine monitoring. 
+
+Benjamin Rode – 7/29/2026 
+
+ 
+
+Implementing New Rule-Based Alerts 
+
+ 
+
+Needed Features 
+
+ 
+
+A list of all rule types from the updated rules document: 
+
+Air minimum and maximum temperature 
+
+Cooling rate 
+
+Forecasted regional minimum temperature 
+
+And check for availability of forecasted temperature (to omit when unavailable) 
+
+Potentially fallback on projected temperature calculated with cooling rate? 
+
+Growth stage 
+
+Ability to abstract frost concern from growth stage 
+
+Wind speed 
+
+Dew point spread 
+
+Lighting environment 
+
+Change in leaf wetness (dry last reading, now wet) 
+
+Projected temperature 
+
+𝑇𝑝𝑟𝑜𝑗𝑒𝑐𝑡𝑒𝑑,2ℎ = 𝑇𝑛𝑜𝑤 + 2(𝐶𝑜𝑜𝑙𝑖𝑛𝑔𝑅𝑎𝑡𝑒60)  
+
+"Wind speed consistently > 5 mph" suggests comparing persistence of stats 
+
+Ability to determine how many updates a rule has been valid for and use that itself as another rule? 
+
+Potentially better for now to just check current wind speed in this case 
+
+"Leaf wetness is active" implies a boolean state for wetness (wet/dry)? 
+
+Tbud_zone which I believe just refers to temperature at sensor box 
+
+"Wind classification" 
+
+Zones affected by frost 
+
+ 
+
+Furthermore, the document suggests these features: 
+
+Ability to customize alert messages and to include numerical values from readings in the alert 
+
+For example: Radiation Freeze Warning: Bud-zone temperature is 35°F and falling. Wind is calm, and conditions favor surface frost. The configured critical temperature of 32°F may be reached within two hours. Prepare the approved frost-protection procedure.  
+
+The document suggestions the ability to display information based on the active warning is expected 
+
+Review Level 5 above for an example 
+
+ 
+
+ 
+
+Checks for freezing temperatures or decreasing cooling rate, although boolean conditions, can be accomplished with numerical rules (temp < freezing, cooling rate > 0) 
+
+ 
+
+Current Features 
+
+ 
+
+Existing interface for creating a Frost Warning alert 
+
+ 
+
+A list of all sensor options from existing capabilities: 
+
+Cooling rate 
+
+Minimum humidity 
+
+Maximum air temperature 
+
+Maximum soil temperature 
+
+Upper lux threshold 
+
+Minimum clear-sky lux drop rate 
+
+Anticipating sky clearing during night 
+
+Seasonal activation 
+
+Cooldown on alerts 
+
+Selection of users to notify 
+
+ 
+
+Features to Implement 
+
+The difference between our current capabilities and what we must have to satisfy the updated frost alert document: 
+
+ 
+
+Minimum air temperature 
+
+Forecasted regional minimum temperature 
+
+And check for availability of forecasted temperature (to omit when unavailable) 
+
+Potentially fallback on projected temperature calculated with cooling rate? 
+
+Growth stage 
+
+Ability to abstract frost concern from growth stage 
+
+Wind speed 
+
+Dew point spread 
+
+Change in leaf wetness (dry last reading, now wet) 
+
+Projected temperature 
+
+𝑇𝑝𝑟𝑜𝑗𝑒𝑐𝑡𝑒𝑑,2ℎ = 𝑇𝑛𝑜𝑤 + 2(𝐶𝑜𝑜𝑙𝑖𝑛𝑔𝑅𝑎𝑡𝑒60)  
+
+"Wind speed consistently > 5 mph" suggests comparing persistence of stats 
+
+Ability to determine how many updates a rule has been valid for and use that itself as another rule? 
+
+Potentially better for now to just check current wind speed in this case 
+
+"Leaf wetness is active" implies a boolean state for wetness? 
+
+0% - 20% : Dry 
+
+20% - 30% : Unknown? 
+
+>30% : Wet 
+
+Tbud_zone which I believe just refers to temperature at sensor box 
+
+Currently omitted 
+
+"Wind classification" 
+
+Zones affected by frost 
+
+ 
+
+Furthermore, the following display is suggested: 
+
+ 
+
+Web App Display and Implementation Specification  
+
+The frost warning/alert panel within the Web-app should show:  
+
+ 
+
+Air temperature: 34.8°F  
+
+Dew point: 34.1°F  
+
+Dew-point spread: 0.7°F  
+
+Leaf condition: Wet  
+
+Continuous wetness: 46 min  
+
+Wind speed: 1.8 mph  
+
+Surface status: Wet; surface icing possible (Type: Radiation)  
+
+ 
+
+Lastly, it is stated that the web app should:  
+
+ 
+
+1. Calculate dew-point temperature from measured air temperature and relative humidity.  
+
+2. Retain the leaf sensor’s raw measurement.  
+
+3. Derive a stable wet/dry state from the raw value.  
+
+4. Calculate wetness duration.  
+
+5. Optionally display Possible Frost/Ice, derived from wetness plus temperature conditions 
+
+ 
+
+It is well beyond the scope of my abilities to implement these features, so I will have to reach out to Hoang regarding their implementation. 
+
+
+
+
+
+Radiation frost: clear, calm night; the vine canopy loses heat and becomes colder than the surrounding air.
+
+Advective freeze: a regional cold-air mass arrives with sustained wind; mixing devices are usually much less useful in this case.
+
+15 metrics:
+-	Air temperature, measured by a sensor installed at the grape bud/shoot zone
+-	Relative humidity
+-	Dew point and dew point spread, calculated from air temperature and humidity (see Appendix A)
+-	Wind speed and, ideally, maximum wind gust (see Appendix B for impact)
+-	Leaf wetness (see Appendix B for impact)
+-	Leaf wetness duration
+-	Soil temperature (see Appendix B for impact)
+-	Soil moisture (see Appendix B for impact)
+-	Light intensity (see Appendix B for impact)
+-	Temperature decline during the previous 15, 30, 60 and 120 minutes
+
+Farmers input:
+-	Grapevine growth stage: dormant, swollen bud, bud break, 1–3-inch shoot, flowering, or fruit set
+-	Expected clear skies or cloudiness a couple of hours before sunrise or anticipated sky clearing during night based on weather-service cloud-cover and forecast information.
+-	Minimum exposure duration used in the injury model
+
+Derived variables:
+-	Temperature Fall Rate
+
+
+Notes from implementation:
+-	20% and 30% threshold for leaf wetness
+-	Missing wind gust definition

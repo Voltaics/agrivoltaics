@@ -122,6 +122,4 @@ firebase functions:log --only ingestSensorData
 
 ## Canonical References
 
-- ../docs/Developer-Handoff.md
-- ../docs/DataModel.md
-- ../docs/Applicable-Software.md
+- ../docs/Developer-Handbook.md
