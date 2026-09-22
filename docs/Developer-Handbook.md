@@ -1,6 +1,6 @@
 # Agrivoltaics Project Handbook
 
-Last updated: 2026-09-18
+Last updated: 2026-09-22
 
 > This is the single consolidated reference for the Agrivoltaics platform, merging the
 > former Applicable-Software, Backlog-Handover, DataModel, Developer-Handoff,
@@ -29,6 +29,7 @@ Last updated: 2026-09-18
 17. [Known Issues and Technical Debt](#17-known-issues-and-technical-debt)
 18. [Outstanding Backlog](#18-outstanding-backlog)
 19. [Handoff Checklist & Quick Reference](#19-handoff-checklist--quick-reference)
+20. [Project Team](#20-project-team)
 
 ---
 
@@ -1777,3 +1778,35 @@ python start_pipeline.py --mode single
   sprint.
 - Prefer additive, backward-compatible schema/API changes unless there is a coordinated
   migration plan.
+
+---
+
+## 20. Project Team
+
+Current active group, as of 2026-09-22:
+
+```mermaid
+flowchart TD
+    MOHSEN["Dr. Mohsen\nFaculty Advisor"] --> HOANG["Hoang Le\nCS Team Lead"]
+    HOANG --> LUU["Dang Luu"]
+    HOANG --> TROUT["Bridget Trout\nPest & Disease Model"]
+    HOANG --> DALLARA["Andrea Dall'Ara\nWeb App Development"]
+    HOANG --> SPEICHER["Cyrus Speicher\nFrost Alert Engine"]
+    HOANG --> SATHIYA["Sathiyanarayanan"]
+    HOANG --> SHASHANK["Shashank"]
+```
+
+| Name | Major | UC email | Role |
+|---|---|---|---|
+| Dr. Mohsen | — | — | Faculty Advisor |
+| Hoang Le | CS | lehoanny@mail.uc.edu | CS Team Lead |
+| Dang Luu | CS | luudh@mail.uc.edu | — |
+| Bridget Trout | CS | troutbr@mail.uc.edu | Pest & Disease Model |
+| Andrea Dall'Ara | CS | dallaraa@mail.uc.edu | Web App Development |
+| Cyrus Speicher | CS | speichcj@mail.uc.edu | Frost alert engine |
+| Sathiyanarayanan | CS | sathiysk@mail.uc.edu | — |
+| Shashank | — | — | — |
+
+> Earlier rosters also included EE members (sensor hardware/electrical lead roles); they
+> are not part of the current active group shown above. Update this section as
+> membership changes — it reflects who is active *now*, not full project history.
