@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const {Timestamp} = require('firebase-admin/firestore');
 const {db, bigquery, DATASET_ID, TABLE_ID} = require('../lib/firebase');
 const {runAlertChecks} = require('../lib/alertHelpers');
+const {evaluateZoneFrostEngine} = require('../lib/frostEngine/evaluateZoneFrostEngine');
 
 const {CloudTasksClient} = require('@google-cloud/tasks');
 const crypto = require('crypto');
@@ -541,6 +542,33 @@ const ingestSensorData = functions.https.onRequest(async (req, res) => {
           });
         } catch (alertErr) {
           console.error('Alert check error:', alertErr.message || alertErr);
+        }
+
+        // Evaluate the rule-based frost alert engine (separate from the
+        // AI-model Cloud Tasks trigger above and from the simple
+        // frost_warning alert rule handled by runAlertChecks). Gated on the
+        // zone opting in via frostRuleConfig.enabled so it's inert for every
+        // zone until that config exists. Errors here are non-fatal and must
+        // not affect the HTTP response, same as the alert-check block above.
+        if (zoneData.frostRuleConfig && zoneData.frostRuleConfig.enabled === true) {
+          try {
+            const engineResult = await evaluateZoneFrostEngine({
+              organizationId,
+              siteId,
+              zoneId,
+              now,
+            });
+            if (!engineResult.skipped) {
+              console.log('Frost engine evaluated:', {
+                zoneId: zoneId,
+                level: engineResult.level,
+                levelChanged: engineResult.levelChanged,
+                matchedRuleIds: engineResult.matchedRuleIds,
+              });
+            }
+          } catch (engineErr) {
+            console.error('Frost engine evaluation error:', engineErr.message || engineErr);
+          }
         }
       } catch (bqError) {
         console.error('BigQuery insert error:', bqError.message);

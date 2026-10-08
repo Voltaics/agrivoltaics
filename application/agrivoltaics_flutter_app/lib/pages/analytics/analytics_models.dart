@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'models/frost_alert_state/frost_alert_state_model.dart';
 import 'models/frost_prediction_timeline/frost_prediction_timeline_model.dart';
 import 'models/irrigation_need_example/irrigation_need_example_model.dart';
 import 'models/pest_detection/pest_detection_model.dart';
@@ -26,6 +27,11 @@ final List<AnalyticsModelDefinition> analyticsModelDefinitions = [
     id: 'frost_prediction_timeline',
     displayName: 'Frost Prediction Timeline',
     builder: (_) => const FrostPredictionTimelineModel(),
+  ),
+  AnalyticsModelDefinition(
+    id: 'frost_alert_state',
+    displayName: 'Frost Alert Status',
+    builder: (_) => const FrostAlertStateModel(),
   ),
   AnalyticsModelDefinition(
     id: 'plant_disease_detection',

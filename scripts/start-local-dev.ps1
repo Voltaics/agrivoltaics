@@ -7,14 +7,14 @@ project, so you sign in with a real Google account - only Firestore data is
 local and disposable.
 
 One-time environment setup (Flutter, Java, Developer Mode, etc.) is NOT done
-by this script - see docs/LocalDevSetup.md first if you haven't done that yet.
+by this script - see docs/Developer-Handbook.md section 11 first if you haven't done that yet.
 
 .PARAMETER Email
 (Optional, positional 1st) Your email. If given, it's added to the
 authorized sign-in list, and a test organization owned by this email is
 seeded directly into the local emulator (bypassing
 AppConstants.canCreateOrganizationForUser, which normally restricts org
-creation to one hardcoded account - see docs/LocalDevSetup.md). Requires
+creation to one hardcoded account - see docs/Developer-Handbook.md section 14.3). Requires
 Application Default Credentials for the real project
 (`gcloud auth application-default login`) so the real Auth UID for this
 email can be looked up (or created, if you've never signed in before).
@@ -59,13 +59,13 @@ if ($Email) {
 }
 foreach ($cmd in $requiredCmds) {
     if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
-        Write-Error "'$cmd' not found on PATH. Follow docs/LocalDevSetup.md to install it first."
+        Write-Error "'$cmd' not found on PATH. Follow docs/Developer-Handbook.md section 11 to install it first."
         exit 1
     }
 }
 
 if (-not (Test-Path (Join-Path $repoRoot "node_modules\.bin\firebase.cmd"))) {
-    Write-Error "Firebase CLI not found in node_modules. Run 'npm install' at the repo root first (see docs/LocalDevSetup.md)."
+    Write-Error "Firebase CLI not found in node_modules. Run 'npm install' at the repo root first (see docs/Developer-Handbook.md section 11)."
     exit 1
 }
 

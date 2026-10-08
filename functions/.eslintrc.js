@@ -25,6 +25,13 @@ module.exports = {
       },
       'rules': {},
     },
+    {
+      'files': ['**/__tests__/**/*.js', '**/*.test.js'],
+      'env': {
+        'jest': true,
+      },
+      'rules': {},
+    },
   ],
   'globals': {},
 };

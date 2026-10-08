@@ -1,19 +1,28 @@
+class _OrgCreator {
+  const _OrgCreator({required this.uid, required this.email});
+
+  final String uid;
+  final String email;
+}
+
 abstract class AppConstants {
   static const double desktopMinWidth = 1280;
-  static const String organizationCreationAllowedUid =
-      '2qeg0hRKEPbJX4mIwtjZcsEVWFx2';
-  static const String organizationCreationAllowedEmail = 'mahsenr2@gmail.com';
+
+  static const List<_OrgCreator> _organizationCreationAllowlist = [
+    _OrgCreator(uid: '2qeg0hRKEPbJX4mIwtjZcsEVWFx2', email: 'mahsenr2@gmail.com'),
+    _OrgCreator(uid: 'RfgbLA5LI1UHQp7yVOr9DjJwL902', email: 'lehoangnhatduy2000@gmail.com'),
+  ];
 
   static bool canCreateOrganizationForUser({String? uid, String? email}) {
-    if (uid != organizationCreationAllowedUid) {
-      return false;
-    }
+    if (uid == null || uid.isEmpty) return false;
 
-    if (email == null || email.trim().isEmpty) {
-      return true;
-    }
+    final normalizedEmail = email?.trim().toLowerCase();
 
-    return email.trim().toLowerCase() == organizationCreationAllowedEmail;
+    return _organizationCreationAllowlist.any((creator) {
+      if (creator.uid != uid) return false;
+      if (normalizedEmail == null || normalizedEmail.isEmpty) return true;
+      return normalizedEmail == creator.email;
+    });
   }
   
   static const String helpPdfUrl = '/help/help.pdf';

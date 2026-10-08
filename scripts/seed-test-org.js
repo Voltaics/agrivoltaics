@@ -3,7 +3,7 @@
  * the LOCAL Firestore emulator, bypassing both the app's UI and
  * AppConstants.canCreateOrganizationForUser (which only allows one
  * hardcoded account to create orgs through the app itself — see
- * docs/LocalDevSetup.md "Known local-testing limitations").
+ * docs/Developer-Handbook.md section 11.9 "Other known local-testing limitations").
  *
  * Firebase Auth stays real (matching start-local-dev.ps1's design): this
  * script looks up — or, if they've never signed in before, creates — the
