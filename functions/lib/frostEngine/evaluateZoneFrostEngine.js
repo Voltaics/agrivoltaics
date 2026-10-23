@@ -25,6 +25,8 @@ const {evaluateFrostLevel} = require('./rules');
 const {loadEngineState, saveEngineState} = require('./stateStore');
 const {fetchRecentEngineContext} = require('./context');
 const {defaultIfNull, toNumberOrNull} = require('./utils');
+// Import notification dispatch for alert-level transitions.
+const {shouldNotify, dispatchFrostNotification} = require('./notifications');
 
 const MIN_EVAL_INTERVAL_MINUTES = 10;
 
@@ -187,6 +189,64 @@ async function evaluateZoneFrostEngine({organizationId, siteId, zoneId, now}) {
   };
 
   await saveEngineState({organizationId, siteId, zoneId, nextState});
+
+  // ==========================================================================
+  // Notification dispatch on alert-level transitions.
+  //
+  // After persisting the new engine state, check whether this tick's
+  // level change (or sustained elevated level) warrants a push
+  // notification to the farmer. The shouldNotify() guard prevents
+  // duplicate sends within a 15-minute cooldown window, and Normal-level
+  // ticks never generate notifications.
+  //
+  // On a successful send, we update lastNotifiedLevel and lastNotifiedAt
+  // on the persisted state so the next tick's cooldown check is accurate.
+  // ==========================================================================
+  const notify = shouldNotify({
+    newLevel: evalResult.level,
+    levelChanged,
+    lastNotifiedLevel: state.lastNotifiedLevel,
+    lastNotifiedAt: state.lastNotifiedAt || null,
+    nowIso,
+  });
+
+  let notificationResult = {notified: false, messageId: null};
+  if (notify) {
+    notificationResult = await dispatchFrostNotification({
+      organizationId,
+      siteId,
+      zoneId,
+      level: evalResult.level,
+      previousLevel: state.currentLevel,
+      subType: evalResult.subType,
+      matchedRuleIds: evalResult.matchedRuleIds,
+      derivedSnapshot: nextState.derivedSnapshot,
+      eventAccumulators: nextState.eventAccumulators,
+      config,
+      nowIso,
+    });
+
+    // Update the notification tracking fields on the already-persisted
+    // state document. This is a partial merge (not a full overwrite) so
+    // we don't clobber the complete state the orchestrator just wrote.
+    if (notificationResult.notified) {
+      try {
+        await saveEngineState({
+          organizationId, siteId, zoneId,
+          nextState: Object.assign({}, nextState, {
+            lastNotifiedLevel: evalResult.level,
+            lastNotifiedAt: nowIso,
+          }),
+        });
+      } catch (err) {
+        // Non-fatal: the notification was already sent and logged;
+        // a stale lastNotifiedLevel just means the cooldown guard
+        // might re-send one extra notification on the next tick.
+        console.error('[frostEngine] Failed to update notification tracking:', err.message || err);
+      }
+    }
+  }
+  // ==========================================================================
 
   return {
     skipped: false,
